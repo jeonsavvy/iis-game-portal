@@ -1,6 +1,7 @@
 import Link from "next/link";
 
 import { ForgeFlowBoard } from "@/components/ForgeFlowBoard";
+import { GameAdminPanel } from "@/components/GameAdminPanel";
 import { PipelineTerminal } from "@/components/PipelineTerminal";
 import { RoleActions } from "@/components/RoleActions";
 import { SignOutButton } from "@/components/SignOutButton";
@@ -56,6 +57,11 @@ export default async function AdminPage() {
     .limit(180);
 
   const typedLogs = (logs ?? []) as PipelineLog[];
+  const { data: recentGames } = await supabase
+    .from("games_metadata")
+    .select("id,name,slug,genre,status,created_at")
+    .order("created_at", { ascending: false })
+    .limit(30);
   const uniquePipelines = new Set(typedLogs.map((log) => log.pipeline_id));
   const statusCounts = typedLogs.reduce<Record<string, number>>((acc, log) => {
     acc[log.status] = (acc[log.status] ?? 0) + 1;
@@ -112,6 +118,18 @@ export default async function AdminPage() {
         <ManualApprovalForm />
       </section>
 
+      <GameAdminPanel
+        initialGames={
+          ((recentGames ?? []) as Array<{
+            id: string;
+            name: string;
+            slug: string;
+            genre: string;
+            status: string;
+            created_at: string;
+          }>)
+        }
+      />
       <RoleActions role={validatedRole} />
       <PipelineTerminal initialLogs={typedLogs} />
     </section>

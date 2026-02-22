@@ -60,30 +60,29 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
     <section className="portal-page">
       <section className="portal-hero">
         <div className="surface portal-hero-main">
-          <p className="eyebrow">Infinite Indie Studio</p>
-          <h1 className="hero-title">AI가 계속 만드는 실험적 웹게임 포털</h1>
+          <p className="eyebrow">IIS House</p>
+          <h1 className="hero-title">생성형 게임 아카이브</h1>
           <p className="section-subtitle">
-            ForgeFlow가 기획·스타일·빌드·QA·게시까지 연결한 결과물을 바로 플레이하고 탐색할 수 있습니다.
+            ForgeFlow가 기획·스타일·빌드·QA·게시까지 연결한 결과물을 아카이브하고 플레이합니다.
           </p>
           <div className="hero-meta-row">
-            <span className="status-chip tone-success">실시간 게시 연결</span>
-            <span className="status-chip tone-running">ForgeFlow 가동 중</span>
+            <span className="status-chip tone-success">게시 파이프라인 연결</span>
             <span className="status-chip tone-idle">게임 수 {typedGames.length}</span>
           </div>
         </div>
 
         <div className="portal-hero-side">
           <article className="surface spotlight-card">
-            <p className="eyebrow">Featured</p>
+            <p className="eyebrow">대표 작품</p>
             <h2>{featuredGame?.name ?? "아직 게시된 게임이 없습니다"}</h2>
             <p className="section-subtitle">
               {featuredGame
-                ? `${featuredGame.genre} · ${featuredGame.slug} · ${new Date(featuredGame.created_at).toLocaleString()}`
-                : "Studio Console에서 첫 파이프라인을 실행하면 여기에 대표 게임이 표시됩니다."}
+                ? `${featuredGame.genre} · ${new Date(featuredGame.created_at).toLocaleString("ko-KR")}`
+                : "스튜디오 콘솔에서 첫 파이프라인을 실행하면 여기에 대표 게임이 표시됩니다."}
             </p>
             {featuredGame ? (
               <a className="button button-primary" href={`/play/${featuredGame.id}`}>
-                대표 게임 플레이
+                지금 플레이
               </a>
             ) : null}
           </article>

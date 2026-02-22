@@ -41,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <nav className="topbar">
           <div className="brand-block">
             <strong>IIS Arcade</strong>
-            <span>Infinite Indie Studio · Live Generated Games</span>
+            <span>생성형 게임 스튜디오 아카이브</span>
           </div>
           <div className="nav-links">
             <Link className="nav-link" href="/">

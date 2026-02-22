@@ -39,7 +39,14 @@ Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 
 ## 로컬 실행
 
+실행 컨텍스트 표기 규칙:
+- `[LOCAL WSL]` : 사용자 PC의 WSL/로컬 터미널
+- `[EC2 SSH]` : 코어 엔진 서버 SSH 셸
+- `[Cloudflare Dashboard]` : Workers/Pages 런타임 변수 설정 화면
+- `[GitHub Actions]` : `deploy-cloudflare` 워크플로우 재실행 화면
+
 ```bash
+# [LOCAL WSL]
 npm install
 cp .env.example .env.local
 npm run dev
@@ -88,4 +95,5 @@ npm run dev
 
 - `CORE_ENGINE_URL is missing`
   - 포털 런타임에 `CORE_ENGINE_URL`이 비어있다는 뜻
-  - GitHub Actions Repository Secret에 `CORE_ENGINE_URL` 추가/수정 후 재배포 필요
+  - `[GitHub Actions]` Repository Secret + `[Cloudflare Dashboard]` 런타임 변수 모두 확인 필요
+  - 값 형식 예시: `http://<ec2-public-dns>:8000`

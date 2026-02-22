@@ -85,19 +85,13 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           </section>
 
           <section className="surface side-card">
-            <p className="eyebrow">스튜디오 메모</p>
-            <h2 className="section-title">포트폴리오 포인트</h2>
+            <p className="eyebrow">제작 메모</p>
+            <h2 className="section-title">생성 파이프라인 요약</h2>
             <ul className="bullet-list">
-              <li>AI 멀티에이전트 파이프라인으로 생성된 웹게임 결과물을 즉시 배포/플레이</li>
-              <li>Studio Console에서 트리거/수동 승인/실시간 로그 기반 운영</li>
-              <li>Supabase 기반 카탈로그/저장소/권한 구조 연동</li>
+              <li>ForgeFlow 멀티에이전트 파이프라인으로 생성된 웹게임 결과물</li>
+              <li>Studio Console에서 트리거/승인/로그 기반 운영 추적 가능</li>
+              <li>Supabase 카탈로그/스토리지 + Archive 레포 동기화 구조</li>
             </ul>
-          </section>
-
-          <section className="surface side-card">
-            <p className="eyebrow">후원</p>
-            <h2 className="section-title">프로젝트 응원하기</h2>
-            <p className="section-subtitle">상단 GNB의 PayPal 후원 링크를 통해 프로젝트를 응원할 수 있습니다.</p>
           </section>
         </aside>
       </div>
