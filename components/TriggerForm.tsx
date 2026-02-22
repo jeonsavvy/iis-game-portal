@@ -127,9 +127,16 @@ export function TriggerForm() {
   };
 
   return (
-    <section className="card">
-      <h3>ForgeFlow 실행</h3>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
+    <section className="surface form-panel">
+      <div className="section-head compact">
+        <div>
+          <p className="eyebrow">실행 제어</p>
+          <h3 className="section-title">ForgeFlow 실행</h3>
+        </div>
+        <p className="section-subtitle">키워드 기반으로 기획→빌드→QA→게시 파이프라인을 시작합니다.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="stack gap-sm">
         <input
           className="input"
           placeholder="예: 네온 퍼즐 스코어어택"
@@ -139,8 +146,8 @@ export function TriggerForm() {
           minLength={1}
           maxLength={200}
         />
-        <label>
-          실행 모드
+        <label className="field">
+          <span>실행 모드</span>
           <select
             className="input"
             value={executionMode}
@@ -150,8 +157,8 @@ export function TriggerForm() {
             <option value="manual">수동 (manual)</option>
           </select>
         </label>
-        <label>
-          파이프라인 버전
+        <label className="field">
+          <span>파이프라인 버전</span>
           <input
             className="input"
             value={pipelineVersion}
@@ -161,21 +168,28 @@ export function TriggerForm() {
             required
           />
         </label>
-        <button className="button" type="submit">
+        <button className="button button-primary button-block" type="submit">
           파이프라인 실행
         </button>
       </form>
-      {status ? <p>{status}</p> : null}
+      {status ? <p className="inline-feedback">{status}</p> : null}
 
       {history.length > 0 ? (
-        <div style={{ marginTop: 12 }}>
-          <h4>최근 실행 이력</h4>
-          <ul style={{ margin: 0, paddingLeft: 16 }}>
+        <div className="surface inset-panel">
+          <div className="row-between">
+            <h4 className="subsection-title">최근 실행 이력</h4>
+            <span className="muted-text">{history.length}건</span>
+          </div>
+          <ul className="activity-list">
             {history.map((item) => (
               <li key={item.pipelineId}>
-                [{statusLabel(item.status)}] {item.keyword} (
-                {item.executionMode === "manual" ? "수동" : "자동"}/{item.pipelineVersion}) (
-                {new Date(item.createdAt).toLocaleTimeString()})
+                <span className={`status-chip tone-${item.status === "error" ? "error" : item.status === "success" ? "success" : item.status === "running" ? "running" : "idle"}`}>
+                  {statusLabel(item.status)}
+                </span>
+                <span className="activity-main">
+                  {item.keyword} · {item.executionMode === "manual" ? "수동" : "자동"} / {item.pipelineVersion}
+                </span>
+                <span className="activity-time">{new Date(item.createdAt).toLocaleTimeString()}</span>
               </li>
             ))}
           </ul>

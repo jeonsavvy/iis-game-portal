@@ -103,11 +103,18 @@ export function PipelineTerminal({
   }, [logs, agentFilter, stageFilter, statusFilter]);
 
   return (
-    <section className="card">
-      <h3>파이프라인 로그</h3>
+    <section className="surface terminal-shell">
+      <div className="section-head compact">
+        <div>
+          <p className="eyebrow">실시간 관측</p>
+          <h3 className="section-title">파이프라인 로그</h3>
+        </div>
+        <p className="section-subtitle">Supabase Realtime 구독으로 새 로그를 즉시 반영합니다.</p>
+      </div>
+
       <div className="log-filters">
-        <label>
-          에이전트
+        <label className="field">
+          <span>에이전트</span>
           <select className="input" value={agentFilter} onChange={(event) => setAgentFilter(event.target.value as AgentName | "all")}>
             {AGENT_OPTIONS.map((agent) => (
               <option key={agent} value={agent}>
@@ -116,8 +123,8 @@ export function PipelineTerminal({
             ))}
           </select>
         </label>
-        <label>
-          단계
+        <label className="field">
+          <span>단계</span>
           <select className="input" value={stageFilter} onChange={(event) => setStageFilter(event.target.value as PipelineStage | "all")}>
             {STAGE_OPTIONS.map((stage) => (
               <option key={stage} value={stage}>
@@ -126,8 +133,8 @@ export function PipelineTerminal({
             ))}
           </select>
         </label>
-        <label>
-          상태
+        <label className="field">
+          <span>상태</span>
           <select className="input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as PipelineStatus | "all")}>
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
@@ -137,14 +144,24 @@ export function PipelineTerminal({
           </select>
         </label>
       </div>
+      <div className="terminal-head">
+        <span className="status-chip tone-running">LIVE</span>
+        <span className="muted-text">표시 로그 수: {rendered.length}</span>
+      </div>
       <div className="terminal">
         {rendered.length === 0 ? (
           <p>아직 로그가 없습니다.</p>
         ) : (
           rendered.map((log) => (
-            <p key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`}>
-              [{new Date(log.created_at).toLocaleTimeString()}] [{log.stage}/{log.status}] [{log.agent_name}] {log.message}
-            </p>
+            <div className="terminal-line" key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`}>
+              <span className="terminal-time">{new Date(log.created_at).toLocaleTimeString()}</span>
+              <span className={`status-chip tone-${log.status === "success" ? "success" : log.status === "error" ? "error" : log.status === "running" ? "running" : log.status === "retry" ? "warn" : "idle"}`}>
+                {STATUS_LABELS[log.status]}
+              </span>
+              <span className="terminal-tag">{log.agent_name}</span>
+              <span className="terminal-tag subtle">{log.stage}</span>
+              <span className="terminal-message">{log.message}</span>
+            </div>
           ))
         )}
       </div>

@@ -57,9 +57,16 @@ export function ManualApprovalForm() {
   };
 
   return (
-    <section className="card">
-      <h3>수동 단계 승인</h3>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
+    <section className="surface form-panel">
+      <div className="section-head compact">
+        <div>
+          <p className="eyebrow">수동 운영</p>
+          <h3 className="section-title">단계 승인 콘솔</h3>
+        </div>
+        <p className="section-subtitle">manual 모드 파이프라인의 단계별 승인 요청을 전달합니다.</p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="stack gap-sm">
         <input
           className="input"
           placeholder="파이프라인 UUID"
@@ -67,8 +74,8 @@ export function ManualApprovalForm() {
           onChange={(event) => setPipelineId(event.target.value)}
           required
         />
-        <label>
-          단계
+        <label className="field">
+          <span>단계</span>
           <select className="input" value={stage} onChange={(event) => setStage(event.target.value as (typeof APPROVAL_STAGES)[number])}>
             {APPROVAL_STAGES.map((value) => (
               <option key={value} value={value}>
@@ -77,11 +84,11 @@ export function ManualApprovalForm() {
             ))}
           </select>
         </label>
-        <button className="button" type="submit">
+        <button className="button button-primary button-block" type="submit">
           단계 승인
         </button>
       </form>
-      {status ? <p>{status}</p> : null}
+      {status ? <p className="inline-feedback">{status}</p> : null}
     </section>
   );
 }

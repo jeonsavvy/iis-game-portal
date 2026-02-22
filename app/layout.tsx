@@ -35,21 +35,31 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko">
       <body>
-        <nav className="nav">
-          <strong>IIS Arcade</strong>
+        <div className="app-bg-orb orb-a" aria-hidden="true" />
+        <div className="app-bg-orb orb-b" aria-hidden="true" />
+        <div className="app-grid" aria-hidden="true" />
+        <nav className="topbar">
+          <div className="brand-block">
+            <strong>IIS Arcade</strong>
+            <span>Infinite Indie Studio · Live Generated Games</span>
+          </div>
           <div className="nav-links">
-            <Link href="/">홈</Link>
-            <Link href="/admin">스튜디오 콘솔</Link>
+            <Link className="nav-link" href="/">
+              홈
+            </Link>
+            <Link className="nav-link" href="/admin">
+              스튜디오 콘솔
+            </Link>
             {paypalDonationUrl ? (
-              <a className="donation-link" href={paypalDonationUrl} target="_blank" rel="noreferrer">
+              <a className="donation-link nav-link support" href={paypalDonationUrl} target="_blank" rel="noreferrer">
                 💖 후원하기
               </a>
             ) : (
-              <span className="donation-disabled">💖 후원하기 (PayPal 준비 중)</span>
+              <span className="donation-disabled nav-link">💖 후원하기 (PayPal 준비 중)</span>
             )}
           </div>
         </nav>
-        <main>{children}</main>
+        <main className="main-shell">{children}</main>
       </body>
     </html>
   );
