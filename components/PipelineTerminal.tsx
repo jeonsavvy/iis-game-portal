@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { subscribePipelineLogs } from "@/lib/supabase/realtime";
+import { fetchRecentPipelineLogs, subscribePipelineLogs } from "@/lib/supabase/realtime";
 import type { AgentName, PipelineLog, PipelineStage, PipelineStatus } from "@/types/pipeline";
 
 const AGENT_OPTIONS: Array<AgentName | "all"> = [
@@ -71,19 +71,63 @@ export function PipelineTerminal({
   pipelineId?: string;
 }) {
   const [logs, setLogs] = useState<PipelineLog[]>(initialLogs);
+  const [pollMode, setPollMode] = useState<"idle" | "polling">("idle");
   const [agentFilter, setAgentFilter] = useState<AgentName | "all">("all");
   const [stageFilter, setStageFilter] = useState<PipelineStage | "all">("all");
   const [statusFilter, setStatusFilter] = useState<PipelineStatus | "all">("all");
 
   useEffect(() => {
+    let closed = false;
+    let realtimeReceived = false;
+
+    const upsertLogs = (incoming: PipelineLog[]) => {
+      setLogs((prev) => {
+        const map = new Map<string, PipelineLog>();
+        [...prev, ...incoming].forEach((log) => {
+          const key = `${log.pipeline_id}-${log.id ?? ""}-${log.stage}-${log.created_at}`;
+          map.set(key, log);
+        });
+        return Array.from(map.values())
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(0, 300);
+      });
+    };
+
     const channel = subscribePipelineLogs((newLog) => {
-      setLogs((prev) => [newLog, ...prev].slice(0, 300));
+      realtimeReceived = true;
+      upsertLogs([newLog]);
     }, pipelineId);
 
+    const poll = async () => {
+      try {
+        const recent = await fetchRecentPipelineLogs(pipelineId, 180);
+        if (!closed) {
+          upsertLogs(recent);
+        }
+      } catch {
+        // Realtime is primary. Polling fallback should fail silently.
+      }
+    };
+
+    const warmupTimer = window.setTimeout(() => {
+      if (!realtimeReceived && !closed) {
+        setPollMode("polling");
+      }
+    }, 4000);
+
+    const interval = window.setInterval(() => {
+      if (!closed && (!realtimeReceived || pollMode === "polling")) {
+        void poll();
+      }
+    }, 3000);
+
     return () => {
+      closed = true;
+      window.clearTimeout(warmupTimer);
+      window.clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [pipelineId]);
+  }, [pipelineId, pollMode]);
 
   const rendered = useMemo(() => {
     const filtered = logs.filter((log) => {
@@ -146,6 +190,7 @@ export function PipelineTerminal({
       </div>
       <div className="terminal-head">
         <span className="status-chip tone-running">LIVE</span>
+        {pollMode === "polling" ? <span className="status-chip tone-warn">폴링 보조모드</span> : null}
         <span className="muted-text">표시 로그 수: {rendered.length}</span>
       </div>
       <div className="terminal">
