@@ -44,17 +44,17 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link href="/admin">Studio Console</Link>
             {tossDonationUrl ? (
               <a className="donation-link" href={tossDonationUrl} target="_blank" rel="noreferrer">
-                💖 $1 후원하기 (Toss)
+                💖 후원하기 (Toss)
               </a>
             ) : (
-              <span className="donation-disabled">💖 $1 후원하기 (Toss 준비중)</span>
+              <span className="donation-disabled">💖 후원하기 (Toss 준비중)</span>
             )}
             {paypalDonationUrl ? (
               <a className="donation-link" href={paypalDonationUrl} target="_blank" rel="noreferrer">
-                💖 $1 후원하기 (PayPal)
+                💖 후원하기 (PayPal)
               </a>
             ) : (
-              <span className="donation-disabled">💖 $1 후원하기 (PayPal 준비중)</span>
+              <span className="donation-disabled">💖 후원하기 (PayPal 준비중)</span>
             )}
           </div>
         </nav>
