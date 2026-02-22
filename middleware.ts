@@ -14,8 +14,10 @@ function hasSupabaseAuthCookie(request: NextRequest): boolean {
 export function middleware(request: NextRequest) {
   if (request.nextUrl.pathname.startsWith("/admin") && !hasSupabaseAuthCookie(request)) {
     const redirectUrl = request.nextUrl.clone();
-    redirectUrl.pathname = "/";
-    redirectUrl.searchParams.set("auth", "required");
+    const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
+    redirectUrl.pathname = "/login";
+    redirectUrl.search = "";
+    redirectUrl.searchParams.set("next", nextPath);
     return NextResponse.redirect(redirectUrl);
   }
 
