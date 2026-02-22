@@ -9,6 +9,7 @@ export async function fetchRecentPipelineLogs(pipelineId?: string, limit = 180):
     params.set("pipelineId", pipelineId);
   }
   params.set("limit", String(limit));
+  params.set("_ts", String(Date.now()));
 
   const response = await fetch(`/api/pipelines/logs?${params.toString()}`, {
     method: "GET",
