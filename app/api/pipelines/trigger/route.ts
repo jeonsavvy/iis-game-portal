@@ -62,12 +62,12 @@ export async function POST(request: Request) {
       { timeoutMs: 15000, retries: 3 },
     );
 
+    const rawBody = await response.text();
     let data: unknown;
     try {
-      data = await response.json();
+      data = rawBody ? JSON.parse(rawBody) : {};
     } catch {
-      const fallbackText = await response.text();
-      data = { error: fallbackText || "Core engine returned non-JSON response" };
+      data = { error: rawBody || "Core engine returned non-JSON response" };
     }
 
     return NextResponse.json(data, { status: response.status });
