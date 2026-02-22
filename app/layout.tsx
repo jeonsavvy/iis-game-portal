@@ -5,7 +5,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "IIS Arcade",
-  description: "Infinite Indie Studio game portal",
+  description: "Infinite Indie Studio 게임 포털",
 };
 
 const PAYPAL_ALLOWED_HOSTS = ["paypal.com", "paypal.me"];
@@ -38,14 +38,14 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <nav className="nav">
           <strong>IIS Arcade</strong>
           <div className="nav-links">
-            <Link href="/">Home</Link>
-            <Link href="/admin">Studio Console</Link>
+            <Link href="/">홈</Link>
+            <Link href="/admin">스튜디오 콘솔</Link>
             {paypalDonationUrl ? (
               <a className="donation-link" href={paypalDonationUrl} target="_blank" rel="noreferrer">
                 💖 후원하기
               </a>
             ) : (
-              <span className="donation-disabled">💖 후원하기 (PayPal 준비중)</span>
+              <span className="donation-disabled">💖 후원하기 (PayPal 준비 중)</span>
             )}
           </div>
         </nav>

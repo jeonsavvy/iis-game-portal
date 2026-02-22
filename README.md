@@ -1,27 +1,43 @@
 # iis-game-portal (IIS Arcade + Studio Console)
 
-Next.js App Router portal for discovery, play, and admin operations.
+IIS 게임 탐색/플레이/운영 콘솔용 Next.js(App Router) 포털입니다.  
+Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 
-## Pages
+## 주요 페이지
 
-- `/` active game catalog (`games_metadata`) + genre/sort filters
-- `/play/[id]` iframe player + leaderboard + score submit form
-- `/admin` Studio Console (trigger history + manual stage approval + realtime pipeline logs + stage/status/agent filter + role-based controls)
+- `/` : 활성 게임 카탈로그 (`games_metadata`) + 장르/정렬/게임명 검색
+- `/play/[id]` : 게임 iframe 플레이 화면
+- `/login` : Studio Console 관리자 매직링크 로그인
+- `/admin` : Studio Console
+  - 파이프라인 트리거
+  - 수동 단계 승인
+  - 실시간 파이프라인 로그
+  - role 기반 접근 제어(`master_admin`)
 
-## Key modules
+## 인증/권한 흐름
 
-- `lib/supabase/*`: browser/server/admin clients
-- `lib/auth/rbac.ts`: role checks (`master_admin` single-operator mode)
-- `types/pipeline.ts`: includes `Stylist` and `style`
-- `app/api/pipelines/approve/route.ts`: manual stage approval proxy
+- `/admin` 접근 시 미로그인이면 `/login?next=/admin`으로 이동
+- `/login`에서 Supabase **Magic Link** 로그인
+- `/auth/callback`에서 세션 교환 후 `/admin` 복귀
+- 앱 레벨에서 `ADMIN_ALLOWED_EMAILS` 목록만 로그인 허용
+- `/admin` 서버 렌더 단계에서 `profiles.role=master_admin` 권한 재검증
 
-## $1 donation CTA
+## 핵심 모듈
 
-- GNB shows `💖 $1 후원하기` links for Toss and PayPal.
-- This is external-link only support UX (not an in-app payment system).
-- URLs are validated against allowed hosts and HTTPS.
+- `lib/supabase/*` : browser/server/admin/realtime 클라이언트
+- `lib/auth/rbac.ts` : role 체크 (`master_admin` 단일 운영 모드)
+- `lib/auth/admin-auth.ts` : 관리자 이메일 allowlist / next 경로 정규화
+- `types/pipeline.ts` : `Stylist`, `style` 포함
+- `app/api/pipelines/approve/route.ts` : 수동 단계 승인 프록시
+- `app/api/pipelines/trigger/route.ts` : 코어 엔진 트리거 프록시
 
-## Run
+## 후원 CTA (현재 정책)
+
+- GNB에는 **PayPal 외부 후원 링크**만 노출
+- 앱 내 결제 시스템이 아니라 외부 링크 이동 UX만 제공
+- URL은 HTTPS + allowlist(host) 검증 후 노출
+
+## 로컬 실행
 
 ```bash
 npm install
@@ -29,21 +45,34 @@ cp .env.example .env.local
 npm run dev
 ```
 
-## Security notes
+## 주요 환경변수
 
-- `SUPABASE_SERVICE_ROLE_KEY` is server-only; never expose it in client code.
-- Trigger API route proxies to Repo1 and enforces auth + role checks.
-- `/admin` route has middleware cookie gate before server-side RBAC check.
-- External fetches use timeout and retry (`fetchWithRetry`).
-- Donation links are allowlist-filtered to reduce phishing/misconfiguration risk.
+### 공개/브라우저
+- `NEXT_PUBLIC_SUPABASE_URL`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `NEXT_PUBLIC_PAYPAL_DONATION_URL`
 
-## Cloudflare deployment
+### 서버 전용
+- `ADMIN_ALLOWED_EMAILS` (예: `jeonsavvy@gmail.com`)
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `CORE_ENGINE_URL`
+- `CORE_ENGINE_API_TOKEN`
 
-- OpenNext config: `open-next.config.ts`
-- Worker config: `wrangler.jsonc`
-- CI workflow: `.github/workflows/deploy-cloudflare.yml`
+## 보안 메모
 
-Required GitHub secrets for deploy workflow:
+- `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용 (클라이언트 노출 금지)
+- Trigger/Approve 프록시는 로그인 + role 검사를 통과한 요청만 코어 엔진으로 전달
+- `/admin`은 middleware 쿠키 게이트 + 서버측 RBAC 이중 검사
+- 외부 fetch는 timeout/retry 사용 (`fetchWithRetry`)
+- 후원 링크는 allowlist 필터링으로 오배치/피싱 위험 완화
+
+## Cloudflare 배포
+
+- OpenNext 설정: `open-next.config.ts`
+- Worker 설정: `wrangler.jsonc`
+- CI 워크플로우: `.github/workflows/deploy-cloudflare.yml`
+
+### 배포 워크플로우 필수 GitHub Secrets
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
@@ -52,5 +81,11 @@ Required GitHub secrets for deploy workflow:
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CORE_ENGINE_URL`
 - `CORE_ENGINE_API_TOKEN`
-- `NEXT_PUBLIC_TOSS_DONATION_URL`
 - `NEXT_PUBLIC_PAYPAL_DONATION_URL`
+- `ADMIN_ALLOWED_EMAILS` *(권장: secret 또는 repo variable로 관리)*
+
+## 트러블슈팅 (자주 보는 에러)
+
+- `CORE_ENGINE_URL is missing`
+  - 포털 런타임에 `CORE_ENGINE_URL`이 비어있다는 뜻
+  - GitHub Actions Repository Secret에 `CORE_ENGINE_URL` 추가/수정 후 재배포 필요

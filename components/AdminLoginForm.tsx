@@ -77,13 +77,13 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
   return (
     <section className="card" style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 12 }}>
-      <h1 style={{ margin: 0 }}>Studio Console Login</h1>
+      <h1 style={{ margin: 0 }}>스튜디오 콘솔 로그인</h1>
       <p style={{ margin: 0, color: "#94a3b8" }}>
         관리자 이메일만 로그인 가능합니다. 매직링크로 세션을 발급한 뒤 Studio Console로 이동합니다.
       </p>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
         <label style={{ display: "grid", gap: 4 }}>
-          Admin email
+          관리자 이메일
           <input
             className="input"
             type="email"
@@ -95,11 +95,11 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
           />
         </label>
         <button className="button" type="submit" disabled={submitting}>
-          {submitting ? "Sending..." : "Send Magic Link"}
+          {submitting ? "전송 중..." : "매직링크 보내기"}
         </button>
       </form>
       {status ? <p style={{ margin: 0 }}>{status}</p> : null}
-      <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>Next: {nextPath}</p>
+      <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>로그인 후 이동 경로: {nextPath}</p>
     </section>
   );
 }

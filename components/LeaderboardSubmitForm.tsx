@@ -25,7 +25,7 @@ export function LeaderboardSubmitForm({ gameId }: { gameId: string }) {
 
   const onSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    setStatus("Submitting...");
+    setStatus("제출 중...");
 
     const fingerprint = getFingerprint(gameId);
     const payload = {
@@ -38,24 +38,24 @@ export function LeaderboardSubmitForm({ gameId }: { gameId: string }) {
     const { error } = await supabase.from("leaderboard").insert(payload as never);
 
     if (error) {
-      setStatus(`Failed: ${error.message}`);
+      setStatus(`실패: ${error.message}`);
       return;
     }
 
-    setStatus("Submitted to leaderboard.");
+    setStatus("리더보드에 등록되었습니다.");
     setPlayerName("");
     setScore(0);
   };
 
   return (
     <section className="card">
-      <h3>Submit Score</h3>
+      <h3>점수 제출</h3>
       <form onSubmit={onSubmit} style={{ display: "grid", gap: 8 }}>
         <input
           className="input"
           value={playerName}
           onChange={(event) => setPlayerName(event.target.value)}
-          placeholder="Player name"
+          placeholder="플레이어 이름"
           minLength={1}
           maxLength={24}
           required
@@ -70,7 +70,7 @@ export function LeaderboardSubmitForm({ gameId }: { gameId: string }) {
           required
         />
         <button className="button" type="submit">
-          Submit
+          제출
         </button>
       </form>
       {status ? <p>{status}</p> : null}

@@ -11,7 +11,7 @@ export function GameCard({ game }: { game: Game }) {
       <h3>{game.name}</h3>
       <p>{game.slug}</p>
       <Link className="button" href={`/play/${game.id}`}>
-        Play
+        플레이
       </Link>
     </article>
   );

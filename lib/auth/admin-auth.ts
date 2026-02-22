@@ -4,7 +4,8 @@ export function parseAllowedAdminEmails(raw: string | undefined | null): string[
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
 
-  return Array.from(new Set(values));
+  const deduped = Array.from(new Set(values));
+  return deduped.length > 0 ? deduped : ["jeonsavvy@gmail.com"];
 }
 
 export function isAllowedAdminEmail(email: string | undefined | null, allowedEmails: string[]): boolean {

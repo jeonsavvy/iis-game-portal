@@ -30,6 +30,39 @@ const STAGE_OPTIONS: Array<PipelineStage | "all"> = [
 
 const STATUS_OPTIONS: Array<PipelineStatus | "all"> = ["all", "queued", "running", "success", "error", "retry", "skipped"];
 
+const AGENT_LABELS: Record<AgentName | "all", string> = {
+  all: "전체",
+  Trigger: "트리거",
+  Architect: "아키텍트",
+  Stylist: "스타일리스트",
+  Builder: "빌더",
+  Sentinel: "센티넬",
+  Publisher: "퍼블리셔",
+  Echo: "에코",
+};
+
+const STAGE_LABELS: Record<PipelineStage | "all", string> = {
+  all: "전체",
+  trigger: "trigger (트리거)",
+  plan: "plan (기획)",
+  style: "style (스타일)",
+  build: "build (빌드)",
+  qa: "qa (검수)",
+  publish: "publish (게시)",
+  echo: "echo (홍보)",
+  done: "done (완료)",
+};
+
+const STATUS_LABELS: Record<PipelineStatus | "all", string> = {
+  all: "전체",
+  queued: "대기",
+  running: "실행중",
+  success: "성공",
+  error: "실패",
+  retry: "재시도",
+  skipped: "건너뜀",
+};
+
 export function PipelineTerminal({
   initialLogs,
   pipelineId,
@@ -71,34 +104,34 @@ export function PipelineTerminal({
 
   return (
     <section className="card">
-      <h3>Pipeline Logs</h3>
+      <h3>파이프라인 로그</h3>
       <div className="log-filters">
         <label>
-          Agent
+          에이전트
           <select className="input" value={agentFilter} onChange={(event) => setAgentFilter(event.target.value as AgentName | "all")}>
             {AGENT_OPTIONS.map((agent) => (
               <option key={agent} value={agent}>
-                {agent}
+                {AGENT_LABELS[agent]}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Stage
+          단계
           <select className="input" value={stageFilter} onChange={(event) => setStageFilter(event.target.value as PipelineStage | "all")}>
             {STAGE_OPTIONS.map((stage) => (
               <option key={stage} value={stage}>
-                {stage}
+                {STAGE_LABELS[stage]}
               </option>
             ))}
           </select>
         </label>
         <label>
-          Status
+          상태
           <select className="input" value={statusFilter} onChange={(event) => setStatusFilter(event.target.value as PipelineStatus | "all")}>
             {STATUS_OPTIONS.map((status) => (
               <option key={status} value={status}>
-                {status}
+                {STATUS_LABELS[status]}
               </option>
             ))}
           </select>
@@ -106,7 +139,7 @@ export function PipelineTerminal({
       </div>
       <div className="terminal">
         {rendered.length === 0 ? (
-          <p>No logs yet.</p>
+          <p>아직 로그가 없습니다.</p>
         ) : (
           rendered.map((log) => (
             <p key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`}>

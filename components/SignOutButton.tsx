@@ -16,7 +16,7 @@ export function SignOutButton() {
 
   return (
     <button className="button" type="button" onClick={handleClick} disabled={loading}>
-      {loading ? "Signing out..." : "Sign out"}
+      {loading ? "로그아웃 중..." : "로그아웃"}
     </button>
   );
 }

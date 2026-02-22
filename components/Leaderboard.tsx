@@ -5,20 +5,20 @@ type LeaderboardRow = Database["public"]["Tables"]["leaderboard"]["Row"];
 export function Leaderboard({ rows }: { rows: LeaderboardRow[] }) {
   return (
     <section className="card">
-      <h3>Leaderboard</h3>
+      <h3>리더보드</h3>
       <table className="table">
         <thead>
           <tr>
             <th>#</th>
-            <th>Player</th>
-            <th>Score</th>
-            <th>Time</th>
+            <th>플레이어</th>
+            <th>점수</th>
+            <th>시간</th>
           </tr>
         </thead>
         <tbody>
           {rows.length === 0 ? (
             <tr>
-              <td colSpan={4}>No scores yet.</td>
+              <td colSpan={4}>아직 기록이 없습니다.</td>
             </tr>
           ) : (
             rows.map((row, index) => (

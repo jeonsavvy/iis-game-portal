@@ -3,13 +3,13 @@ import type { AppRole } from "@/types/database";
 export function RoleActions({ role }: { role: AppRole }) {
   return (
     <section className="card admin-actions">
-      <h3>Master Admin Controls</h3>
-      <p>Single-operator mode is active. ({role})</p>
+      <h3>마스터 관리자 제어</h3>
+      <p>단일 운영자 모드가 활성화되어 있습니다. ({role})</p>
       <button className="button" disabled type="button">
-        Replay Failed Pipelines (Planned)
+        실패 파이프라인 재실행 (예정)
       </button>
       <button className="button" disabled type="button">
-        Rotate Integration Keys (Planned)
+        연동 키 교체 (예정)
       </button>
     </section>
   );

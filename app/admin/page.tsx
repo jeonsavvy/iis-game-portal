@@ -20,10 +20,10 @@ export default async function AdminPage() {
   if (!user) {
     return (
       <section className="card" style={{ display: "grid", gap: 8 }}>
-        <h1 style={{ margin: 0 }}>Studio Console</h1>
-        <p style={{ margin: 0 }}>Sign in is required to access Studio Console.</p>
+        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
+        <p style={{ margin: 0 }}>스튜디오 콘솔에 접근하려면 로그인이 필요합니다.</p>
         <Link className="button" href="/login?next=/admin">
-          Go to Login
+          로그인 페이지로 이동
         </Link>
       </section>
     );
@@ -35,9 +35,9 @@ export default async function AdminPage() {
   if (!canReadPipelineLogs(role)) {
     return (
       <section className="card" style={{ display: "grid", gap: 8 }}>
-        <h1 style={{ margin: 0 }}>Studio Console</h1>
+        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
         <p style={{ margin: 0 }}>
-          Access denied. master_admin role is required. (signed in as {user.email ?? user.id})
+          접근 권한이 없습니다. master_admin 권한이 필요합니다. (현재 로그인: {user.email ?? user.id})
         </p>
         <div>
           <SignOutButton />
@@ -58,9 +58,9 @@ export default async function AdminPage() {
     <section style={{ display: "grid", gap: 16 }}>
       <div className="card" style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "center" }}>
         <div style={{ display: "grid", gap: 4 }}>
-          <h1 style={{ margin: 0 }}>Studio Console</h1>
+          <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
           <p style={{ margin: 0 }}>
-            Role: {validatedRole} · {user.email ?? user.id}
+            권한: {validatedRole} · {user.email ?? user.id}
           </p>
         </div>
         <SignOutButton />
