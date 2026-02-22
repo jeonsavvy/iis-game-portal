@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState } from "react";
 
-import { subscribePipelineLogs } from "@/lib/supabase/realtime";
+import { fetchRecentPipelineLogs, subscribePipelineLogs } from "@/lib/supabase/realtime";
 import type { PipelineLog, PipelineStage, PipelineStatus } from "@/types/pipeline";
 
 const STAGE_FLOW: Array<{
@@ -49,16 +49,60 @@ function statusTone(status: PipelineStatus | null): string {
 
 export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) {
   const [logs, setLogs] = useState<PipelineLog[]>(initialLogs);
+  const [pollMode, setPollMode] = useState<"idle" | "polling">("idle");
 
   useEffect(() => {
+    let closed = false;
+    let realtimeReceived = false;
+
+    const upsertLogs = (incoming: PipelineLog[]) => {
+      setLogs((prev) => {
+        const map = new Map<string, PipelineLog>();
+        [...prev, ...incoming].forEach((log) => {
+          const key = `${log.pipeline_id}-${log.id ?? ""}-${log.stage}-${log.created_at}`;
+          map.set(key, log);
+        });
+        return Array.from(map.values())
+          .sort((a, b) => b.created_at.localeCompare(a.created_at))
+          .slice(0, 400);
+      });
+    };
+
     const channel = subscribePipelineLogs((newLog) => {
-      setLogs((prev) => [newLog, ...prev].slice(0, 400));
+      realtimeReceived = true;
+      upsertLogs([newLog]);
     });
 
+    const poll = async () => {
+      try {
+        const recent = await fetchRecentPipelineLogs(undefined, 200);
+        if (!closed) {
+          upsertLogs(recent);
+        }
+      } catch {
+        // Silent fallback; terminal view surfaces enough info.
+      }
+    };
+
+    const warmupTimer = window.setTimeout(() => {
+      if (!realtimeReceived && !closed) {
+        setPollMode("polling");
+      }
+    }, 4000);
+
+    const interval = window.setInterval(() => {
+      if (!closed && (!realtimeReceived || pollMode === "polling")) {
+        void poll();
+      }
+    }, 3000);
+
     return () => {
+      closed = true;
+      window.clearTimeout(warmupTimer);
+      window.clearInterval(interval);
       channel.unsubscribe();
     };
-  }, []);
+  }, [pollMode]);
 
   const pipelineSnapshots = useMemo(() => {
     const sorted = [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -88,6 +132,15 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
 
   const latestLog = pipelineSnapshots.sorted[0] ?? null;
 
+  const compactMessage = (message?: string | null) => {
+    if (!message) {
+      return "아직 실행 로그가 없습니다. 트리거를 실행하면 여기부터 흐름이 채워집니다.";
+    }
+    const normalized = message.replace(/\s+/g, " ").trim();
+    if (normalized.length <= 140) return normalized;
+    return `${normalized.slice(0, 140)}…`;
+  };
+
   return (
     <section className="surface console-flow">
       <div className="section-head">
@@ -99,6 +152,12 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
           </p>
         </div>
         <div className="stat-inline-list">
+          {pollMode === "polling" ? (
+            <div className="stat-inline">
+              <span className="stat-inline-label">로그 모드</span>
+              <strong>polling</strong>
+            </div>
+          ) : null}
           <div className="stat-inline">
             <span className="stat-inline-label">관측 파이프라인</span>
             <strong>{pipelineSnapshots.observedPipelines}</strong>
@@ -132,8 +191,8 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
                 </span>
               </div>
 
-              <p className="flow-lane-message">
-                {stageLog?.message ?? "아직 실행 로그가 없습니다. 트리거를 실행하면 여기부터 흐름이 채워집니다."}
+              <p className="flow-lane-message" title={stageLog?.message ?? undefined}>
+                {compactMessage(stageLog?.message)}
               </p>
 
               <div className="flow-lane-foot">

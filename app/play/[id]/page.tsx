@@ -14,6 +14,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   }
 
   const typedGame = game as unknown as Database["public"]["Tables"]["games_metadata"]["Row"];
+  const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact`;
 
   return (
     <section className="play-page">
@@ -29,7 +30,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           <Link className="button button-ghost" href="/">
             포털로 돌아가기
           </Link>
-          <a className="button button-primary" href={typedGame.url} target="_blank" rel="noreferrer">
+          <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noreferrer">
             새 탭에서 열기
           </a>
         </div>
@@ -43,7 +44,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           </div>
           <div className="game-frame-wrap">
             <iframe
-              src={typedGame.url}
+              src={proxiedArtifactUrl}
               title={typedGame.name}
               width="100%"
               height="100%"
@@ -73,6 +74,12 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
               <div>
                 <dt>상태</dt>
                 <dd>{typedGame.status}</dd>
+              </div>
+              <div>
+                <dt>원본 URL</dt>
+                <dd title={typedGame.url} style={{ wordBreak: "break-all" }}>
+                  {typedGame.url}
+                </dd>
               </div>
             </dl>
           </section>

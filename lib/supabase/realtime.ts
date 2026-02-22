@@ -4,19 +4,31 @@ import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 import type { PipelineLog } from "@/types/pipeline";
 
 export async function fetchRecentPipelineLogs(pipelineId?: string, limit = 180): Promise<PipelineLog[]> {
-  const supabase = createSupabaseBrowserClient();
-  let query = supabase.from("pipeline_logs").select("*").order("created_at", { ascending: false }).limit(limit);
-
+  const params = new URLSearchParams();
   if (pipelineId) {
-    query = query.eq("pipeline_id", pipelineId);
+    params.set("pipelineId", pipelineId);
+  }
+  params.set("limit", String(limit));
+
+  const response = await fetch(`/api/pipelines/logs?${params.toString()}`, {
+    method: "GET",
+    credentials: "include",
+    cache: "no-store",
+  });
+
+  const raw = await response.text();
+  let payload: { logs?: PipelineLog[]; error?: string } = {};
+  try {
+    payload = raw ? (JSON.parse(raw) as { logs?: PipelineLog[]; error?: string }) : {};
+  } catch {
+    payload = { error: raw || "Invalid response" };
   }
 
-  const { data, error } = await query;
-  if (error) {
-    throw error;
+  if (!response.ok) {
+    throw new Error(payload.error || `http_${response.status}`);
   }
 
-  return (data ?? []) as PipelineLog[];
+  return Array.isArray(payload.logs) ? payload.logs : [];
 }
 
 export function subscribePipelineLogs(onLog: (log: PipelineLog) => void, pipelineId?: string): RealtimeChannel {

@@ -675,6 +675,7 @@ a {
   display: grid;
   gap: 10px;
   position: relative;
+  overflow: hidden;
 }
 
 .flow-lane::after {
@@ -700,11 +701,13 @@ a {
   justify-content: space-between;
   align-items: flex-start;
   gap: 10px;
+  min-width: 0;
 }
 
 .flow-lane-head h3 {
   margin: 2px 0 0;
   font-size: 16px;
+  word-break: keep-all;
 }
 
 .flow-lane-kicker {
@@ -719,6 +722,13 @@ a {
   font-size: 12px;
   line-height: 1.4;
   min-height: 68px;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 5;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
 .flow-lane-foot {
@@ -727,6 +737,14 @@ a {
   gap: 8px;
   color: var(--muted);
   font-size: 11px;
+  min-width: 0;
+}
+
+.flow-lane-foot span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .console-grid {
