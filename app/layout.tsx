@@ -8,7 +8,6 @@ export const metadata: Metadata = {
   description: "Infinite Indie Studio game portal",
 };
 
-const TOSS_ALLOWED_HOSTS = ["toss.im", "pay.toss.im", "tosspayments.com"];
 const PAYPAL_ALLOWED_HOSTS = ["paypal.com", "paypal.me"];
 
 function toSafeDonationUrl(rawUrl: string | undefined, allowedHosts: string[]): string | null {
@@ -31,7 +30,6 @@ function toSafeDonationUrl(rawUrl: string | undefined, allowedHosts: string[]): 
 }
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
-  const tossDonationUrl = toSafeDonationUrl(process.env.NEXT_PUBLIC_TOSS_DONATION_URL, TOSS_ALLOWED_HOSTS);
   const paypalDonationUrl = toSafeDonationUrl(process.env.NEXT_PUBLIC_PAYPAL_DONATION_URL, PAYPAL_ALLOWED_HOSTS);
 
   return (
@@ -42,16 +40,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div className="nav-links">
             <Link href="/">Home</Link>
             <Link href="/admin">Studio Console</Link>
-            {tossDonationUrl ? (
-              <a className="donation-link" href={tossDonationUrl} target="_blank" rel="noreferrer">
-                💖 후원하기 (Toss)
-              </a>
-            ) : (
-              <span className="donation-disabled">💖 후원하기 (Toss 준비중)</span>
-            )}
             {paypalDonationUrl ? (
               <a className="donation-link" href={paypalDonationUrl} target="_blank" rel="noreferrer">
-                💖 후원하기 (PayPal)
+                💖 후원하기
               </a>
             ) : (
               <span className="donation-disabled">💖 후원하기 (PayPal 준비중)</span>
