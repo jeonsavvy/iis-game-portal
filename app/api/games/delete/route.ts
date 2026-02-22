@@ -79,6 +79,28 @@ export async function POST(request: Request) {
       data = { error: raw || "Core engine returned non-JSON response" };
     }
 
+    if (data && typeof data === "object" && "detail" in data) {
+      const detail = (data as { detail?: unknown }).detail;
+      if (detail && typeof detail === "object") {
+        const detailObj = detail as Record<string, unknown>;
+        data = {
+          ...(data as Record<string, unknown>),
+          reason:
+            (typeof detailObj.reason === "string" && detailObj.reason) ||
+            (typeof (data as Record<string, unknown>).reason === "string"
+              ? (data as Record<string, unknown>).reason
+              : undefined),
+          error:
+            (typeof detailObj.reason === "string" && detailObj.reason) ||
+            (typeof detailObj.error === "string" && detailObj.error) ||
+            (typeof (data as Record<string, unknown>).error === "string"
+              ? (data as Record<string, unknown>).error
+              : undefined),
+          detail: detailObj,
+        };
+      }
+    }
+
     return NextResponse.json(data, { status: response.status });
   } catch (error) {
     return NextResponse.json(

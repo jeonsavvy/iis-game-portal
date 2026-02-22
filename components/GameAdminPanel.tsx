@@ -22,8 +22,25 @@ type DeleteResponse = {
   deleted?: Record<string, boolean>;
   reason?: string;
   details?: Record<string, unknown>;
+  detail?: Record<string, unknown> | string;
   error?: string;
 };
+
+function resolveDeleteErrorMessage(data: DeleteResponse): string {
+  const nestedDetail =
+    data.detail && typeof data.detail === "object"
+      ? (data.detail as Record<string, unknown>)
+      : data.details && typeof data.details === "object"
+        ? (data.details as Record<string, unknown>)
+        : null;
+
+  const fromNested =
+    (nestedDetail && typeof nestedDetail.reason === "string" && nestedDetail.reason) ||
+    (nestedDetail && typeof nestedDetail.error === "string" && nestedDetail.error) ||
+    (typeof data.detail === "string" ? data.detail : null);
+
+  return data.error ?? data.reason ?? fromNested ?? "unknown_error";
+}
 
 export function GameAdminPanel({ initialGames }: Props) {
   const router = useRouter();
@@ -66,7 +83,7 @@ export function GameAdminPanel({ initialGames }: Props) {
       }
 
       if (!response.ok) {
-        setResultMessage(`삭제 실패 (${response.status}): ${data.error ?? data.reason ?? "unknown_error"}`);
+        setResultMessage(`삭제 실패 (${response.status}): ${resolveDeleteErrorMessage(data)}`);
         return;
       }
 
