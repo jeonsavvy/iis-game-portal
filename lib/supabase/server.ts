@@ -33,7 +33,12 @@ export async function createSupabaseServerClient() {
         return cookieStore.getAll();
       },
       setAll(cookiesToSet: CookieRecord[]) {
-        cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => cookieStore.set(name, value, options));
+        } catch {
+          // Server Components (e.g. app/page.tsx) cannot mutate cookies in Next.js.
+          // Route Handlers / middleware handle auth cookie refresh where mutation is allowed.
+        }
       },
     },
   });
