@@ -393,11 +393,11 @@ function buildTokenUsageReport(
   }
 
   const rows = Array.from(rowMap.values()).sort((a, b) => {
-    if (b.estimatedCostUsd !== a.estimatedCostUsd) {
-      return b.estimatedCostUsd - a.estimatedCostUsd;
-    }
     if (b.totalTokens !== a.totalTokens) {
       return b.totalTokens - a.totalTokens;
+    }
+    if (b.promptTokens !== a.promptTokens) {
+      return b.promptTokens - a.promptTokens;
     }
     return b.lastSeenAt.localeCompare(a.lastSeenAt);
   });

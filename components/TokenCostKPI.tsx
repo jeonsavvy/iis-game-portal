@@ -32,10 +32,11 @@ type Props = {
 };
 
 export function TokenCostKPI({ summary, rows }: Props) {
+  const trackedPipelines = summary.finalizedPipelines + summary.sampledPipelines;
   return (
     <section className="surface side-card" style={{ padding: "16px", marginBottom: "16px" }}>
       <p className="eyebrow">Observability</p>
-      <h3 className="section-title">AI Token Usage & Cost (Last 180 Logs)</h3>
+      <h3 className="section-title">AI Token Usage (Last 180 Logs)</h3>
 
       <div style={{ display: "flex", gap: "24px", marginTop: "12px", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: "120px" }}>
@@ -46,9 +47,9 @@ export function TokenCostKPI({ summary, rows }: Props) {
         </div>
         <div style={{ flex: 1, minWidth: "120px" }}>
           <p className="muted-text" style={{ fontSize: "12px", margin: "0 0 4px" }}>
-            Estimated Cost
+            Tracked Pipelines
           </p>
-          <strong style={{ fontSize: "24px", color: "#10b981" }}>${summary.estimatedCostUsd.toFixed(4)}</strong>
+          <strong style={{ fontSize: "24px", color: "#10b981" }}>{trackedPipelines.toLocaleString()}</strong>
         </div>
       </div>
 
@@ -139,7 +140,6 @@ export function TokenCostKPI({ summary, rows }: Props) {
                   <th>Prompt</th>
                   <th>Completion</th>
                   <th>Total</th>
-                  <th>추정 비용</th>
                   <th>최근 로그</th>
                 </tr>
               </thead>
@@ -166,7 +166,6 @@ export function TokenCostKPI({ summary, rows }: Props) {
                     <td>{row.promptTokens.toLocaleString()}</td>
                     <td>{row.completionTokens.toLocaleString()}</td>
                     <td>{row.totalTokens.toLocaleString()}</td>
-                    <td style={{ color: "#10b981", fontWeight: 700 }}>${row.estimatedCostUsd.toFixed(4)}</td>
                     <td>{new Date(row.lastSeenAt).toLocaleString("ko-KR")}</td>
                   </tr>
                 ))}
