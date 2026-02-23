@@ -44,6 +44,15 @@ function guessContentType(path: string): string {
   return "application/octet-stream";
 }
 
+function resolveProxyContentType(upstreamContentType: string, hint: string): string {
+  const normalized = upstreamContentType.toLowerCase();
+  const isGeneric = normalized.startsWith("text/plain") || normalized.startsWith("application/octet-stream");
+  if (!upstreamContentType || isGeneric) {
+    return hint;
+  }
+  return upstreamContentType;
+}
+
 export async function resolveArtifactTarget(gameId: string, requestedAssetPath: string): Promise<ArtifactTarget | NextResponse> {
   const supabase = await createSupabaseServerClient();
   const { data: game, error } = await supabase.from("games_metadata").select("*").eq("id", gameId).eq("status", "active").single();
@@ -115,7 +124,7 @@ export async function proxyArtifactResponse(target: ArtifactTarget): Promise<Nex
   return new NextResponse(body, {
     status: upstream.status,
     headers: {
-      "content-type": upstreamContentType || target.contentTypeHint,
+      "content-type": resolveProxyContentType(upstreamContentType, target.contentTypeHint),
       "cache-control": "no-store",
       "x-iis-artifact-proxy": "1",
       "x-iis-artifact-source": target.upstreamUrl,
