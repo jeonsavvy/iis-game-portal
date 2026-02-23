@@ -1,6 +1,7 @@
 "use client";
 
 import { FormEvent, useEffect, useState } from "react";
+import { sanitizeTriggerKeyword } from "@/lib/text/trigger-keyword";
 
 type TriggerHistoryItem = {
   pipelineId: string;
@@ -34,6 +35,12 @@ function translateError(errorText: string): string {
     Unauthorized: "로그인이 필요합니다.",
     Forbidden: "권한이 없습니다.",
     "keyword is required": "키워드를 입력해주세요.",
+    keyword_too_short: "키워드를 입력해주세요.",
+    keyword_too_long: "키워드는 200자 이하로 입력해주세요.",
+    keyword_contains_control_characters: "키워드에 제어문자/숨김문자가 포함되어 있습니다. 다시 입력해주세요.",
+    keyword_contains_unsupported_characters: "키워드에 지원되지 않는 문자가 포함되어 있습니다. 숨김문자 제거 후 다시 시도해주세요.",
+    keyword_contains_blocked_term: "키워드에 금지된 단어가 포함되어 있습니다.",
+    keyword_slug_generation_failed: "키워드 처리에 실패했습니다. 다른 키워드로 다시 시도해주세요.",
     "Core engine unavailable": "코어 엔진(ForgeMind)에 연결할 수 없습니다.",
     unknown_error: "알 수 없는 오류",
   };
@@ -87,13 +94,22 @@ export function TriggerForm() {
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const sanitizedKeyword = sanitizeTriggerKeyword(keyword);
+    if (!sanitizedKeyword) {
+      setStatus("실패: 키워드를 입력해주세요.");
+      return;
+    }
+    if (sanitizedKeyword !== keyword) {
+      setKeyword(sanitizedKeyword);
+    }
+
     setStatus("요청 전송 중...");
 
     const response = await fetch("/api/pipelines/trigger", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        keyword,
+        keyword: sanitizedKeyword,
         execution_mode: executionMode,
         pipeline_version: pipelineVersion,
       }),
@@ -111,7 +127,7 @@ export function TriggerForm() {
     const updatedHistory: TriggerHistoryItem[] = [
       {
         pipelineId: json.pipeline_id,
-        keyword,
+        keyword: sanitizedKeyword,
         status: json.status,
         createdAt: new Date().toISOString(),
         executionMode,

@@ -13,6 +13,267 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 import type { PipelineLog } from "@/types/pipeline";
 
+type RecentGameRow = {
+  id: string;
+  name: string;
+  slug: string;
+  genre: string;
+  status: string;
+  created_at: string;
+};
+
+type TokenUsageSummary = {
+  totalTokens: number;
+  promptTokens: number;
+  completionTokens: number;
+  estimatedCostUsd: number;
+  flashPromptTokens: number;
+  flashCompletionTokens: number;
+  proPromptTokens: number;
+  proCompletionTokens: number;
+  unpricedTokens: number;
+};
+
+type TokenUsageByGameRow = {
+  key: string;
+  name: string;
+  slug: string | null;
+  secondaryLabel: string;
+  pipelineCount: number;
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  estimatedCostUsd: number;
+  lastSeenAt: string;
+};
+
+const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
+
+function toNonNegativeInt(value: unknown): number {
+  if (typeof value !== "number" || !Number.isFinite(value)) {
+    return 0;
+  }
+  if (value <= 0) {
+    return 0;
+  }
+  return Math.floor(value);
+}
+
+function estimateUsageCostUsd(modelName: string, promptTokens: number, completionTokens: number): number {
+  const model = modelName.toLowerCase();
+
+  if (model.includes("flash")) {
+    return (promptTokens / 1_000_000) * 0.075 + (completionTokens / 1_000_000) * 0.3;
+  }
+
+  if (model.includes("pro")) {
+    return (promptTokens / 1_000_000) * 1.25 + (completionTokens / 1_000_000) * 5.0;
+  }
+
+  return 0;
+}
+
+function extractSlugFromMetadata(metadata: Record<string, unknown>): string | null {
+  const directSlug = typeof metadata.slug === "string" ? metadata.slug.trim().toLowerCase() : "";
+  if (SLUG_RE.test(directSlug)) {
+    return directSlug;
+  }
+
+  const pathCandidates = [
+    typeof metadata.storage_path === "string" ? metadata.storage_path : "",
+    typeof metadata.artifact === "string" ? metadata.artifact : "",
+  ];
+
+  for (const candidate of pathCandidates) {
+    const normalized = candidate.trim();
+    if (!normalized) {
+      continue;
+    }
+    const fromGamesPath = normalized.match(/(?:^|\/)games\/([a-z0-9-]+)\//i)?.[1];
+    if (fromGamesPath && SLUG_RE.test(fromGamesPath)) {
+      return fromGamesPath.toLowerCase();
+    }
+    const fromRootPath = normalized.match(/^([a-z0-9-]+)\//i)?.[1];
+    if (fromRootPath && SLUG_RE.test(fromRootPath)) {
+      return fromRootPath.toLowerCase();
+    }
+  }
+
+  const rawUrl = typeof metadata.url === "string" ? metadata.url.trim() : "";
+  if (rawUrl) {
+    try {
+      const url = new URL(rawUrl);
+      const segments = url.pathname.split("/").filter(Boolean);
+      const gamesIndex = segments.findIndex((segment) => segment.toLowerCase() === "games");
+      const preferred = gamesIndex >= 0 ? segments[gamesIndex + 1] : segments[segments.length - 1];
+      const slug = (preferred ?? "").trim().toLowerCase();
+      if (SLUG_RE.test(slug)) {
+        return slug;
+      }
+    } catch {
+      // ignore malformed URL metadata
+    }
+  }
+
+  return null;
+}
+
+function buildTokenUsageReport(
+  logs: PipelineLog[],
+  recentGames: RecentGameRow[],
+  pipelineKeywordById: Map<string, string>,
+): { summary: TokenUsageSummary; rows: TokenUsageByGameRow[] } {
+  const summary: TokenUsageSummary = {
+    totalTokens: 0,
+    promptTokens: 0,
+    completionTokens: 0,
+    estimatedCostUsd: 0,
+    flashPromptTokens: 0,
+    flashCompletionTokens: 0,
+    proPromptTokens: 0,
+    proCompletionTokens: 0,
+    unpricedTokens: 0,
+  };
+
+  const pipelineUsage = new Map<
+    string,
+    {
+      pipelineId: string;
+      keyword: string;
+      slug: string | null;
+      promptTokens: number;
+      completionTokens: number;
+      totalTokens: number;
+      estimatedCostUsd: number;
+      lastSeenAt: string;
+    }
+  >();
+
+  for (const log of logs) {
+    const pipelineId = log.pipeline_id;
+    const metadata = log.metadata && typeof log.metadata === "object" ? log.metadata : {};
+    const typedMetadata = metadata as Record<string, unknown>;
+
+    let pipeline = pipelineUsage.get(pipelineId);
+    if (!pipeline) {
+      pipeline = {
+        pipelineId,
+        keyword: pipelineKeywordById.get(pipelineId) ?? "",
+        slug: null,
+        promptTokens: 0,
+        completionTokens: 0,
+        totalTokens: 0,
+        estimatedCostUsd: 0,
+        lastSeenAt: log.created_at,
+      };
+      pipelineUsage.set(pipelineId, pipeline);
+    }
+
+    if (log.created_at > pipeline.lastSeenAt) {
+      pipeline.lastSeenAt = log.created_at;
+    }
+
+    const slug = extractSlugFromMetadata(typedMetadata);
+    if (slug) {
+      pipeline.slug = slug;
+    }
+
+    const usageRaw = typedMetadata.usage;
+    if (!usageRaw || typeof usageRaw !== "object") {
+      continue;
+    }
+
+    const usage = usageRaw as Record<string, unknown>;
+    const promptTokens = toNonNegativeInt(usage.prompt_tokens);
+    const completionTokens = toNonNegativeInt(usage.completion_tokens);
+    const totalTokens = toNonNegativeInt(usage.total_tokens) || promptTokens + completionTokens;
+
+    if (totalTokens <= 0 && promptTokens <= 0 && completionTokens <= 0) {
+      continue;
+    }
+
+    const modelName = typeof typedMetadata.model === "string" ? typedMetadata.model : "";
+    const estimatedCostUsd = estimateUsageCostUsd(modelName, promptTokens, completionTokens);
+
+    pipeline.promptTokens += promptTokens;
+    pipeline.completionTokens += completionTokens;
+    pipeline.totalTokens += totalTokens;
+    pipeline.estimatedCostUsd += estimatedCostUsd;
+
+    summary.promptTokens += promptTokens;
+    summary.completionTokens += completionTokens;
+    summary.totalTokens += totalTokens;
+    summary.estimatedCostUsd += estimatedCostUsd;
+
+    const normalizedModel = modelName.toLowerCase();
+    if (normalizedModel.includes("flash")) {
+      summary.flashPromptTokens += promptTokens;
+      summary.flashCompletionTokens += completionTokens;
+    } else if (normalizedModel.includes("pro")) {
+      summary.proPromptTokens += promptTokens;
+      summary.proCompletionTokens += completionTokens;
+    } else {
+      summary.unpricedTokens += totalTokens;
+    }
+  }
+
+  const gameBySlug = new Map(recentGames.map((game) => [game.slug, game]));
+  const rowMap = new Map<string, TokenUsageByGameRow>();
+
+  for (const pipeline of pipelineUsage.values()) {
+    if (pipeline.totalTokens <= 0) {
+      continue;
+    }
+
+    if (pipeline.slug) {
+      const game = gameBySlug.get(pipeline.slug);
+      const rowKey = `slug:${pipeline.slug}`;
+      const existing = rowMap.get(rowKey);
+      const nextLastSeenAt = existing && existing.lastSeenAt > pipeline.lastSeenAt ? existing.lastSeenAt : pipeline.lastSeenAt;
+
+      rowMap.set(rowKey, {
+        key: rowKey,
+        name: game?.name ?? pipeline.slug,
+        slug: pipeline.slug,
+        secondaryLabel: pipeline.slug,
+        pipelineCount: (existing?.pipelineCount ?? 0) + 1,
+        promptTokens: (existing?.promptTokens ?? 0) + pipeline.promptTokens,
+        completionTokens: (existing?.completionTokens ?? 0) + pipeline.completionTokens,
+        totalTokens: (existing?.totalTokens ?? 0) + pipeline.totalTokens,
+        estimatedCostUsd: (existing?.estimatedCostUsd ?? 0) + pipeline.estimatedCostUsd,
+        lastSeenAt: nextLastSeenAt,
+      });
+      continue;
+    }
+
+    const rowKey = `pipeline:${pipeline.pipelineId}`;
+    rowMap.set(rowKey, {
+      key: rowKey,
+      name: pipeline.keyword || "미식별 파이프라인",
+      slug: null,
+      secondaryLabel: `pipeline ${pipeline.pipelineId.slice(0, 8)}`,
+      pipelineCount: 1,
+      promptTokens: pipeline.promptTokens,
+      completionTokens: pipeline.completionTokens,
+      totalTokens: pipeline.totalTokens,
+      estimatedCostUsd: pipeline.estimatedCostUsd,
+      lastSeenAt: pipeline.lastSeenAt,
+    });
+  }
+
+  const rows = Array.from(rowMap.values()).sort((a, b) => {
+    if (b.estimatedCostUsd !== a.estimatedCostUsd) {
+      return b.estimatedCostUsd - a.estimatedCostUsd;
+    }
+    if (b.totalTokens !== a.totalTokens) {
+      return b.totalTokens - a.totalTokens;
+    }
+    return b.lastSeenAt.localeCompare(a.lastSeenAt);
+  });
+
+  return { summary, rows };
+}
+
 export default async function AdminPage() {
   const supabase = await createSupabaseServerClient();
 
@@ -63,37 +324,22 @@ export default async function AdminPage() {
     .select("id,name,slug,genre,status,created_at")
     .order("created_at", { ascending: false })
     .limit(30);
+  const recentGamesRows = (recentGames ?? []) as RecentGameRow[];
   const uniquePipelines = new Set(typedLogs.map((log) => log.pipeline_id));
   const statusCounts = typedLogs.reduce<Record<string, number>>((acc, log) => {
     acc[log.status] = (acc[log.status] ?? 0) + 1;
     return acc;
   }, {});
   const latestLog = typedLogs[0] ?? null;
-
-  const tokenStats = {
-    flashPromptTokens: 0,
-    flashCompletionTokens: 0,
-    proPromptTokens: 0,
-    proCompletionTokens: 0,
-  };
-
-  for (const log of typedLogs) {
-    if (log.metadata && typeof log.metadata === "object" && "usage" in log.metadata) {
-      const usage = log.metadata.usage as {
-        prompt_tokens?: number;
-        completion_tokens?: number;
-      };
-      // Simple heuristic based on model names, you could also track this explicitly
-      const model = (log.metadata as { model?: string }).model ?? "";
-      if (model.includes("flash")) {
-        tokenStats.flashPromptTokens += usage.prompt_tokens ?? 0;
-        tokenStats.flashCompletionTokens += usage.completion_tokens ?? 0;
-      } else if (model.includes("pro")) {
-        tokenStats.proPromptTokens += usage.prompt_tokens ?? 0;
-        tokenStats.proCompletionTokens += usage.completion_tokens ?? 0;
-      }
-    }
-  }
+  const pipelineIdList = Array.from(uniquePipelines);
+  const { data: pipelineRows } =
+    pipelineIdList.length > 0
+      ? await supabase.from("admin_config").select("id,keyword").in("id", pipelineIdList)
+      : { data: [] };
+  const pipelineKeywordById = new Map(
+    ((pipelineRows ?? []) as Array<{ id: string; keyword: string }>).map((row) => [row.id, row.keyword]),
+  );
+  const tokenReport = buildTokenUsageReport(typedLogs, recentGamesRows, pipelineKeywordById);
 
   return (
     <section className="console-page">
@@ -121,18 +367,11 @@ export default async function AdminPage() {
         <ManualApprovalForm />
       </section>
 
-      <TokenCostKPI stats={tokenStats} />
+      <TokenCostKPI summary={tokenReport.summary} rows={tokenReport.rows} />
 
       <GameAdminPanel
         initialGames={
-          ((recentGames ?? []) as Array<{
-            id: string;
-            name: string;
-            slug: string;
-            genre: string;
-            status: string;
-            created_at: string;
-          }>)
+          recentGamesRows
         }
       />
       {/* RoleActions removed */}

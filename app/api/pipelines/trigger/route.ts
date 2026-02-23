@@ -3,6 +3,7 @@ import { NextResponse } from "next/server";
 import { canInsertAdminConfig } from "@/lib/auth/rbac";
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { sanitizeTriggerKeyword } from "@/lib/text/trigger-keyword";
 import type { AppRole } from "@/types/database";
 
 export async function POST(request: Request) {
@@ -29,7 +30,7 @@ export async function POST(request: Request) {
       execution_mode?: "auto" | "manual";
       pipeline_version?: string;
     };
-    const keyword = body.keyword?.trim();
+    const keyword = sanitizeTriggerKeyword(body.keyword ?? "");
     const executionMode = body.execution_mode === "manual" ? "manual" : "auto";
     const pipelineVersion = body.pipeline_version?.trim() || "forgeflow-v1";
 
