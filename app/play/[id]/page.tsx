@@ -5,29 +5,66 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import { Metadata } from "next";
 
+type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
+
+function pickReviewFromMetadata(metadata: unknown, slug: string): string | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const row = metadata as Record<string, unknown>;
+  const metadataSlug = row.slug;
+  const metadataReview = row.ai_review_text;
+  if (typeof metadataSlug !== "string" || metadataSlug !== slug) return null;
+  if (typeof metadataReview !== "string") return null;
+  const normalized = metadataReview.trim();
+  return normalized || null;
+}
+
+async function resolveAiReviewFallback(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, game: GameRow): Promise<string | null> {
+  if (game.ai_review && game.ai_review.trim()) {
+    return game.ai_review.trim();
+  }
+
+  const { data: logs } = await supabase
+    .from("pipeline_logs")
+    .select("metadata,created_at")
+    .eq("stage", "echo")
+    .order("created_at", { ascending: false })
+    .limit(120);
+
+  const typedLogs = (logs ?? []) as Array<Pick<Database["public"]["Tables"]["pipeline_logs"]["Row"], "metadata" | "created_at">>;
+  if (typedLogs.length === 0) return null;
+
+  for (const log of typedLogs) {
+    const review = pickReviewFromMetadata(log.metadata, game.slug);
+    if (review) return review;
+  }
+  return null;
+}
+
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const supabase = await createSupabaseServerClient();
   const { data: game } = await supabase.from("games_metadata").select("*").eq("id", id).single();
 
   if (!game) return { title: "Game Not Found" };
-  const typedGame = game as unknown as Database["public"]["Tables"]["games_metadata"]["Row"];
+  const typedGame = game as unknown as GameRow;
+  const resolvedAiReview = await resolveAiReviewFallback(supabase, typedGame);
 
   const ogImage = typedGame.screenshot_url || typedGame.thumbnail_url || undefined;
+  const defaultDescription = `${typedGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
 
   return {
     title: `${typedGame.name} - IIS Arcade`,
-    description: typedGame.ai_review || `Play ${typedGame.name}, a fun ${typedGame.genre} game on IIS Arcade.`,
+    description: resolvedAiReview || defaultDescription,
     openGraph: {
       title: `${typedGame.name} - IIS Arcade`,
-      description: typedGame.ai_review || `Play ${typedGame.name}, a fun ${typedGame.genre} game on IIS Arcade.`,
+      description: resolvedAiReview || defaultDescription,
       images: ogImage ? [ogImage] : [],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
       title: typedGame.name,
-      description: typedGame.ai_review || undefined,
+      description: resolvedAiReview || defaultDescription,
       images: ogImage ? [ogImage] : [],
     }
   };
@@ -42,7 +79,8 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
     notFound();
   }
 
-  const typedGame = game as unknown as Database["public"]["Tables"]["games_metadata"]["Row"];
+  const typedGame = game as unknown as GameRow;
+  const resolvedAiReview = await resolveAiReviewFallback(supabase, typedGame);
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
 
   return (
@@ -96,9 +134,9 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           <section className="surface side-card">
             <p className="eyebrow">에이전트 리뷰</p>
             <h2 className="section-title">AI 게임 디자이너 코멘트</h2>
-            {typedGame.ai_review ? (
+            {resolvedAiReview ? (
               <p className="ai-review-text" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                {typedGame.ai_review}
+                {resolvedAiReview}
               </p>
             ) : (
               <p className="muted-text">리뷰 생성 대기 중이거나 생성에 실패했습니다. 최신 파이프라인 로그를 확인해주세요.</p>
