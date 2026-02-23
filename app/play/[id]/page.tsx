@@ -43,7 +43,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   }
 
   const typedGame = game as unknown as Database["public"]["Tables"]["games_metadata"]["Row"];
-  const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact`;
+  const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
 
   return (
     <section className="play-page">
@@ -101,11 +101,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
                 {typedGame.ai_review}
               </p>
             ) : (
-              <ul className="bullet-list">
-                <li>사용자가 제시한 키워드를 분석하여 핵심적인 플레이 경험을 추출했습니다.</li>
-                <li>난이도 곡선과 스코어링 시스템을 조정하여 아케이드 특유의 몰입감을 극대화했습니다.</li>
-                <li>시각적 테마는 게임의 장르에 맞춰 최적화된 하이브리드 엔진 설정을 사용했습니다.</li>
-              </ul>
+              <p className="muted-text">리뷰 생성 대기 중이거나 생성에 실패했습니다. 최신 파이프라인 로그를 확인해주세요.</p>
             )}
           </section>
         </aside>

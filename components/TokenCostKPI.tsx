@@ -8,6 +8,8 @@ type TokenUsageSummary = {
   proPromptTokens: number;
   proCompletionTokens: number;
   unpricedTokens: number;
+  finalizedPipelines: number;
+  sampledPipelines: number;
 };
 
 type TokenUsageByGameRow = {
@@ -15,6 +17,7 @@ type TokenUsageByGameRow = {
   name: string;
   slug: string | null;
   secondaryLabel: string;
+  costSource: "finalized" | "sampled";
   pipelineCount: number;
   promptTokens: number;
   completionTokens: number;
@@ -47,6 +50,24 @@ export function TokenCostKPI({ summary, rows }: Props) {
           </p>
           <strong style={{ fontSize: "24px", color: "#10b981" }}>${summary.estimatedCostUsd.toFixed(4)}</strong>
         </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          gap: "12px",
+          flexWrap: "wrap",
+          marginTop: "12px",
+          fontSize: "12px",
+          color: "#94a3b8",
+        }}
+      >
+        <span>
+          확정 집계 파이프라인: <strong style={{ color: "#dbeafe" }}>{summary.finalizedPipelines.toLocaleString()}</strong>
+        </span>
+        <span>
+          샘플 추정 파이프라인: <strong style={{ color: "#dbeafe" }}>{summary.sampledPipelines.toLocaleString()}</strong>
+        </span>
       </div>
 
       <div
@@ -96,10 +117,10 @@ export function TokenCostKPI({ summary, rows }: Props) {
       <div style={{ marginTop: "16px" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "8px", gap: "8px" }}>
           <h4 className="subsection-title" style={{ margin: 0 }}>
-            게임별 AI 사용량 (추정)
+            게임별 AI 사용량
           </h4>
           <span className="muted-text" style={{ fontSize: "12px" }}>
-            파이프라인 로그 기준 집계
+            확정 집계(usage_summary) 우선, 없으면 로그 샘플 추정
           </span>
         </div>
 
@@ -113,6 +134,7 @@ export function TokenCostKPI({ summary, rows }: Props) {
               <thead>
                 <tr>
                   <th>게임/파이프라인</th>
+                  <th>집계 기준</th>
                   <th>파이프라인 수</th>
                   <th>Prompt</th>
                   <th>Completion</th>
@@ -132,6 +154,14 @@ export function TokenCostKPI({ summary, rows }: Props) {
                         </span>
                       </div>
                     </td>
+                    <td>
+                      <span
+                        className={`status-chip ${row.costSource === "finalized" ? "tone-success" : "tone-muted"}`}
+                        style={{ fontSize: "11px" }}
+                      >
+                        {row.costSource === "finalized" ? "확정 집계" : "샘플 추정"}
+                      </span>
+                    </td>
                     <td>{row.pipelineCount.toLocaleString()}</td>
                     <td>{row.promptTokens.toLocaleString()}</td>
                     <td>{row.completionTokens.toLocaleString()}</td>
@@ -148,4 +178,3 @@ export function TokenCostKPI({ summary, rows }: Props) {
     </section>
   );
 }
-
