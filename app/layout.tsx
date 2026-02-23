@@ -55,6 +55,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </nav>
         <main className="main-shell">{children}</main>
+        <footer style={{ textAlign: "center", padding: "2rem", color: "var(--text-muted)", fontSize: "0.875rem" }}>
+          Copyright &copy; 2026 iis
+        </footer>
       </body>
     </html>
   );

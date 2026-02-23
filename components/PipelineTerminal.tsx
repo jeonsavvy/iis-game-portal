@@ -153,7 +153,6 @@ export function PipelineTerminal({
           <p className="eyebrow">실시간 관측</p>
           <h3 className="section-title">파이프라인 로그</h3>
         </div>
-        <p className="section-subtitle">Supabase Realtime 구독으로 새 로그를 즉시 반영합니다.</p>
       </div>
 
       <div className="log-filters">

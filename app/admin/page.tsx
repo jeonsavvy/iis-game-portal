@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ForgeFlowBoard } from "@/components/ForgeFlowBoard";
 import { GameAdminPanel } from "@/components/GameAdminPanel";
 import { PipelineTerminal } from "@/components/PipelineTerminal";
+import { TokenCostKPI } from "@/components/TokenCostKPI";
 // RoleActions removed
 import { SignOutButton } from "@/components/SignOutButton";
 import { TriggerForm } from "@/components/TriggerForm";
@@ -69,6 +70,31 @@ export default async function AdminPage() {
   }, {});
   const latestLog = typedLogs[0] ?? null;
 
+  const tokenStats = {
+    flashPromptTokens: 0,
+    flashCompletionTokens: 0,
+    proPromptTokens: 0,
+    proCompletionTokens: 0,
+  };
+
+  for (const log of typedLogs) {
+    if (log.metadata && typeof log.metadata === "object" && "usage" in log.metadata) {
+      const usage = log.metadata.usage as {
+        prompt_tokens?: number;
+        completion_tokens?: number;
+      };
+      // Simple heuristic based on model names, you could also track this explicitly
+      const model = (log.metadata as { model?: string }).model ?? "";
+      if (model.includes("flash")) {
+        tokenStats.flashPromptTokens += usage.prompt_tokens ?? 0;
+        tokenStats.flashCompletionTokens += usage.completion_tokens ?? 0;
+      } else if (model.includes("pro")) {
+        tokenStats.proPromptTokens += usage.prompt_tokens ?? 0;
+        tokenStats.proCompletionTokens += usage.completion_tokens ?? 0;
+      }
+    }
+  }
+
   return (
     <section className="console-page">
       <section className="surface console-hero">
@@ -88,35 +114,14 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <section className="console-kpis">
-        <article className="surface kpi-card">
-          <p className="eyebrow">파이프라인</p>
-          <h3>{uniquePipelines.size}</h3>
-          <p className="kpi-desc">최근 로그에서 관측된 실행 수</p>
-        </article>
-        <article className="surface kpi-card">
-          <p className="eyebrow">실행중 로그</p>
-          <h3>{statusCounts.running ?? 0}</h3>
-          <p className="kpi-desc">실시간 처리 중 이벤트 수</p>
-        </article>
-        <article className="surface kpi-card">
-          <p className="eyebrow">성공 로그</p>
-          <h3>{statusCounts.success ?? 0}</h3>
-          <p className="kpi-desc">성공 이벤트 누적(현재 조회 범위)</p>
-        </article>
-        <article className="surface kpi-card">
-          <p className="eyebrow">최근 업데이트</p>
-          <h3>{latestLog ? new Date(latestLog.created_at).toLocaleTimeString() : "-"}</h3>
-          <p className="kpi-desc">{latestLog ? `${latestLog.stage} / ${latestLog.agent_name}` : "아직 로그 없음"}</p>
-        </article>
-      </section>
-
       <ForgeFlowBoard initialLogs={typedLogs} />
 
       <section className="console-grid">
         <TriggerForm />
         <ManualApprovalForm />
       </section>
+
+      <TokenCostKPI stats={tokenStats} />
 
       <GameAdminPanel
         initialGames={

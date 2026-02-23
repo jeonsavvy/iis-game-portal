@@ -118,6 +118,8 @@ export type Database = {
           genre: string;
           url: string;
           thumbnail_url: string | null;
+          ai_review: string | null;
+          screenshot_url: string | null;
           status: GameStatus;
           created_by: string | null;
           created_at: string;
@@ -130,6 +132,8 @@ export type Database = {
           genre: string;
           url: string;
           thumbnail_url?: string | null;
+          ai_review?: string | null;
+          screenshot_url?: string | null;
           status?: GameStatus;
           created_by?: string | null;
           created_at?: string;
@@ -141,6 +145,8 @@ export type Database = {
           genre?: string;
           url?: string;
           thumbnail_url?: string | null;
+          ai_review?: string | null;
+          screenshot_url?: string | null;
           status?: GameStatus;
           updated_at?: string;
         };
