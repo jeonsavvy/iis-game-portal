@@ -1041,6 +1041,10 @@ a {
   gap: 8px;
 }
 
+.ai-review-head {
+  align-items: center;
+}
+
 .meta-list {
   display: grid;
   gap: 8px;
@@ -1068,6 +1072,30 @@ a {
   word-break: break-word;
 }
 
+.inline-link {
+  color: #93c5fd;
+  text-decoration: underline;
+  text-decoration-color: rgba(147, 197, 253, 0.4);
+  text-underline-offset: 2px;
+}
+
+.inline-link:hover {
+  color: #dbeafe;
+}
+
+.meta-shot-wrap {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  overflow: hidden;
+  background: #020617;
+}
+
+.meta-shot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
 .bullet-list {
   margin: 0;
   padding-left: 18px;
@@ -1081,6 +1109,11 @@ a {
 .bullet-list.compact {
   gap: 6px;
   font-size: 12px;
+}
+
+.ai-review-list {
+  padding-left: 20px;
+  gap: 10px;
 }
 
 /* Existing utility compatibility */

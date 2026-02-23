@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -90,6 +91,12 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   const typedGame = game as unknown as GameRow;
   const resolvedAiReview = await resolveAiReviewFallback(typedGame);
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
+  const reviewLines = (resolvedAiReview ?? "")
+    .split(/\n+/)
+    .map((line) => line.replace(/^[\s\-•\d.)]+/, "").trim())
+    .filter(Boolean);
+  const createdAt = new Date(typedGame.created_at).toLocaleString("ko-KR");
+  const updatedAt = new Date(typedGame.updated_at).toLocaleString("ko-KR");
 
   return (
     <section className="play-page">
@@ -98,7 +105,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
           <p className="eyebrow">게임 플레이</p>
           <h1 className="hero-title">{typedGame.name}</h1>
           <p className="section-subtitle">
-            {typedGame.genre} · {typedGame.slug} · 생성일 {new Date(typedGame.created_at).toLocaleString("ko-KR")}
+            {typedGame.genre} · {typedGame.slug} · 생성일 {createdAt}
           </p>
         </div>
         <div className="play-header-actions">
@@ -136,16 +143,67 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
                 <dt>게임명</dt>
                 <dd>{typedGame.name}</dd>
               </div>
+              <div>
+                <dt>장르</dt>
+                <dd>{typedGame.genre}</dd>
+              </div>
+              <div>
+                <dt>슬러그</dt>
+                <dd>{typedGame.slug}</dd>
+              </div>
+              <div>
+                <dt>상태</dt>
+                <dd>{typedGame.status}</dd>
+              </div>
+              <div>
+                <dt>업데이트</dt>
+                <dd>{updatedAt}</dd>
+              </div>
+              {typedGame.url ? (
+                <div>
+                  <dt>원본 URL</dt>
+                  <dd>
+                    <a className="inline-link" href={typedGame.url} target="_blank" rel="noreferrer">
+                      스토리지 URL 열기
+                    </a>
+                  </dd>
+                </div>
+              ) : null}
             </dl>
+            {typedGame.screenshot_url ? (
+              <div className="meta-shot-wrap">
+                <Image
+                  className="meta-shot"
+                  src={typedGame.screenshot_url}
+                  alt={`${typedGame.name} screenshot`}
+                  width={1280}
+                  height={720}
+                  unoptimized
+                />
+              </div>
+            ) : null}
           </section>
 
           <section className="surface side-card">
             <p className="eyebrow">에이전트 리뷰</p>
-            <h2 className="section-title">AI 게임 디자이너 코멘트</h2>
+            <div className="row-between ai-review-head">
+              <h2 className="section-title">AI 게임 디자이너 코멘트</h2>
+              <span className={`status-chip ${resolvedAiReview ? "tone-success" : "tone-muted"}`}>
+                {resolvedAiReview ? "생성 완료" : "대기/실패"}
+              </span>
+            </div>
             {resolvedAiReview ? (
-              <p className="ai-review-text" style={{ whiteSpace: "pre-wrap", lineHeight: 1.6 }}>
-                {resolvedAiReview}
-              </p>
+              reviewLines.length > 1 ? (
+                <ul className="bullet-list ai-review-list">
+                  {reviewLines.map((line, index) => (
+                    <li key={`${typedGame.id}-review-${index}`}>{line}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="ai-review-text" style={{ whiteSpace: "pre-wrap", lineHeight: 1.65 }}>
+                  {resolvedAiReview}
+                </p>
+              )
             ) : (
               <p className="muted-text">리뷰 생성 대기 중이거나 생성에 실패했습니다. 최신 파이프라인 로그를 확인해주세요.</p>
             )}
