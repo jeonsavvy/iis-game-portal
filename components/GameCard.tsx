@@ -34,16 +34,12 @@ export function GameCard({ game }: { game: Game }) {
       </div>
 
       <div className="game-card-body">
-        <div className="game-card-meta">
-          <span>상태: {game.status}</span>
-          <span>포털 ID: {game.id.slice(0, 8)}</span>
-        </div>
         <div className="game-card-actions">
           <Link className="button button-primary" href={`/play/${game.id}`}>
-            플레이
+            ▶ Play
           </Link>
           <a className="button button-ghost game-card-secondary" href={game.url} target="_blank" rel="noreferrer">
-            직접 열기
+            Direct Link
           </a>
         </div>
       </div>

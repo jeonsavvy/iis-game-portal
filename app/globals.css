@@ -1,21 +1,22 @@
 :root {
   color-scheme: dark;
-  --bg: #030712;
-  --bg-soft: #071022;
-  --panel: rgba(12, 20, 40, 0.72);
-  --panel-strong: rgba(12, 20, 40, 0.92);
-  --line: rgba(148, 163, 184, 0.18);
-  --line-strong: rgba(148, 163, 184, 0.32);
-  --text: #e5e7eb;
-  --muted: #94a3b8;
-  --blue: #4f7cff;
-  --blue-strong: #3b63ea;
-  --green: #22c55e;
-  --red: #ef4444;
-  --amber: #f59e0b;
-  --radius-lg: 18px;
-  --radius-md: 14px;
-  --shadow-soft: 0 20px 60px rgba(2, 6, 23, 0.35);
+  --bg: #1a1a1a;
+  --bg-soft: #262626;
+  --panel: #2a2a2a;
+  --panel-strong: #333333;
+  --line: rgba(255, 255, 255, 0.1);
+  --line-strong: rgba(255, 255, 255, 0.2);
+  --text: #f0f0f0;
+  --muted: #a0a0a0;
+  --blue: #00c3e3;
+  --blue-strong: #00a0bc;
+  --green: #2ecc71;
+  --red: #e60012;
+  --amber: #f1c40f;
+  --radius-lg: 24px;
+  --radius-md: 16px;
+  --shadow-soft: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --nintendo-red: #e60012;
 }
 
 * {
@@ -30,6 +31,7 @@ body {
 body {
   margin: 0;
   font-family:
+    "Outfit",
     Inter,
     system-ui,
     -apple-system,
@@ -37,10 +39,9 @@ body {
     "Segoe UI",
     Roboto,
     sans-serif;
-  background:
-    radial-gradient(900px 500px at 8% -10%, rgba(59, 130, 246, 0.22), transparent 70%),
-    radial-gradient(760px 420px at 92% 0%, rgba(168, 85, 247, 0.16), transparent 70%),
-    linear-gradient(180deg, #02050e 0%, #030712 42%, #040816 100%);
+  background: var(--bg);
+  background-image: radial-gradient(circle at 15% 50%, rgba(230, 0, 18, 0.08), transparent 40%),
+    radial-gradient(circle at 85% 30%, rgba(0, 195, 227, 0.08), transparent 40%);
   color: var(--text);
   position: relative;
   overflow-x: hidden;
@@ -78,13 +79,13 @@ a {
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(to right, rgba(148, 163, 184, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
-  background-size: 44px 44px;
-  opacity: 0.2;
+    linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+  background-size: 60px 60px;
+  opacity: 0.5;
   pointer-events: none;
   z-index: 0;
-  mask-image: radial-gradient(circle at center, black 40%, transparent 100%);
+  mask-image: radial-gradient(circle at center, black 50%, transparent 100%);
 }
 
 .topbar {
@@ -343,7 +344,7 @@ a {
   color: #dfe7fb;
 }
 
-.field > span {
+.field>span {
   color: #b8c5de;
   font-size: 12px;
 }
@@ -429,7 +430,7 @@ a {
 }
 
 .portal-hero-main,
-.portal-hero-side > .spotlight-card {
+.portal-hero-side>.spotlight-card {
   padding: 18px;
 }
 
@@ -496,12 +497,21 @@ a {
 }
 
 .game-card {
-  border: 1px solid var(--line);
-  border-radius: 16px;
+  border: 4px solid transparent;
+  border-radius: 20px;
   overflow: hidden;
-  background: rgba(8, 13, 28, 0.92);
-  box-shadow: var(--shadow-soft);
+  background: var(--panel-strong);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
   display: grid;
+  transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), border-color 0.2s ease, box-shadow 0.2s ease;
+  cursor: pointer;
+}
+
+.game-card:hover {
+  transform: translateY(-8px) scale(1.02);
+  border-color: var(--blue);
+  box-shadow: 0 12px 24px rgba(0, 195, 227, 0.4);
+  z-index: 10;
 }
 
 .game-card-art {
@@ -591,35 +601,26 @@ a {
 }
 
 .game-card-body {
-  padding: 12px;
+  padding: 16px;
   display: grid;
   gap: 10px;
-  border-top: 1px solid rgba(148, 163, 184, 0.12);
-}
-
-.game-card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  color: var(--muted);
-  font-size: 12px;
-}
-
-.game-card-meta span {
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 999px;
-  padding: 4px 8px;
-  background: rgba(3, 8, 20, 0.5);
+  background: #232323;
 }
 
 .game-card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 8px;
+  gap: 12px;
 }
 
 .game-card-secondary {
-  color: #c5d3f7;
+  color: #f0f0f0;
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.2);
+}
+
+.game-card-secondary:hover {
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Console */
@@ -744,6 +745,7 @@ a {
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 5;
+  line-clamp: 5;
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
@@ -1045,7 +1047,7 @@ a {
   margin: 0;
 }
 
-.meta-list > div {
+.meta-list>div {
   display: grid;
   gap: 4px;
   border: 1px solid rgba(148, 163, 184, 0.1);
@@ -1082,7 +1084,7 @@ a {
 }
 
 /* Existing utility compatibility */
-main section > .card:first-child h2 {
+main section>.card:first-child h2 {
   margin-top: 0;
 }
 
