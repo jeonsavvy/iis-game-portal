@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ForgeFlowBoard } from "@/components/ForgeFlowBoard";
 import { GameAdminPanel } from "@/components/GameAdminPanel";
 import { PipelineTerminal } from "@/components/PipelineTerminal";
-import { RoleActions } from "@/components/RoleActions";
+// RoleActions removed
 import { SignOutButton } from "@/components/SignOutButton";
 import { TriggerForm } from "@/components/TriggerForm";
 import { ManualApprovalForm } from "@/components/ManualApprovalForm";
@@ -130,7 +130,7 @@ export default async function AdminPage() {
           }>)
         }
       />
-      <RoleActions role={validatedRole} />
+      {/* RoleActions removed */}
       <PipelineTerminal initialLogs={typedLogs} />
     </section>
   );

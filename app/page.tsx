@@ -58,10 +58,12 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   return (
     <section className="portal-page">
-      <section className="portal-hero" style={{ background: 'var(--nintendo-red)', color: 'white', borderRadius: 'var(--radius-lg)', padding: '40px', marginBottom: '32px' }}>
+      <section className="portal-hero">
         <div className="portal-hero-main">
-          <h1 className="hero-title" style={{ fontSize: '48px', fontWeight: 900, margin: 0 }}>IIS ARCADE</h1>
-          <p className="section-subtitle" style={{ fontSize: '18px', opacity: 0.9, marginTop: '8px' }}>
+          <h1 className="hero-title" style={{ fontSize: '48px', fontWeight: 900, margin: 0, textShadow: '0 0 20px rgba(230, 0, 18, 0.5)', color: 'var(--text)' }}>
+            IIS ARCADE
+          </h1>
+          <p className="section-subtitle" style={{ fontSize: '18px', color: 'var(--muted)', marginTop: '8px' }}>
             Choose your game and let the AI-generated fun begin!
           </p>
         </div>
@@ -75,16 +77,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         </div>
 
         <div className="filter-grid">
-          <label className="field">
-            <span>장르</span>
-            <select className="input" name="genre" defaultValue={genre}>
-              {GENRE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {GENRE_LABELS[option]}
-                </option>
-              ))}
-            </select>
-          </label>
+          {/* Genre field removed */}
           <label className="field">
             <span>정렬</span>
             <select className="input" name="sort" defaultValue={sort}>

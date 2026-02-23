@@ -41,7 +41,6 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <nav className="topbar">
           <div className="brand-block">
             <strong>IIS Arcade</strong>
-            <span>생성형 게임 스튜디오 아카이브</span>
           </div>
           <div className="nav-links">
             <Link className="nav-link" href="/">
@@ -50,13 +49,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link className="nav-link" href="/admin">
               스튜디오 콘솔
             </Link>
-            {paypalDonationUrl ? (
-              <a className="donation-link nav-link support" href={paypalDonationUrl} target="_blank" rel="noreferrer">
-                💖 후원하기
-              </a>
-            ) : (
-              <span className="donation-disabled nav-link">💖 후원하기 (PayPal 준비 중)</span>
-            )}
+            <a className="donation-link nav-link support" href="https://www.paypal.com/ncp/payment/FLVUVTZLLCKVY" target="_blank" rel="noreferrer">
+              💖 후원하기
+            </a>
           </div>
         </nav>
         <main className="main-shell">{children}</main>

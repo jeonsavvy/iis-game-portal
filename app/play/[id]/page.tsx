@@ -64,33 +64,19 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
                 <dd>{typedGame.name}</dd>
               </div>
               <div>
-                <dt>장르</dt>
-                <dd>{typedGame.genre}</dd>
-              </div>
-              <div>
-                <dt>슬러그</dt>
-                <dd>{typedGame.slug}</dd>
-              </div>
-              <div>
                 <dt>상태</dt>
-                <dd>{typedGame.status}</dd>
-              </div>
-              <div>
-                <dt>원본 URL</dt>
-                <dd title={typedGame.url} style={{ wordBreak: "break-all" }}>
-                  {typedGame.url}
-                </dd>
+                <dd>플레이 가능</dd>
               </div>
             </dl>
           </section>
 
           <section className="surface side-card">
-            <p className="eyebrow">제작 메모</p>
-            <h2 className="section-title">생성 파이프라인 요약</h2>
+            <p className="eyebrow">에이전트 리뷰</p>
+            <h2 className="section-title">AI 게임 디자이너 코멘트</h2>
             <ul className="bullet-list">
-              <li>ForgeFlow 멀티에이전트 파이프라인으로 생성된 웹게임 결과물</li>
-              <li>Studio Console에서 트리거/승인/로그 기반 운영 추적 가능</li>
-              <li>Supabase 카탈로그/스토리지 + Archive 레포 동기화 구조</li>
+              <li>사용자가 제시한 키워드를 분석하여 핵심적인 플레이 경험을 추출했습니다.</li>
+              <li>난이도 곡선과 스코어링 시스템을 조정하여 아케이드 특유의 몰입감을 극대화했습니다.</li>
+              <li>시각적 테마는 게임의 장르에 맞춰 최적화된 하이브리드 엔진 설정을 사용했습니다.</li>
             </ul>
           </section>
         </aside>

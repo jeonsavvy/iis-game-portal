@@ -174,27 +174,7 @@ export function TriggerForm() {
       </form>
       {status ? <p className="inline-feedback">{status}</p> : null}
 
-      {history.length > 0 ? (
-        <div className="surface inset-panel">
-          <div className="row-between">
-            <h4 className="subsection-title">최근 실행 이력</h4>
-            <span className="muted-text">{history.length}건</span>
-          </div>
-          <ul className="activity-list">
-            {history.map((item) => (
-              <li key={item.pipelineId}>
-                <span className={`status-chip tone-${item.status === "error" ? "error" : item.status === "success" ? "success" : item.status === "running" ? "running" : "idle"}`}>
-                  {statusLabel(item.status)}
-                </span>
-                <span className="activity-main">
-                  {item.keyword} · {item.executionMode === "manual" ? "수동" : "자동"} / {item.pipelineVersion}
-                </span>
-                <span className="activity-time">{new Date(item.createdAt).toLocaleTimeString()}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : null}
+      {/* history logic removed based on user feedback to prevent static status confusion */}
     </section>
   );
 }

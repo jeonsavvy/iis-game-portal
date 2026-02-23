@@ -38,9 +38,6 @@ export function GameCard({ game }: { game: Game }) {
           <Link className="button button-primary" href={`/play/${game.id}`}>
             ▶ Play
           </Link>
-          <a className="button button-ghost game-card-secondary" href={game.url} target="_blank" rel="noreferrer">
-            Direct Link
-          </a>
         </div>
       </div>
     </article>
