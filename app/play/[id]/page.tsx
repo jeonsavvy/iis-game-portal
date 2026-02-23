@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 
+import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 import { Metadata } from "next";
@@ -18,12 +19,19 @@ function pickReviewFromMetadata(metadata: unknown, slug: string): string | null 
   return normalized || null;
 }
 
-async function resolveAiReviewFallback(supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>, game: GameRow): Promise<string | null> {
+async function resolveAiReviewFallback(game: GameRow): Promise<string | null> {
   if (game.ai_review && game.ai_review.trim()) {
     return game.ai_review.trim();
   }
 
-  const { data: logs } = await supabase
+  let adminClient;
+  try {
+    adminClient = createSupabaseAdminClient();
+  } catch {
+    return null;
+  }
+
+  const { data: logs } = await adminClient
     .from("pipeline_logs")
     .select("metadata,created_at")
     .eq("stage", "echo")
@@ -47,7 +55,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 
   if (!game) return { title: "Game Not Found" };
   const typedGame = game as unknown as GameRow;
-  const resolvedAiReview = await resolveAiReviewFallback(supabase, typedGame);
+  const resolvedAiReview = await resolveAiReviewFallback(typedGame);
 
   const ogImage = typedGame.screenshot_url || typedGame.thumbnail_url || undefined;
   const defaultDescription = `${typedGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
@@ -80,7 +88,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   }
 
   const typedGame = game as unknown as GameRow;
-  const resolvedAiReview = await resolveAiReviewFallback(supabase, typedGame);
+  const resolvedAiReview = await resolveAiReviewFallback(typedGame);
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
 
   return (
