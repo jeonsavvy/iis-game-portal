@@ -629,6 +629,122 @@ a {
   gap: 16px;
 }
 
+.studio-control-deck {
+  display: grid;
+  gap: 12px;
+}
+
+.mission-toolbar {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.mission-status-inline {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.mission-toolbar-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, auto);
+  gap: 10px;
+  align-items: end;
+}
+
+.mission-control-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.mission-context-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.mission-mobile-tabs {
+  display: none;
+}
+
+.mission-board-shell {
+  padding: 14px;
+}
+
+.flow-pipeline-selector {
+  margin-bottom: 12px;
+}
+
+.mission-activity-pane {
+  padding: 14px;
+}
+
+.mission-activity-list {
+  max-height: 420px;
+  overflow: auto;
+}
+
+.activity-metrics {
+  display: inline-block;
+  margin-left: 8px;
+  font-size: 11px;
+  color: #93c5fd;
+}
+
+.mission-control-pane {
+  padding: 14px;
+}
+
+.mission-control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mission-control-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+}
+
+.mission-stage-strip {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(7, minmax(150px, 1fr));
+  overflow-x: auto;
+}
+
+.mission-stage-card {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 12px;
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+  background: rgba(2, 6, 23, 0.64);
+  min-width: 150px;
+}
+
+.mission-stage-card.waiting {
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.28), 0 8px 20px rgba(250, 204, 21, 0.1);
+}
+
+.mission-stage-card.tone-success {
+  border-color: rgba(34, 197, 94, 0.35);
+}
+
+.mission-stage-card.tone-running {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
+.mission-stage-card.tone-error {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+.mission-stage-card strong {
+  font-size: 14px;
+}
+
 .console-hero {
   padding: 18px;
   display: flex;
@@ -1165,6 +1281,14 @@ main section>.card:first-child h2 {
   .flow-board {
     grid-template-columns: repeat(7, minmax(180px, 1fr));
   }
+
+  .mission-toolbar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mission-control-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 760px) {
@@ -1225,5 +1349,33 @@ main section>.card:first-child h2 {
   .activity-list li {
     grid-template-columns: 1fr;
     align-items: start;
+  }
+
+  .mission-mobile-tabs {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mission-mobile-tabs .button.is-active {
+    border-color: rgba(96, 165, 250, 0.45);
+    background: rgba(59, 130, 246, 0.2);
+  }
+
+  .mission-pane {
+    display: none;
+  }
+
+  .mission-pane.is-active {
+    display: block;
+  }
+
+  .mission-stage-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: visible;
+  }
+
+  .mission-stage-card {
+    min-width: 0;
   }
 }

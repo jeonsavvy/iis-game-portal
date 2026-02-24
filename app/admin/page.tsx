@@ -1,13 +1,10 @@
 import Link from "next/link";
 
-import { ForgeFlowBoard } from "@/components/ForgeFlowBoard";
 import { GameAdminPanel } from "@/components/GameAdminPanel";
-import { PipelineTerminal } from "@/components/PipelineTerminal";
+import { StudioControlDeck } from "@/components/StudioControlDeck";
 import { TokenCostKPI } from "@/components/TokenCostKPI";
 // RoleActions removed
 import { SignOutButton } from "@/components/SignOutButton";
-import { TriggerForm } from "@/components/TriggerForm";
-import { ManualApprovalForm } from "@/components/ManualApprovalForm";
 import { canReadPipelineLogs } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
@@ -482,9 +479,9 @@ export default async function AdminPage() {
       <section className="surface console-hero">
         <div className="console-hero-copy">
           <p className="eyebrow">운영 관제</p>
-          <h1 className="hero-title">Studio Console</h1>
+          <h1 className="hero-title">Studio Mission Console</h1>
           <p className="section-subtitle">
-            ForgeFlow 멀티에이전트 파이프라인을 실행·승인·관찰하는 운영 대시보드입니다.
+            ForgeFlow 멀티에이전트 파이프라인을 운영실 관점에서 실행·승인·관측·제어합니다.
           </p>
           <p className="muted-text">권한: {validatedRole} · {user.email ?? user.id}</p>
         </div>
@@ -496,12 +493,7 @@ export default async function AdminPage() {
         </div>
       </section>
 
-      <ForgeFlowBoard initialLogs={typedLogs} />
-
-      <section className="console-grid">
-        <TriggerForm />
-        <ManualApprovalForm />
-      </section>
+      <StudioControlDeck initialLogs={typedLogs} />
 
       <TokenCostKPI summary={tokenReport.summary} rows={tokenReport.rows} />
 
@@ -510,8 +502,6 @@ export default async function AdminPage() {
           recentGamesRows
         }
       />
-      {/* RoleActions removed */}
-      <PipelineTerminal initialLogs={typedLogs} />
     </section>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState } from "react";
+import { FormEvent, useEffect, useState } from "react";
 
 const APPROVAL_STAGES = ["plan", "style", "build", "qa", "publish", "echo"] as const;
 
@@ -27,10 +27,22 @@ function parseErrorMessage(payload: { error?: string; detail?: string } | null):
   return map[raw] ?? raw;
 }
 
-export function ManualApprovalForm() {
-  const [pipelineId, setPipelineId] = useState("");
+export function ManualApprovalForm({
+  defaultPipelineId,
+  onApproved,
+  className,
+}: {
+  defaultPipelineId?: string;
+  onApproved?: (result: { pipelineId: string; stage: (typeof APPROVAL_STAGES)[number] }) => void;
+  className?: string;
+} = {}) {
+  const [pipelineId, setPipelineId] = useState(defaultPipelineId ?? "");
   const [stage, setStage] = useState<(typeof APPROVAL_STAGES)[number]>("plan");
   const [status, setStatus] = useState("");
+
+  useEffect(() => {
+    setPipelineId(defaultPipelineId ?? "");
+  }, [defaultPipelineId]);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
@@ -54,10 +66,11 @@ export function ManualApprovalForm() {
     setStatus(
       `승인 완료: ${STAGE_LABELS[stage]} 단계 · 파이프라인 상태=${payload?.status ?? "unknown"} · 대기 단계=${payload?.waiting_for_stage ?? "-"}`,
     );
+    onApproved?.({ pipelineId, stage });
   };
 
   return (
-    <section className="surface form-panel">
+    <section className={`surface form-panel${className ? ` ${className}` : ""}`}>
       <div className="section-head compact">
         <div>
           <p className="eyebrow">수동 운영</p>

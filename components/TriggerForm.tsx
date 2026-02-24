@@ -61,7 +61,13 @@ function statusLabel(value: string): string {
   return map[value] ?? value;
 }
 
-export function TriggerForm() {
+export function TriggerForm({
+  onTriggered,
+  className,
+}: {
+  onTriggered?: (item: TriggerHistoryItem) => void;
+  className?: string;
+} = {}) {
   const [keyword, setKeyword] = useState("");
   const [executionMode, setExecutionMode] = useState<"auto" | "manual">("auto");
   const [pipelineVersion, setPipelineVersion] = useState("forgeflow-v1");
@@ -138,12 +144,13 @@ export function TriggerForm() {
 
     setHistory(updatedHistory);
     window.localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(updatedHistory));
+    onTriggered?.(updatedHistory[0]);
 
     setKeyword("");
   };
 
   return (
-    <section className="surface form-panel">
+    <section className={`surface form-panel${className ? ` ${className}` : ""}`}>
       <div className="section-head compact">
         <div>
           <p className="eyebrow">실행 제어</p>

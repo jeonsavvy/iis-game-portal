@@ -11,6 +11,7 @@ Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 - `/admin` : Studio Console
   - 파이프라인 트리거
   - 수동 단계 승인
+  - Pause/Resume/Stop/Retry 오퍼레이터 제어
   - 실시간 파이프라인 로그
   - role 기반 접근 제어(`master_admin`)
 

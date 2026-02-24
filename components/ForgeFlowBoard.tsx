@@ -25,7 +25,7 @@ const STATUS_LABELS: Record<PipelineStatus, string> = {
   success: "성공",
   error: "실패",
   retry: "재시도",
-  skipped: "건너뜀",
+  skipped: "일시정지",
 };
 
 function statusTone(status: PipelineStatus | null): string {
@@ -47,11 +47,38 @@ function statusTone(status: PipelineStatus | null): string {
   }
 }
 
-export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) {
+function compactMessage(message?: string | null) {
+  if (!message) {
+    return "아직 실행 로그가 없습니다. 트리거를 실행하면 흐름이 채워집니다.";
+  }
+  const normalized = message.replace(/\s+/g, " ").trim();
+  if (normalized.length <= 140) return normalized;
+  return `${normalized.slice(0, 140)}…`;
+}
+
+export function ForgeFlowBoard({
+  initialLogs,
+  selectedPipelineId,
+  onSelectPipeline,
+  live = true,
+}: {
+  initialLogs: PipelineLog[];
+  selectedPipelineId?: string | null;
+  onSelectPipeline?: (pipelineId: string) => void;
+  live?: boolean;
+}) {
   const [logs, setLogs] = useState<PipelineLog[]>(initialLogs);
   const [pollMode, setPollMode] = useState<"idle" | "polling">("idle");
 
   useEffect(() => {
+    setLogs(initialLogs);
+  }, [initialLogs]);
+
+  useEffect(() => {
+    if (!live) {
+      return;
+    }
+
     let closed = false;
     let realtimeReceived = false;
 
@@ -64,7 +91,7 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
         });
         return Array.from(map.values())
           .sort((a, b) => b.created_at.localeCompare(a.created_at))
-          .slice(0, 400);
+          .slice(0, 500);
       });
     };
 
@@ -80,7 +107,7 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
           upsertLogs(recent);
         }
       } catch {
-        // Silent fallback; terminal view surfaces enough info.
+        // silent fallback
       }
     };
 
@@ -102,7 +129,7 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
       window.clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [pollMode]);
+  }, [live, pollMode]);
 
   const pipelineSnapshots = useMemo(() => {
     const sorted = [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -113,9 +140,13 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
       }
     }
 
-    const activePipelineId = sorted[0]?.pipeline_id ?? null;
+    const activePipelineId = selectedPipelineId ?? sorted[0]?.pipeline_id ?? null;
+    const focusLogs = activePipelineId
+      ? sorted.filter((log) => log.pipeline_id === activePipelineId)
+      : sorted;
+
     const latestByStage = new Map<PipelineStage, PipelineLog>();
-    for (const log of sorted) {
+    for (const log of focusLogs) {
       if (!latestByStage.has(log.stage)) {
         latestByStage.set(log.stage, log);
       }
@@ -127,29 +158,17 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
       latestByPipeline,
       latestByStage,
       observedPipelines: latestByPipeline.size,
+      latestLog: focusLogs[0] ?? null,
     };
-  }, [logs]);
-
-  const latestLog = pipelineSnapshots.sorted[0] ?? null;
-
-  const compactMessage = (message?: string | null) => {
-    if (!message) {
-      return "아직 실행 로그가 없습니다. 트리거를 실행하면 여기부터 흐름이 채워집니다.";
-    }
-    const normalized = message.replace(/\s+/g, " ").trim();
-    if (normalized.length <= 140) return normalized;
-    return `${normalized.slice(0, 140)}…`;
-  };
+  }, [logs, selectedPipelineId]);
 
   return (
-    <section className="surface console-flow">
-      <div className="section-head">
+    <section className="surface console-flow mission-board-shell">
+      <div className="section-head compact">
         <div>
           <p className="eyebrow">라이브 파이프라인</p>
           <h2 className="section-title">ForgeFlow Mission Board</h2>
-          <p className="section-subtitle">
-            에이전트들이 어떤 단계에서 작업 중인지 실시간 로그 기준으로 시각화합니다.
-          </p>
+          <p className="section-subtitle">현재 선택 파이프라인 기준 단계별 상태와 메시지를 표시합니다.</p>
         </div>
         <div className="stat-inline-list">
           {pollMode === "polling" ? (
@@ -164,10 +183,30 @@ export function ForgeFlowBoard({ initialLogs }: { initialLogs: PipelineLog[] }) 
           </div>
           <div className="stat-inline">
             <span className="stat-inline-label">최근 단계</span>
-            <strong>{latestLog ? `${latestLog.stage}` : "-"}</strong>
+            <strong>{pipelineSnapshots.latestLog ? pipelineSnapshots.latestLog.stage : "-"}</strong>
           </div>
         </div>
       </div>
+
+      {pipelineSnapshots.latestByPipeline.size > 0 && onSelectPipeline ? (
+        <label className="field flow-pipeline-selector">
+          <span>보드 기준 파이프라인</span>
+          <select
+            className="input"
+            value={pipelineSnapshots.activePipelineId ?? ""}
+            onChange={(event) => {
+              const next = event.target.value;
+              if (next) onSelectPipeline(next);
+            }}
+          >
+            {Array.from(pipelineSnapshots.latestByPipeline.values()).map((row) => (
+              <option key={row.pipeline_id} value={row.pipeline_id}>
+                {row.pipeline_id.slice(0, 8)} · {row.status} · {compactMessage(row.message)}
+              </option>
+            ))}
+          </select>
+        </label>
+      ) : null}
 
       <div className="flow-board">
         {STAGE_FLOW.map((lane) => {
