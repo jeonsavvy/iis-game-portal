@@ -479,7 +479,7 @@ export default async function AdminPage() {
       <section className="surface console-hero">
         <div className="console-hero-copy">
           <p className="eyebrow">운영 관제</p>
-          <h1 className="hero-title">Studio Mission Console</h1>
+          <h1 className="hero-title">스튜디오 임무 콘솔</h1>
           <p className="section-subtitle">
             ForgeFlow 멀티에이전트 파이프라인을 운영실 관점에서 실행·승인·관측·제어합니다.
           </p>

@@ -35,19 +35,19 @@ export function TokenCostKPI({ summary, rows }: Props) {
   const trackedPipelines = summary.finalizedPipelines + summary.sampledPipelines;
   return (
     <section className="surface side-card" style={{ padding: "16px", marginBottom: "16px" }}>
-      <p className="eyebrow">Observability</p>
-      <h3 className="section-title">AI Token Usage (Last 180 Logs)</h3>
+      <p className="eyebrow">관측 지표</p>
+      <h3 className="section-title">AI 토큰 사용량 (최근 180개 로그)</h3>
 
       <div style={{ display: "flex", gap: "24px", marginTop: "12px", flexWrap: "wrap" }}>
         <div style={{ flex: 1, minWidth: "120px" }}>
           <p className="muted-text" style={{ fontSize: "12px", margin: "0 0 4px" }}>
-            Total Tokens
+            전체 토큰
           </p>
           <strong style={{ fontSize: "24px", color: "#f8fafc" }}>{summary.totalTokens.toLocaleString()}</strong>
         </div>
         <div style={{ flex: 1, minWidth: "120px" }}>
           <p className="muted-text" style={{ fontSize: "12px", margin: "0 0 4px" }}>
-            Tracked Pipelines
+            집계 파이프라인
           </p>
           <strong style={{ fontSize: "24px", color: "#10b981" }}>{trackedPipelines.toLocaleString()}</strong>
         </div>
@@ -82,35 +82,35 @@ export function TokenCostKPI({ summary, rows }: Props) {
         }}
       >
         <div>
-          <span>Prompt Tokens: </span>
+          <span>프롬프트 토큰: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.promptTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Completion Tokens: </span>
+          <span>완성 토큰: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.completionTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Flash Prompt: </span>
+          <span>Flash 프롬프트: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.flashPromptTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Flash Completion: </span>
+          <span>Flash 완성: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.flashCompletionTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Pro Prompt: </span>
+          <span>Pro 프롬프트: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.proPromptTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Pro Completion: </span>
+          <span>Pro 완성: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.proCompletionTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Unpriced Tokens: </span>
+          <span>미단가 토큰: </span>
           <strong style={{ color: "#dbeafe" }}>{summary.unpricedTokens.toLocaleString()}</strong>
         </div>
         <div>
-          <span>Rows: </span>
+          <span>행 수: </span>
           <strong style={{ color: "#dbeafe" }}>{rows.length.toLocaleString()}</strong>
         </div>
       </div>
@@ -137,9 +137,9 @@ export function TokenCostKPI({ summary, rows }: Props) {
                   <th>게임/파이프라인</th>
                   <th>집계 기준</th>
                   <th>파이프라인 수</th>
-                  <th>Prompt</th>
-                  <th>Completion</th>
-                  <th>Total</th>
+                  <th>프롬프트</th>
+                  <th>완성</th>
+                  <th>합계</th>
                   <th>최근 로그</th>
                 </tr>
               </thead>

@@ -3,7 +3,6 @@
 import { useEffect, useId, useMemo, useState } from "react";
 
 import { ManualApprovalForm } from "@/components/ManualApprovalForm";
-import { PipelineTerminal } from "@/components/PipelineTerminal";
 import { TriggerForm } from "@/components/TriggerForm";
 import { fetchRecentPipelineLogs, subscribePipelineLogs } from "@/lib/supabase/realtime";
 import type {
@@ -16,13 +15,13 @@ import type {
 } from "@/types/pipeline";
 
 const STAGE_FLOW: Array<{ stage: Exclude<PipelineStage, "done">; label: string; agent: string }> = [
-  { stage: "trigger", label: "Scout", agent: "Director" },
-  { stage: "plan", label: "Intel", agent: "Architect" },
-  { stage: "style", label: "Stylist", agent: "Stylist" },
-  { stage: "build", label: "Builder", agent: "Builder" },
-  { stage: "qa", label: "Sentinel", agent: "Sentinel" },
-  { stage: "publish", label: "Outreach", agent: "Publisher" },
-  { stage: "echo", label: "Closer", agent: "Echo" },
+  { stage: "trigger", label: "스카우트", agent: "디렉터" },
+  { stage: "plan", label: "인텔", agent: "아키텍트" },
+  { stage: "style", label: "스타일", agent: "스타일리스트" },
+  { stage: "build", label: "빌더", agent: "빌더" },
+  { stage: "qa", label: "센티널", agent: "센티널" },
+  { stage: "publish", label: "아웃리치", agent: "퍼블리셔" },
+  { stage: "echo", label: "클로저", agent: "에코" },
 ];
 
 const AGENT_LAYOUT: Array<{
@@ -33,13 +32,13 @@ const AGENT_LAYOUT: Array<{
   gridRow: number;
   icon: "scout" | "intel" | "stylist" | "builder" | "sentinel" | "publisher" | "echo";
 }> = [
-  { stage: "trigger", role: "Director", title: "Scout", gridColumn: 1, gridRow: 1, icon: "scout" },
-  { stage: "plan", role: "Architect", title: "Intel", gridColumn: 2, gridRow: 1, icon: "intel" },
-  { stage: "build", role: "Builder", title: "Builder", gridColumn: 3, gridRow: 1, icon: "builder" },
-  { stage: "style", role: "Stylist", title: "Stylist", gridColumn: 1, gridRow: 2, icon: "stylist" },
-  { stage: "qa", role: "Sentinel", title: "Sentinel", gridColumn: 2, gridRow: 2, icon: "sentinel" },
-  { stage: "publish", role: "Publisher", title: "Outreach", gridColumn: 3, gridRow: 2, icon: "publisher" },
-  { stage: "echo", role: "Echo", title: "Closer", gridColumn: 2, gridRow: 3, icon: "echo" },
+  { stage: "trigger", role: "디렉터", title: "스카우트", gridColumn: 1, gridRow: 1, icon: "scout" },
+  { stage: "plan", role: "아키텍트", title: "인텔", gridColumn: 2, gridRow: 1, icon: "intel" },
+  { stage: "build", role: "빌더", title: "빌더", gridColumn: 3, gridRow: 1, icon: "builder" },
+  { stage: "style", role: "스타일리스트", title: "스타일", gridColumn: 1, gridRow: 2, icon: "stylist" },
+  { stage: "qa", role: "센티널", title: "센티널", gridColumn: 2, gridRow: 2, icon: "sentinel" },
+  { stage: "publish", role: "퍼블리셔", title: "아웃리치", gridColumn: 3, gridRow: 2, icon: "publisher" },
+  { stage: "echo", role: "에코", title: "클로저", gridColumn: 2, gridRow: 3, icon: "echo" },
 ];
 
 const STATUS_LABELS: Record<PipelineStatus, string> = {
@@ -52,18 +51,38 @@ const STATUS_LABELS: Record<PipelineStatus, string> = {
 };
 
 const CONTROL_LABELS: Record<PipelineControlAction, string> = {
-  pause: "Pause",
-  resume: "Resume",
-  cancel: "Stop",
-  retry: "Retry",
+  pause: "일시정지",
+  resume: "재개",
+  cancel: "중단",
+  retry: "재시도",
 };
 
 const MOBILE_TABS = [
-  { key: "board", label: "Board" },
-  { key: "activity", label: "Activity" },
-  { key: "control", label: "Control" },
-  { key: "logs", label: "Logs" },
+  { key: "board", label: "운영보드" },
+  { key: "activity", label: "활동" },
+  { key: "control", label: "제어" },
 ] as const;
+
+const STAGE_LABELS: Record<PipelineStage, string> = {
+  trigger: "트리거",
+  plan: "기획",
+  style: "스타일",
+  build: "빌드",
+  qa: "QA",
+  publish: "게시",
+  echo: "홍보",
+  done: "완료",
+};
+
+const AGENT_LABELS: Record<string, string> = {
+  Trigger: "트리거",
+  Architect: "아키텍트",
+  Stylist: "스타일리스트",
+  Builder: "빌더",
+  Sentinel: "센티널",
+  Publisher: "퍼블리셔",
+  Echo: "에코",
+};
 
 function statusTone(status: PipelineStatus | null): string {
   switch (status) {
@@ -326,9 +345,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       }
 
       const typed = payload as PipelineControlResponse;
-      setFeedback(
-        `${CONTROL_LABELS[action]} 완료 · status=${typed.status} · waiting=${typed.waiting_for_stage ?? "-"} · reason=${typed.error_reason ?? "-"}`,
-      );
+      setFeedback(`${CONTROL_LABELS[action]} 완료 · 상태=${STATUS_LABELS[typed.status]} · 대기단계=${typed.waiting_for_stage ? STAGE_LABELS[typed.waiting_for_stage] : "-"}`);
       await refreshSummary(selectedPipelineId);
       const recent = await fetchRecentPipelineLogs(undefined, 220);
       setLogs(recent);
@@ -344,16 +361,16 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       <section className="surface mission-toolbar">
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">Command Deck</p>
+            <p className="eyebrow">운영 데크</p>
             <h3 className="section-title">멀티 에이전트 운영실</h3>
             <p className="section-subtitle">선택 파이프라인 중심으로 지금 누가 무엇을 하는지 실시간으로 표시합니다.</p>
           </div>
           <div className="mission-status-inline">
-            <span className="status-chip tone-running">running {globalStatus.running}</span>
-            <span className="status-chip tone-warn">retry {globalStatus.retry}</span>
-            <span className="status-chip tone-error">error {globalStatus.error}</span>
-            <span className="status-chip tone-success">success {globalStatus.success}</span>
-            {pollMode === "polling" ? <span className="status-chip tone-warn">polling</span> : null}
+            <span className="status-chip tone-running">동작 {globalStatus.running}</span>
+            <span className="status-chip tone-warn">재시도 {globalStatus.retry}</span>
+            <span className="status-chip tone-error">오류 {globalStatus.error}</span>
+            <span className="status-chip tone-success">완료 {globalStatus.success}</span>
+            {pollMode === "polling" ? <span className="status-chip tone-warn">폴링 보조</span> : null}
           </div>
         </div>
 
@@ -361,10 +378,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
           <label className="field">
             <span>관측 파이프라인</span>
             <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
-              {pipelines.length === 0 ? <option value="">(no pipeline)</option> : null}
+              {pipelines.length === 0 ? <option value="">(파이프라인 없음)</option> : null}
               {pipelines.map((item) => (
                 <option key={item.pipeline_id} value={item.pipeline_id}>
-                  {item.pipeline_id.slice(0, 8)} · {item.stage} · {item.status} · {compactMessage(item.message)}
+                  {item.pipeline_id.slice(0, 8)} · {STAGE_LABELS[item.stage]} · {STATUS_LABELS[item.status]} · {compactMessage(item.message)}
                 </option>
               ))}
             </select>
@@ -386,10 +403,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </div>
 
         <div className="mission-context-row">
-          <span className="terminal-tag">pipeline: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
-          <span className="terminal-tag subtle">status: {pipelineSummary?.status ?? "-"}</span>
-          <span className="terminal-tag subtle">mode: {pipelineSummary?.execution_mode ?? "-"}</span>
-          <span className="terminal-tag subtle">waiting: {pipelineSummary?.waiting_for_stage ?? "-"}</span>
+          <span className="terminal-tag">파이프라인: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
+          <span className="terminal-tag subtle">상태: {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}</span>
+          <span className="terminal-tag subtle">모드: {pipelineSummary?.execution_mode === "manual" ? "수동" : pipelineSummary?.execution_mode === "auto" ? "자동" : "-"}</span>
+          <span className="terminal-tag subtle">대기 단계: {pipelineSummary?.waiting_for_stage ? STAGE_LABELS[pipelineSummary.waiting_for_stage] : "-"}</span>
         </div>
         {feedback ? <p className="inline-feedback">{feedback}</p> : null}
 
@@ -414,19 +431,19 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
               <div className="war-room-counter-strip">
                 <span className="war-counter">
                   <strong>{telemetry.found}</strong>
-                  <small>FOUND</small>
+                  <small>기획 완료</small>
                 </span>
                 <span className="war-counter">
                   <strong>{telemetry.built}</strong>
-                  <small>BUILT</small>
+                  <small>빌드 완료</small>
                 </span>
                 <span className="war-counter">
                   <strong>{telemetry.sent}</strong>
-                  <small>SENT</small>
+                  <small>게시 완료</small>
                 </span>
                 <span className="war-counter">
                   <strong>{telemetry.replied}</strong>
-                  <small>REPLIED</small>
+                  <small>홍보 완료</small>
                 </span>
               </div>
             </div>
@@ -459,16 +476,16 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
                           <h4>{agent.title}</h4>
                         </div>
                       </div>
-                      <p className="war-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "idle"))}</p>
+                      <p className="war-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "유휴"))}</p>
                       <div className="war-node-foot">
                         <span className={`status-chip tone-${tone}`}>
-                          {stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "idle"}
+                          {stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "유휴"}
                         </span>
                         <span>{stageLog ? new Date(stageLog.created_at).toLocaleTimeString() : "-"}</span>
                       </div>
                       {(signals.fatal > 0 || signals.warning > 0) && (
                         <p className="war-node-signal">
-                          fatal {signals.fatal} · warning {signals.warning}
+                          치명 {signals.fatal} · 경고 {signals.warning}
                         </p>
                       )}
                     </article>
@@ -481,10 +498,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
           <aside className="war-room-activity">
             <div className="section-head compact">
               <div>
-                <p className="eyebrow">Activity Rail</p>
-                <h3 className="section-title">Live Mission Feed</h3>
+                <p className="eyebrow">활동 레일</p>
+                <h3 className="section-title">실시간 임무 피드</h3>
               </div>
-              <span className="muted-text">{selectedLogs.length} logs</span>
+              <span className="muted-text">{selectedLogs.length}개 로그</span>
             </div>
 
             <ul className="war-activity-list">
@@ -497,12 +514,12 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
                     <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
                     <div>
                       <strong>
-                        {log.stage} · {log.agent_name}
+                        {STAGE_LABELS[log.stage]} · {AGENT_LABELS[log.agent_name] ?? log.agent_name}
                       </strong>
                       <p>{compactMessage(log.message)}</p>
                       {(signals.fatal > 0 || signals.warning > 0) && (
                         <small>
-                          fatal {signals.fatal} · warning {signals.warning}
+                          치명 {signals.fatal} · 경고 {signals.warning}
                         </small>
                       )}
                     </div>
@@ -518,10 +535,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       <section className={`surface mission-activity-pane mission-pane ${mobileTab === "activity" ? "is-active" : ""}`}>
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">Activity</p>
+            <p className="eyebrow">활동</p>
             <h3 className="section-title">모바일 이벤트 피드</h3>
           </div>
-          <span className="muted-text">{selectedLogs.length} logs</span>
+          <span className="muted-text">{selectedLogs.length}개 로그</span>
         </div>
         <ul className="activity-list mission-activity-list">
           {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
@@ -531,10 +548,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
               <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`}>
                 <span className={`status-chip tone-${statusTone(log.status)}`}>{STATUS_LABELS[log.status]}</span>
                 <div className="activity-main">
-                  <strong>{log.stage}</strong> · {compactMessage(log.message)}
+                  <strong>{STAGE_LABELS[log.stage]}</strong> · {compactMessage(log.message)}
                   {(signals.fatal > 0 || signals.warning > 0) && (
                     <span className="activity-metrics">
-                      fatal {signals.fatal} · warning {signals.warning}
+                      치명 {signals.fatal} · 경고 {signals.warning}
                     </span>
                   )}
                 </div>
@@ -563,10 +580,6 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
             }}
           />
         </div>
-      </section>
-
-      <section className={`mission-pane ${mobileTab === "logs" ? "is-active" : ""}`}>
-        <PipelineTerminal initialLogs={selectedPipelineId ? selectedLogs : logs} pipelineId={selectedPipelineId ?? undefined} />
       </section>
 
       <section className="surface mission-stage-strip">
