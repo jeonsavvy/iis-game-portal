@@ -626,18 +626,22 @@ a {
 /* Console */
 .console-page {
   display: grid;
-  gap: 16px;
+  gap: 14px;
 }
 
 .studio-control-deck {
   display: grid;
-  gap: 12px;
+  gap: 14px;
 }
 
 .mission-toolbar {
-  padding: 14px;
+  padding: 16px;
   display: grid;
   gap: 12px;
+  background:
+    linear-gradient(160deg, rgba(4, 10, 18, 0.95), rgba(2, 5, 10, 0.92)),
+    radial-gradient(circle at 85% 8%, rgba(59, 130, 246, 0.12), transparent 42%);
+  border-color: rgba(148, 163, 184, 0.2);
 }
 
 .mission-status-inline {
@@ -669,6 +673,261 @@ a {
   display: none;
 }
 
+.war-room-shell {
+  padding: 0;
+  overflow: hidden;
+  border-color: rgba(148, 163, 184, 0.2);
+  background: linear-gradient(180deg, rgba(4, 8, 14, 0.98), rgba(3, 6, 11, 0.98));
+}
+
+.war-room-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  min-height: 640px;
+}
+
+.war-room-map {
+  border-right: 1px solid rgba(148, 163, 184, 0.14);
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.war-room-map-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.war-room-counter-strip {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.war-counter {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 11px;
+  min-width: 82px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 2px;
+  background: rgba(15, 23, 42, 0.62);
+}
+
+.war-counter strong {
+  font-size: 16px;
+  line-height: 1;
+  color: #f8fafc;
+}
+
+.war-counter small {
+  color: #93c5fd;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+}
+
+.war-room-canvas {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  background: radial-gradient(circle at 50% -18%, rgba(56, 189, 248, 0.09), rgba(3, 7, 14, 0.96) 45%);
+  min-height: 560px;
+  overflow: hidden;
+}
+
+.war-room-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(to right, rgba(148, 163, 184, 0.06) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(148, 163, 184, 0.06) 1px, transparent 1px);
+  background-size: 34px 34px;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+.war-room-links {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.war-room-links path {
+  fill: none;
+  stroke: rgba(100, 116, 139, 0.45);
+  stroke-width: 0.45;
+  stroke-linecap: round;
+  stroke-dasharray: 1.5 2.2;
+  animation: war-link-flow 12s linear infinite;
+}
+
+@keyframes war-link-flow {
+  to {
+    stroke-dashoffset: -40;
+  }
+}
+
+.war-room-node-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-rows: repeat(3, minmax(140px, 1fr));
+  gap: 18px;
+  min-height: 560px;
+  padding: 18px;
+}
+
+.war-node {
+  border: 1px solid rgba(148, 163, 184, 0.22);
+  border-radius: 16px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 8px;
+  background:
+    linear-gradient(180deg, rgba(10, 15, 27, 0.96), rgba(4, 8, 15, 0.96)),
+    radial-gradient(circle at 25% 0, rgba(59, 130, 246, 0.06), transparent 45%);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03);
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.war-node.is-live {
+  transform: translateY(-1px);
+}
+
+.war-node.waiting,
+.war-node.tone-warn {
+  border-color: rgba(250, 204, 21, 0.4);
+  box-shadow: 0 0 0 1px rgba(250, 204, 21, 0.16), 0 10px 24px rgba(250, 204, 21, 0.08);
+}
+
+.war-node.tone-running {
+  border-color: rgba(96, 165, 250, 0.45);
+  box-shadow: 0 0 0 1px rgba(56, 189, 248, 0.2), 0 12px 30px rgba(37, 99, 235, 0.12);
+}
+
+.war-node.tone-success {
+  border-color: rgba(34, 197, 94, 0.4);
+}
+
+.war-node.tone-error {
+  border-color: rgba(248, 113, 113, 0.45);
+  box-shadow: 0 0 0 1px rgba(248, 113, 113, 0.16), 0 12px 30px rgba(185, 28, 28, 0.18);
+}
+
+.war-node-top {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.war-node-top p {
+  margin: 0;
+  color: #93c5fd;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.war-node-top h4 {
+  margin: 0;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.agent-glyph {
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  filter: drop-shadow(0 8px 14px rgba(185, 28, 28, 0.28));
+}
+
+.agent-glyph.is-active {
+  animation: glyph-float 1.8s ease-in-out infinite;
+}
+
+@keyframes glyph-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-2px);
+  }
+}
+
+.war-node-message {
+  margin: 0;
+  color: #dbeafe;
+  font-size: 12px;
+  line-height: 1.45;
+  min-height: 38px;
+}
+
+.war-node-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
+.war-node-signal {
+  margin: 0;
+  color: #facc15;
+  font-size: 11px;
+}
+
+.war-room-activity {
+  padding: 14px;
+  display: grid;
+  gap: 10px;
+  background: linear-gradient(180deg, rgba(3, 7, 13, 0.98), rgba(2, 5, 10, 0.98));
+}
+
+.war-activity-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+  max-height: 574px;
+  overflow: auto;
+}
+
+.war-activity-item {
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  border-radius: 11px;
+  padding: 8px 10px;
+  display: grid;
+  gap: 5px;
+  background: rgba(8, 12, 20, 0.9);
+}
+
+.war-activity-item strong {
+  font-size: 12px;
+}
+
+.war-activity-item p {
+  margin: 0;
+  font-size: 12px;
+  color: #dbeafe;
+}
+
+.war-activity-item small {
+  color: #facc15;
+  font-size: 10px;
+}
+
+.war-activity-item time {
+  font-size: 10px;
+  color: #94a3b8;
+}
+
 .mission-board-shell {
   padding: 14px;
 }
@@ -679,6 +938,7 @@ a {
 
 .mission-activity-pane {
   padding: 14px;
+  display: none;
 }
 
 .mission-activity-list {
@@ -746,11 +1006,15 @@ a {
 }
 
 .console-hero {
-  padding: 18px;
+  padding: 16px 18px;
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
   gap: 16px;
+  border-color: rgba(148, 163, 184, 0.2);
+  background:
+    linear-gradient(130deg, rgba(4, 9, 16, 0.96), rgba(3, 6, 11, 0.95)),
+    radial-gradient(circle at 15% 20%, rgba(37, 99, 235, 0.16), transparent 42%);
 }
 
 .console-hero-copy {
@@ -1289,6 +1553,15 @@ main section>.card:first-child h2 {
   .mission-control-grid {
     grid-template-columns: 1fr;
   }
+
+  .war-room-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .war-room-map {
+    border-right: 0;
+    border-bottom: 1px solid rgba(148, 163, 184, 0.14);
+  }
 }
 
 @media (max-width: 760px) {
@@ -1367,6 +1640,30 @@ main section>.card:first-child h2 {
   }
 
   .mission-pane.is-active {
+    display: block;
+  }
+
+  .war-room-layout {
+    min-height: 0;
+  }
+
+  .war-room-node-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: auto;
+    min-height: 0;
+  }
+
+  .war-node {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    min-height: 140px;
+  }
+
+  .war-room-activity {
+    border-top: 1px solid rgba(148, 163, 184, 0.14);
+  }
+
+  .mission-activity-pane.is-active {
     display: block;
   }
 

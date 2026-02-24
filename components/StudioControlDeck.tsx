@@ -1,7 +1,10 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useId, useMemo, useState } from "react";
 
+import { ManualApprovalForm } from "@/components/ManualApprovalForm";
+import { PipelineTerminal } from "@/components/PipelineTerminal";
+import { TriggerForm } from "@/components/TriggerForm";
 import { fetchRecentPipelineLogs, subscribePipelineLogs } from "@/lib/supabase/realtime";
 import type {
   PipelineControlAction,
@@ -11,25 +14,38 @@ import type {
   PipelineStatus,
   PipelineSummary,
 } from "@/types/pipeline";
-import { ForgeFlowBoard } from "@/components/ForgeFlowBoard";
-import { ManualApprovalForm } from "@/components/ManualApprovalForm";
-import { PipelineTerminal } from "@/components/PipelineTerminal";
-import { TriggerForm } from "@/components/TriggerForm";
 
 const STAGE_FLOW: Array<{ stage: Exclude<PipelineStage, "done">; label: string; agent: string }> = [
-  { stage: "trigger", label: "트리거", agent: "Director" },
-  { stage: "plan", label: "기획", agent: "Architect" },
-  { stage: "style", label: "스타일", agent: "Stylist" },
-  { stage: "build", label: "빌드", agent: "Builder" },
-  { stage: "qa", label: "QA", agent: "Sentinel" },
-  { stage: "publish", label: "게시", agent: "Publisher" },
-  { stage: "echo", label: "홍보", agent: "Echo" },
+  { stage: "trigger", label: "Scout", agent: "Director" },
+  { stage: "plan", label: "Intel", agent: "Architect" },
+  { stage: "style", label: "Stylist", agent: "Stylist" },
+  { stage: "build", label: "Builder", agent: "Builder" },
+  { stage: "qa", label: "Sentinel", agent: "Sentinel" },
+  { stage: "publish", label: "Outreach", agent: "Publisher" },
+  { stage: "echo", label: "Closer", agent: "Echo" },
+];
+
+const AGENT_LAYOUT: Array<{
+  stage: Exclude<PipelineStage, "done">;
+  role: string;
+  title: string;
+  gridColumn: number;
+  gridRow: number;
+  icon: "scout" | "intel" | "stylist" | "builder" | "sentinel" | "publisher" | "echo";
+}> = [
+  { stage: "trigger", role: "Director", title: "Scout", gridColumn: 1, gridRow: 1, icon: "scout" },
+  { stage: "plan", role: "Architect", title: "Intel", gridColumn: 2, gridRow: 1, icon: "intel" },
+  { stage: "build", role: "Builder", title: "Builder", gridColumn: 3, gridRow: 1, icon: "builder" },
+  { stage: "style", role: "Stylist", title: "Stylist", gridColumn: 1, gridRow: 2, icon: "stylist" },
+  { stage: "qa", role: "Sentinel", title: "Sentinel", gridColumn: 2, gridRow: 2, icon: "sentinel" },
+  { stage: "publish", role: "Publisher", title: "Outreach", gridColumn: 3, gridRow: 2, icon: "publisher" },
+  { stage: "echo", role: "Echo", title: "Closer", gridColumn: 2, gridRow: 3, icon: "echo" },
 ];
 
 const STATUS_LABELS: Record<PipelineStatus, string> = {
   queued: "대기",
-  running: "실행중",
-  success: "성공",
+  running: "동작중",
+  success: "완료",
   error: "실패",
   retry: "재시도",
   skipped: "일시정지",
@@ -69,12 +85,89 @@ function statusTone(status: PipelineStatus | null): string {
 }
 
 function compactMessage(message?: string | null): string {
-  if (!message) {
-    return "로그 대기중";
-  }
+  if (!message) return "대기중";
   const normalized = message.replace(/\s+/g, " ").trim();
-  if (normalized.length <= 120) return normalized;
-  return `${normalized.slice(0, 120)}…`;
+  if (normalized.length <= 84) return normalized;
+  return `${normalized.slice(0, 84)}…`;
+}
+
+function qualitySignals(log: PipelineLog | null): { fatal: number; warning: number } {
+  if (!log || !log.metadata || typeof log.metadata !== "object") {
+    return { fatal: 0, warning: 0 };
+  }
+  const metadata = log.metadata as Record<string, unknown>;
+  const fatal = Array.isArray(metadata.fatal_errors) ? metadata.fatal_errors.filter((entry) => typeof entry === "string").length : 0;
+  const warning = Array.isArray(metadata.non_fatal_warnings)
+    ? metadata.non_fatal_warnings.filter((entry) => typeof entry === "string").length
+    : 0;
+  return { fatal, warning };
+}
+
+function AgentGlyph({
+  icon,
+  tone,
+  active,
+}: {
+  icon: "scout" | "intel" | "stylist" | "builder" | "sentinel" | "publisher" | "echo";
+  tone: string;
+  active: boolean;
+}) {
+  const uid = useId().replace(/:/g, "");
+  const gradA = `${uid}-a`;
+  const gradB = `${uid}-b`;
+  const radar = `${uid}-r`;
+
+  const antenna =
+    icon === "scout" ? (
+      <path d="M40 18 L40 10 M32 14 L40 10 L48 14" stroke="#dbeafe" strokeWidth="2" strokeLinecap="round" fill="none" />
+    ) : null;
+  const badge =
+    icon === "builder" ? (
+      <rect x="47" y="27" width="11" height="9" rx="2" fill="#93c5fd" stroke="#1e3a8a" strokeWidth="1" />
+    ) : icon === "publisher" ? (
+      <path d="M49 28 L58 34 L49 40 Z" fill="#fca5a5" />
+    ) : icon === "intel" ? (
+      <circle cx="53" cy="29" r="5" fill="#fde047" stroke="#854d0e" strokeWidth="1" />
+    ) : icon === "stylist" ? (
+      <path d="M50 27 C54 23 58 23 60 27 C57 30 53 31 49 30 Z" fill="#f5d0fe" />
+    ) : icon === "sentinel" ? (
+      <path d="M49 26 L58 26 L56 31 L51 31 Z" fill="#bbf7d0" />
+    ) : icon === "echo" ? (
+      <rect x="49" y="26" width="10" height="10" rx="2" fill="#fecdd3" />
+    ) : null;
+
+  return (
+    <svg className={`agent-glyph tone-${tone}${active ? " is-active" : ""}`} viewBox="0 0 80 80" aria-hidden="true">
+      <defs>
+        <radialGradient id={gradA} cx="40%" cy="35%">
+          <stop offset="0%" stopColor="#fca5a5" />
+          <stop offset="65%" stopColor="#dc2626" />
+          <stop offset="100%" stopColor="#7f1d1d" />
+        </radialGradient>
+        <radialGradient id={gradB} cx="45%" cy="32%">
+          <stop offset="0%" stopColor="#1f2937" />
+          <stop offset="100%" stopColor="#020617" />
+        </radialGradient>
+        <radialGradient id={radar} cx="50%" cy="50%">
+          <stop offset="0%" stopColor="rgba(56,189,248,0.5)" />
+          <stop offset="100%" stopColor="rgba(15,23,42,0)" />
+        </radialGradient>
+      </defs>
+
+      <circle cx="40" cy="40" r="36" fill={`url(#${radar})`} opacity="0.18">
+        <animate attributeName="r" values="32;37;32" dur="2.6s" repeatCount="indefinite" />
+      </circle>
+      <ellipse cx="40" cy="47" rx="21" ry="17" fill={`url(#${gradA})`} />
+      <ellipse cx="40" cy="44" rx="10" ry="10" fill={`url(#${gradB})`} />
+      <circle cx="34" cy="40" r="2.2" fill="#f8fafc" />
+      <circle cx="46" cy="40" r="2.2" fill="#f8fafc" />
+      <path d="M28 51 C34 57 46 57 52 51" stroke="#fecaca" strokeWidth="2" fill="none" strokeLinecap="round" />
+      <path d="M19 47 C14 46 11 42 11 37 C14 35 17 35 21 37" stroke="#dc2626" strokeWidth="4" fill="none" strokeLinecap="round" />
+      <path d="M61 47 C66 46 69 42 69 37 C66 35 63 35 59 37" stroke="#dc2626" strokeWidth="4" fill="none" strokeLinecap="round" />
+      {antenna}
+      {badge}
+    </svg>
+  );
 }
 
 export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] }) {
@@ -111,11 +204,9 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
     const poll = async () => {
       try {
         const recent = await fetchRecentPipelineLogs(undefined, 220);
-        if (!closed) {
-          upsertLogs(recent);
-        }
+        if (!closed) upsertLogs(recent);
       } catch {
-        // no-op
+        // ignore network fallback errors
       }
     };
 
@@ -158,9 +249,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
 
   const selectedLogs = useMemo(() => {
     if (!selectedPipelineId) return [];
-    return logs
-      .filter((log) => log.pipeline_id === selectedPipelineId)
-      .sort((a, b) => b.created_at.localeCompare(a.created_at));
+    return logs.filter((log) => log.pipeline_id === selectedPipelineId).sort((a, b) => b.created_at.localeCompare(a.created_at));
   }, [logs, selectedPipelineId]);
 
   const latestStageMap = useMemo(() => {
@@ -174,19 +263,22 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
   }, [selectedLogs]);
 
   const globalStatus = useMemo(() => {
-    const counts: Record<string, number> = {
-      queued: 0,
-      running: 0,
-      retry: 0,
-      error: 0,
-      success: 0,
-      skipped: 0,
-    };
+    const counts: Record<string, number> = { queued: 0, running: 0, retry: 0, error: 0, success: 0, skipped: 0 };
     for (const item of pipelines) {
       counts[item.status] = (counts[item.status] ?? 0) + 1;
     }
     return counts;
   }, [pipelines]);
+
+  const telemetry = useMemo(
+    () => ({
+      found: selectedLogs.filter((log) => log.stage === "plan" && log.status === "success").length,
+      built: selectedLogs.filter((log) => log.stage === "build" && log.status === "success").length,
+      sent: selectedLogs.filter((log) => log.stage === "publish" && log.status === "success").length,
+      replied: selectedLogs.filter((log) => log.stage === "echo" && log.status === "success").length,
+    }),
+    [selectedLogs],
+  );
 
   const refreshSummary = async (pipelineId: string | null) => {
     if (!pipelineId) {
@@ -200,7 +292,9 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
     const payload = (await response.json().catch(() => null)) as PipelineSummary | { error?: string; detail?: string } | null;
     if (!response.ok) {
       setPipelineSummary(null);
-      setFeedback(`상태 조회 실패: ${(payload as { detail?: string; error?: string } | null)?.detail ?? (payload as { error?: string } | null)?.error ?? "unknown_error"}`);
+      setFeedback(
+        `상태 조회 실패: ${(payload as { detail?: string; error?: string } | null)?.detail ?? (payload as { error?: string } | null)?.error ?? "unknown_error"}`,
+      );
       return;
     }
     setPipelineSummary(payload as PipelineSummary);
@@ -215,7 +309,6 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       setFeedback("파이프라인을 먼저 선택해주세요.");
       return;
     }
-
     setBusyAction(action);
     setFeedback(`${CONTROL_LABELS[action]} 요청 전송 중...`);
 
@@ -225,11 +318,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ pipelineId: selectedPipelineId, action }),
       });
-      const payload = (await response.json().catch(() => null)) as
-        | PipelineControlResponse
-        | { error?: string; detail?: string }
-        | null;
-
+      const payload = (await response.json().catch(() => null)) as PipelineControlResponse | { error?: string; detail?: string } | null;
       if (!response.ok) {
         const err = payload as { detail?: string; error?: string } | null;
         setFeedback(`제어 실패: ${err?.detail ?? err?.error ?? "unknown_error"}`);
@@ -250,16 +339,14 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
     }
   };
 
-  const latestSelectedLog = selectedLogs[0] ?? null;
-
   return (
     <section className="studio-control-deck">
       <section className="surface mission-toolbar">
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">Mission Control</p>
-            <h3 className="section-title">멀티에이전트 운영실</h3>
-            <p className="section-subtitle">실행 흐름 · QA 경고/치명 · 오퍼레이터 제어를 한 화면에서 관측합니다.</p>
+            <p className="eyebrow">Command Deck</p>
+            <h3 className="section-title">멀티 에이전트 운영실</h3>
+            <p className="section-subtitle">선택 파이프라인 중심으로 지금 누가 무엇을 하는지 실시간으로 표시합니다.</p>
           </div>
           <div className="mission-status-inline">
             <span className="status-chip tone-running">running {globalStatus.running}</span>
@@ -273,11 +360,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         <div className="mission-toolbar-grid">
           <label className="field">
             <span>관측 파이프라인</span>
-            <select
-              className="input"
-              value={selectedPipelineId ?? ""}
-              onChange={(event) => setSelectedPipelineId(event.target.value || null)}
-            >
+            <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
               {pipelines.length === 0 ? <option value="">(no pipeline)</option> : null}
               {pipelines.map((item) => (
                 <option key={item.pipeline_id} value={item.pipeline_id}>
@@ -294,9 +377,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
                 className={`button ${action === "cancel" ? "button-danger" : action === "resume" ? "button-primary" : "button-ghost"}`}
                 type="button"
                 disabled={!selectedPipelineId || busyAction !== null}
-                onClick={() => {
-                  void runControl(action);
-                }}
+                onClick={() => void runControl(action)}
               >
                 {busyAction === action ? `${CONTROL_LABELS[action]}...` : CONTROL_LABELS[action]}
               </button>
@@ -305,12 +386,11 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </div>
 
         <div className="mission-context-row">
-          <span className="terminal-tag">selected: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
-          <span className="terminal-tag subtle">status: {pipelineSummary?.status ?? latestSelectedLog?.status ?? "-"}</span>
+          <span className="terminal-tag">pipeline: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
+          <span className="terminal-tag subtle">status: {pipelineSummary?.status ?? "-"}</span>
           <span className="terminal-tag subtle">mode: {pipelineSummary?.execution_mode ?? "-"}</span>
           <span className="terminal-tag subtle">waiting: {pipelineSummary?.waiting_for_stage ?? "-"}</span>
         </div>
-
         {feedback ? <p className="inline-feedback">{feedback}</p> : null}
 
         <div className="mission-mobile-tabs">
@@ -327,40 +407,134 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </div>
       </section>
 
-      <section className={`mission-pane ${mobileTab === "board" ? "is-active" : ""}`}>
-        <ForgeFlowBoard
-          initialLogs={logs}
-          selectedPipelineId={selectedPipelineId}
-          onSelectPipeline={setSelectedPipelineId}
-          live={false}
-        />
+      <section className={`surface war-room-shell mission-pane ${mobileTab === "board" ? "is-active" : ""}`}>
+        <div className="war-room-layout">
+          <section className="war-room-map">
+            <div className="war-room-map-head">
+              <div className="war-room-counter-strip">
+                <span className="war-counter">
+                  <strong>{telemetry.found}</strong>
+                  <small>FOUND</small>
+                </span>
+                <span className="war-counter">
+                  <strong>{telemetry.built}</strong>
+                  <small>BUILT</small>
+                </span>
+                <span className="war-counter">
+                  <strong>{telemetry.sent}</strong>
+                  <small>SENT</small>
+                </span>
+                <span className="war-counter">
+                  <strong>{telemetry.replied}</strong>
+                  <small>REPLIED</small>
+                </span>
+              </div>
+            </div>
+
+            <div className="war-room-canvas">
+              <svg className="war-room-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+                <path d="M17 16 L50 16 L83 16" />
+                <path d="M17 16 L17 50 L50 50 L83 50" />
+                <path d="M50 16 L50 50" />
+                <path d="M83 16 L83 50 L50 82" />
+              </svg>
+
+              <div className="war-room-node-grid">
+                {AGENT_LAYOUT.map((agent) => {
+                  const stageLog = latestStageMap.get(agent.stage) ?? null;
+                  const tone = statusTone(stageLog?.status ?? null);
+                  const waiting = pipelineSummary?.waiting_for_stage === agent.stage;
+                  const signals = qualitySignals(stageLog);
+                  const active = stageLog?.status === "running" || waiting;
+                  return (
+                    <article
+                      key={agent.stage}
+                      className={`war-node tone-${tone}${waiting ? " waiting" : ""}${active ? " is-live" : ""}`}
+                      style={{ gridColumn: `${agent.gridColumn} / span 1`, gridRow: `${agent.gridRow} / span 1` }}
+                    >
+                      <div className="war-node-top">
+                        <AgentGlyph icon={agent.icon} tone={tone} active={active} />
+                        <div>
+                          <p>{agent.role}</p>
+                          <h4>{agent.title}</h4>
+                        </div>
+                      </div>
+                      <p className="war-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "idle"))}</p>
+                      <div className="war-node-foot">
+                        <span className={`status-chip tone-${tone}`}>
+                          {stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "idle"}
+                        </span>
+                        <span>{stageLog ? new Date(stageLog.created_at).toLocaleTimeString() : "-"}</span>
+                      </div>
+                      {(signals.fatal > 0 || signals.warning > 0) && (
+                        <p className="war-node-signal">
+                          fatal {signals.fatal} · warning {signals.warning}
+                        </p>
+                      )}
+                    </article>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+
+          <aside className="war-room-activity">
+            <div className="section-head compact">
+              <div>
+                <p className="eyebrow">Activity Rail</p>
+                <h3 className="section-title">Live Mission Feed</h3>
+              </div>
+              <span className="muted-text">{selectedLogs.length} logs</span>
+            </div>
+
+            <ul className="war-activity-list">
+              {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
+              {selectedLogs.slice(0, 22).map((log) => {
+                const tone = statusTone(log.status);
+                const signals = qualitySignals(log);
+                return (
+                  <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`war-activity-item tone-${tone}`}>
+                    <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
+                    <div>
+                      <strong>
+                        {log.stage} · {log.agent_name}
+                      </strong>
+                      <p>{compactMessage(log.message)}</p>
+                      {(signals.fatal > 0 || signals.warning > 0) && (
+                        <small>
+                          fatal {signals.fatal} · warning {signals.warning}
+                        </small>
+                      )}
+                    </div>
+                    <time>{new Date(log.created_at).toLocaleTimeString()}</time>
+                  </li>
+                );
+              })}
+            </ul>
+          </aside>
+        </div>
       </section>
 
       <section className={`surface mission-activity-pane mission-pane ${mobileTab === "activity" ? "is-active" : ""}`}>
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">Activity Rail</p>
-            <h3 className="section-title">선택 파이프라인 이벤트</h3>
+            <p className="eyebrow">Activity</p>
+            <h3 className="section-title">모바일 이벤트 피드</h3>
           </div>
           <span className="muted-text">{selectedLogs.length} logs</span>
         </div>
         <ul className="activity-list mission-activity-list">
           {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
           {selectedLogs.slice(0, 18).map((log) => {
-            const fatalErrors = Array.isArray(log.metadata?.fatal_errors)
-              ? (log.metadata.fatal_errors as unknown[]).filter((entry) => typeof entry === "string").length
-              : 0;
-            const warnings = Array.isArray(log.metadata?.non_fatal_warnings)
-              ? (log.metadata.non_fatal_warnings as unknown[]).filter((entry) => typeof entry === "string").length
-              : 0;
+            const signals = qualitySignals(log);
             return (
               <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`}>
                 <span className={`status-chip tone-${statusTone(log.status)}`}>{STATUS_LABELS[log.status]}</span>
                 <div className="activity-main">
                   <strong>{log.stage}</strong> · {compactMessage(log.message)}
-                  {(fatalErrors > 0 || warnings > 0) && (
+                  {(signals.fatal > 0 || signals.warning > 0) && (
                     <span className="activity-metrics">
-                      fatal {fatalErrors} · warning {warnings}
+                      fatal {signals.fatal} · warning {signals.warning}
                     </span>
                   )}
                 </div>
@@ -405,7 +579,6 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
               <p className="flow-lane-kicker">{lane.agent}</p>
               <strong>{lane.label}</strong>
               <span className={`status-chip tone-${tone}`}>{stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "-"}</span>
-              <p className="muted-text">{stageLog ? compactMessage(stageLog.message) : waiting ? "승인 대기중" : "관측 없음"}</p>
             </article>
           );
         })}
