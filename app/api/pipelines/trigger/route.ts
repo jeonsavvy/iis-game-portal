@@ -1,28 +1,28 @@
 import { NextResponse } from "next/server";
 
-import { canInsertAdminConfig } from "@/lib/auth/rbac";
-import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
-import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { withAdminGuard } from "@/lib/api/admin-guard";
+import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
+import { jsonError } from "@/lib/api/error-response";
 import { sanitizeTriggerKeyword } from "@/lib/text/trigger-keyword";
-import type { AppRole } from "@/types/database";
+
+function resolveIdempotencyKey(request: Request): string {
+  const fromHeader = request.headers.get("Idempotency-Key")?.trim();
+  if (fromHeader) {
+    return fromHeader;
+  }
+
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `iid-${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
 
 export async function POST(request: Request) {
   try {
-    const supabase = await createSupabaseServerClient();
-
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-
-    if (!user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
-    const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
-    const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
-
-    if (!canInsertAdminConfig(role)) {
-      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    const auth = await withAdminGuard("pipeline:write");
+    if (auth instanceof NextResponse) {
+      return auth;
     }
 
     const body = (await request.json()) as {
@@ -33,52 +33,33 @@ export async function POST(request: Request) {
     const keyword = sanitizeTriggerKeyword(body.keyword ?? "");
     const executionMode = body.execution_mode === "manual" ? "manual" : "auto";
     const pipelineVersion = body.pipeline_version?.trim() || "forgeflow-v1";
+    const idempotencyKey = resolveIdempotencyKey(request);
 
     if (!keyword) {
-      return NextResponse.json({ error: "keyword is required" }, { status: 400 });
+      return jsonError({ status: 400, error: "keyword is required", code: "invalid_keyword" });
     }
 
-    const coreEngineUrl = process.env.CORE_ENGINE_URL;
-    if (!coreEngineUrl) {
-      return NextResponse.json({ error: "CORE_ENGINE_URL is missing" }, { status: 500 });
-    }
-
-    const response = await fetchWithRetry(
-      `${coreEngineUrl.replace(/\/$/, "")}/api/v1/pipelines/trigger`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          ...(process.env.CORE_ENGINE_API_TOKEN ? { Authorization: `Bearer ${process.env.CORE_ENGINE_API_TOKEN}` } : {}),
-        },
-        body: JSON.stringify({
-          keyword,
-          source: "console",
-          requested_by: user.id,
-          execution_mode: executionMode,
-          pipeline_version: pipelineVersion,
-        }),
-        cache: "no-store",
+    return forwardToCoreEngine({
+      path: "/api/v1/pipelines/trigger",
+      method: "POST",
+      timeoutMs: 15000,
+      retries: 3,
+      headers: { "Idempotency-Key": idempotencyKey },
+      body: {
+        keyword,
+        source: "console",
+        requested_by: auth.userId,
+        execution_mode: executionMode,
+        pipeline_version: pipelineVersion,
+        idempotency_key: idempotencyKey,
       },
-      { timeoutMs: 15000, retries: 3 },
-    );
-
-    const rawBody = await response.text();
-    let data: unknown;
-    try {
-      data = rawBody ? JSON.parse(rawBody) : {};
-    } catch {
-      data = { error: rawBody || "Core engine returned non-JSON response" };
-    }
-
-    return NextResponse.json(data, { status: response.status });
+    });
   } catch (error) {
-    return NextResponse.json(
-      {
-        error: "Core engine unavailable",
-        detail: error instanceof Error ? error.message : "unknown_error",
-      },
-      { status: 502 },
-    );
+    return jsonError({
+      status: 502,
+      error: "Core engine unavailable",
+      detail: error instanceof Error ? error.message : "unknown_error",
+      code: "core_engine_unavailable",
+    });
   }
 }

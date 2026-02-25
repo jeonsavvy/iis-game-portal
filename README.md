@@ -61,6 +61,8 @@ npm run dev
 - `NEXT_PUBLIC_PAYPAL_DONATION_URL`
 
 ### 서버 전용
+- `FEATURED_GAME_SLUG` *(선택: 홈 Hero 대표작 슬러그 고정)*
+- `IIS_DEMO_PREVIEW` *(선택: `1`이면 Supabase 없이 샘플 데이터 프리뷰 모드)*
 - `ADMIN_ALLOWED_EMAILS` (예: `jeonsavvy@gmail.com`)
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CORE_ENGINE_URL`

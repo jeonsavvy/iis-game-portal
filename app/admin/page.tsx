@@ -6,6 +6,7 @@ import { TokenCostKPI } from "@/components/TokenCostKPI";
 // RoleActions removed
 import { SignOutButton } from "@/components/SignOutButton";
 import { canReadPipelineLogs } from "@/lib/auth/rbac";
+import { PREVIEW_GAMES, PREVIEW_PIPELINE_LOGS, PREVIEW_TOKEN_ROWS, PREVIEW_TOKEN_SUMMARY } from "@/lib/demo/preview-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 import type { PipelineLog } from "@/types/pipeline";
@@ -402,8 +403,85 @@ function buildTokenUsageReport(
   return { summary, rows };
 }
 
+function renderAdminSurface({
+  roleLabel,
+  identityLabel,
+  logs,
+  games,
+  tokenSummary,
+  tokenRows,
+  previewMode,
+}: {
+  roleLabel: string;
+  identityLabel: string;
+  logs: PipelineLog[];
+  games: RecentGameRow[];
+  tokenSummary: TokenUsageSummary;
+  tokenRows: TokenUsageByGameRow[];
+  previewMode: boolean;
+}) {
+  return (
+    <section className="console-page">
+      <section className="surface console-hero">
+        <div className="console-hero-copy">
+          <p className="eyebrow">운영 관제</p>
+          <h1 className="hero-title">스튜디오 임무 콘솔</h1>
+          <p className="section-subtitle">ForgeFlow 멀티에이전트 파이프라인을 운영실 관점에서 실행·승인·관측·제어합니다.</p>
+          <p className="muted-text">권한: {roleLabel} · {identityLabel}</p>
+          {previewMode ? <p className="muted-text">프리뷰 모드: 실서버 호출 없이 샘플 데이터로 협업 인터페이스를 검수합니다.</p> : null}
+        </div>
+        <div className="console-hero-actions">
+          <Link className="button button-ghost" href="/">
+            포털 홈 보기
+          </Link>
+          {previewMode ? null : <SignOutButton />}
+        </div>
+      </section>
+
+      <StudioControlDeck initialLogs={logs} previewMode={previewMode} />
+
+      <TokenCostKPI summary={tokenSummary} rows={tokenRows} />
+
+      <GameAdminPanel initialGames={games} readOnly={previewMode} />
+    </section>
+  );
+}
+
 export default async function AdminPage() {
-  const supabase = await createSupabaseServerClient();
+  const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
+  const previewGames: RecentGameRow[] = PREVIEW_GAMES.map((game) => ({
+    id: game.id,
+    name: game.name,
+    slug: game.slug,
+    genre: game.genre,
+    status: game.status,
+    created_at: game.created_at,
+  }));
+
+  if (previewMode) {
+    return renderAdminSurface({
+      roleLabel: "preview_operator",
+      identityLabel: "preview@iis.local",
+      logs: PREVIEW_PIPELINE_LOGS,
+      games: previewGames,
+      tokenSummary: PREVIEW_TOKEN_SUMMARY,
+      tokenRows: PREVIEW_TOKEN_ROWS,
+      previewMode: true,
+    });
+  }
+
+  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
+  try {
+    supabase = await createSupabaseServerClient();
+  } catch (error) {
+    return (
+      <section className="card" style={{ display: "grid", gap: 8 }}>
+        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
+        <p style={{ margin: 0 }}>Supabase 구성이 올바르지 않아 콘솔을 불러오지 못했습니다.</p>
+        <p style={{ margin: 0, color: "var(--muted)" }}>{error instanceof Error ? error.message : "unknown_error"}</p>
+      </section>
+    );
+  }
 
   const {
     data: { user },
@@ -440,11 +518,7 @@ export default async function AdminPage() {
 
   const validatedRole = role as AppRole;
 
-  const { data: logs } = await supabase
-    .from("pipeline_logs")
-    .select("*")
-    .order("created_at", { ascending: false })
-    .limit(180);
+  const { data: logs } = await supabase.from("pipeline_logs").select("*").order("created_at", { ascending: false }).limit(180);
 
   const typedLogs = (logs ?? []) as PipelineLog[];
   const { data: recentGames } = await supabase
@@ -454,11 +528,6 @@ export default async function AdminPage() {
     .limit(30);
   const recentGamesRows = (recentGames ?? []) as RecentGameRow[];
   const uniquePipelines = new Set(typedLogs.map((log) => log.pipeline_id));
-  const statusCounts = typedLogs.reduce<Record<string, number>>((acc, log) => {
-    acc[log.status] = (acc[log.status] ?? 0) + 1;
-    return acc;
-  }, {});
-  const latestLog = typedLogs[0] ?? null;
   const pipelineIdList = Array.from(uniquePipelines);
   const { data: pipelineRows } =
     pipelineIdList.length > 0
@@ -474,34 +543,13 @@ export default async function AdminPage() {
   );
   const tokenReport = buildTokenUsageReport(typedLogs, recentGamesRows, pipelineKeywordById, pipelineUsageSummaryById);
 
-  return (
-    <section className="console-page">
-      <section className="surface console-hero">
-        <div className="console-hero-copy">
-          <p className="eyebrow">운영 관제</p>
-          <h1 className="hero-title">스튜디오 임무 콘솔</h1>
-          <p className="section-subtitle">
-            ForgeFlow 멀티에이전트 파이프라인을 운영실 관점에서 실행·승인·관측·제어합니다.
-          </p>
-          <p className="muted-text">권한: {validatedRole} · {user.email ?? user.id}</p>
-        </div>
-        <div className="console-hero-actions">
-          <Link className="button button-ghost" href="/">
-            포털 홈 보기
-          </Link>
-          <SignOutButton />
-        </div>
-      </section>
-
-      <StudioControlDeck initialLogs={typedLogs} />
-
-      <TokenCostKPI summary={tokenReport.summary} rows={tokenReport.rows} />
-
-      <GameAdminPanel
-        initialGames={
-          recentGamesRows
-        }
-      />
-    </section>
-  );
+  return renderAdminSurface({
+    roleLabel: validatedRole,
+    identityLabel: user.email ?? user.id,
+    logs: typedLogs,
+    games: recentGamesRows,
+    tokenSummary: tokenReport.summary,
+    tokenRows: tokenReport.rows,
+    previewMode: false,
+  });
 }

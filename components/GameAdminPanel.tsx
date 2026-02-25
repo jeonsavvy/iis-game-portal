@@ -14,6 +14,7 @@ type AdminGameRow = {
 
 type Props = {
   initialGames: AdminGameRow[];
+  readOnly?: boolean;
 };
 
 type DeleteResponse = {
@@ -42,26 +43,33 @@ function resolveDeleteErrorMessage(data: DeleteResponse): string {
   return data.error ?? data.reason ?? fromNested ?? "unknown_error";
 }
 
-export function GameAdminPanel({ initialGames }: Props) {
+export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
   const router = useRouter();
   const [games, setGames] = useState(initialGames);
   const [selectedId, setSelectedId] = useState<string>(initialGames[0]?.id ?? "");
   const [confirmSlug, setConfirmSlug] = useState("");
+  const [confirmChecked, setConfirmChecked] = useState(false);
   const [resultMessage, setResultMessage] = useState<string>("");
   const [isPending, startTransition] = useTransition();
 
-  const selectedGame = useMemo(
-    () => games.find((game) => game.id === selectedId) ?? null,
-    [games, selectedId],
-  );
+  const selectedGame = useMemo(() => games.find((game) => game.id === selectedId) ?? null, [games, selectedId]);
 
   async function handleDelete() {
+    if (readOnly) {
+      setResultMessage("프리뷰 모드에서는 실제 삭제를 수행하지 않습니다.");
+      return;
+    }
+
     if (!selectedGame) {
       setResultMessage("삭제할 게임을 먼저 선택하세요.");
       return;
     }
     if (confirmSlug.trim() !== selectedGame.slug) {
       setResultMessage("슬러그 확인값이 일치하지 않습니다.");
+      return;
+    }
+    if (!confirmChecked) {
+      setResultMessage("영구 삭제 확인 체크를 먼저 선택하세요.");
       return;
     }
 
@@ -96,6 +104,7 @@ export function GameAdminPanel({ initialGames }: Props) {
       setGames(nextGames);
       setSelectedId(nextGames[0]?.id ?? "");
       setConfirmSlug("");
+      setConfirmChecked(false);
       startTransition(() => {
         router.refresh();
       });
@@ -104,20 +113,28 @@ export function GameAdminPanel({ initialGames }: Props) {
     }
   }
 
+  const canDelete = Boolean(selectedGame && confirmSlug.trim() === selectedGame.slug && confirmChecked && !isPending);
+
   return (
-    <section className="surface admin-actions-shell">
+    <section className="surface ops-danger-shell">
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">게임 운영</p>
+          <p className="eyebrow">Danger Zone</p>
           <h3 className="section-title">완전 삭제 (DB · 스토리지 · 아카이브)</h3>
         </div>
         <p className="section-subtitle">운영 로그는 보존하고, 선택한 게임 산출물만 완전 제거합니다.</p>
       </div>
 
-      <div className="game-admin-grid">
+      {readOnly ? (
+        <div className="danger-note" role="status">
+          <p>프리뷰 모드: 이 화면은 위험 액션 UX 점검용이며 실제 삭제 요청은 차단됩니다.</p>
+        </div>
+      ) : null}
+
+      <div className="ops-danger-grid">
         <div className="surface inset-card game-admin-list-card">
           <div className="game-admin-list-head">
-            <h4 className="subsection-title">최근 게임</h4>
+            <h4 className="subsection-title">삭제 대상 선택</h4>
             <span className="muted-text">{games.length}개</span>
           </div>
           {games.length === 0 ? (
@@ -132,6 +149,7 @@ export function GameAdminPanel({ initialGames }: Props) {
                   onClick={() => {
                     setSelectedId(game.id);
                     setConfirmSlug("");
+                    setConfirmChecked(false);
                     setResultMessage("");
                   }}
                 >
@@ -150,17 +168,23 @@ export function GameAdminPanel({ initialGames }: Props) {
         </div>
 
         <div className="surface inset-card game-admin-delete-card">
-          <h4 className="subsection-title">삭제 확인</h4>
+          <h4 className="subsection-title">삭제 확인 (되돌릴 수 없음)</h4>
+
           {selectedGame ? (
             <>
               <div className="danger-note">
-                <p>선택 게임: {selectedGame.name}</p>
-                <p>슬러그: {selectedGame.slug}</p>
-                <p>이 작업은 되돌릴 수 없습니다. (운영 로그는 보존)</p>
+                <p>
+                  <strong>선택 게임:</strong> {selectedGame.name}
+                </p>
+                <p>
+                  <strong>슬러그:</strong> {selectedGame.slug}
+                </p>
+                <p>이 작업은 게임 산출물(DB/스토리지/아카이브)을 영구 삭제합니다.</p>
               </div>
+
               <label className="field">
                 <span>
-                  확인을 위해 슬러그 입력: <strong>{selectedGame.slug}</strong>
+                  1) 확인을 위해 슬러그 입력: <strong>{selectedGame.slug}</strong>
                 </span>
                 <input
                   className="input"
@@ -169,12 +193,13 @@ export function GameAdminPanel({ initialGames }: Props) {
                   placeholder={selectedGame.slug}
                 />
               </label>
-              <button
-                type="button"
-                className="button button-danger button-block"
-                disabled={isPending || confirmSlug.trim() !== selectedGame.slug}
-                onClick={handleDelete}
-              >
+
+              <label className="danger-checkbox">
+                <input type="checkbox" checked={confirmChecked} onChange={(event) => setConfirmChecked(event.target.checked)} />
+                <span>2) 이 작업이 영구 삭제임을 이해했고, 복구 불가에 동의합니다.</span>
+              </label>
+
+              <button type="button" className="button button-danger button-block" disabled={!canDelete || readOnly} onClick={handleDelete}>
                 {isPending ? "삭제 처리 중..." : "완전 삭제 실행"}
               </button>
             </>

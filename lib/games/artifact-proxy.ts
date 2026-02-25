@@ -127,7 +127,6 @@ export async function proxyArtifactResponse(target: ArtifactTarget): Promise<Nex
       "content-type": resolveProxyContentType(upstreamContentType, target.contentTypeHint),
       "cache-control": "no-store",
       "x-iis-artifact-proxy": "1",
-      "x-iis-artifact-source": target.upstreamUrl,
     },
   });
 }

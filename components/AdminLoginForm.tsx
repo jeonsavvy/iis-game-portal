@@ -36,9 +36,25 @@ function getErrorMessage(code: string | null | undefined): string | null {
 }
 
 export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminLoginFormProps) {
-  const supabase = useMemo(() => createSupabaseBrowserClient(), []);
+  const [supabaseConfigError] = useState<string | null>(() => {
+    try {
+      createSupabaseBrowserClient();
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : "unknown_error";
+    }
+  });
+
+  const supabase = useMemo(() => {
+    try {
+      return createSupabaseBrowserClient();
+    } catch {
+      return null;
+    }
+  }, []);
+
   const [email, setEmail] = useState(allowedEmails[0] ?? "");
-  const [status, setStatus] = useState<string>(getErrorMessage(initialError) ?? "");
+  const [status, setStatus] = useState<string>(getErrorMessage(initialError) ?? (supabaseConfigError ? `로그인 설정 오류: ${supabaseConfigError}` : ""));
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
@@ -52,6 +68,11 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
     if (!allowedEmails.includes(normalizedEmail)) {
       setStatus("허용된 관리자 이메일만 로그인할 수 있습니다.");
+      return;
+    }
+
+    if (!supabase) {
+      setStatus("로그인 설정 오류로 매직링크를 전송할 수 없습니다.");
       return;
     }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useState } from "react";
 
 import { ManualApprovalForm } from "@/components/ManualApprovalForm";
 import { TriggerForm } from "@/components/TriggerForm";
@@ -32,13 +32,13 @@ const AGENT_LAYOUT: Array<{
   gridRow: number;
   icon: "scout" | "intel" | "stylist" | "builder" | "sentinel" | "publisher" | "echo";
 }> = [
-  { stage: "trigger", role: "디렉터", title: "스카우트", gridColumn: 1, gridRow: 1, icon: "scout" },
-  { stage: "plan", role: "아키텍트", title: "인텔", gridColumn: 2, gridRow: 1, icon: "intel" },
-  { stage: "build", role: "빌더", title: "빌더", gridColumn: 3, gridRow: 1, icon: "builder" },
-  { stage: "style", role: "스타일리스트", title: "스타일", gridColumn: 1, gridRow: 2, icon: "stylist" },
-  { stage: "qa", role: "센티널", title: "센티널", gridColumn: 2, gridRow: 2, icon: "sentinel" },
-  { stage: "publish", role: "퍼블리셔", title: "아웃리치", gridColumn: 3, gridRow: 2, icon: "publisher" },
-  { stage: "echo", role: "에코", title: "클로저", gridColumn: 2, gridRow: 3, icon: "echo" },
+  { stage: "trigger", role: "디렉터", title: "Scout", gridColumn: 1, gridRow: 1, icon: "scout" },
+  { stage: "plan", role: "아키텍트", title: "Intel", gridColumn: 2, gridRow: 1, icon: "intel" },
+  { stage: "build", role: "빌더", title: "Builder", gridColumn: 3, gridRow: 1, icon: "builder" },
+  { stage: "style", role: "스타일리스트", title: "Stylist", gridColumn: 1, gridRow: 2, icon: "stylist" },
+  { stage: "qa", role: "센티널", title: "Sentinel", gridColumn: 2, gridRow: 2, icon: "sentinel" },
+  { stage: "publish", role: "퍼블리셔", title: "Outreach", gridColumn: 3, gridRow: 2, icon: "publisher" },
+  { stage: "echo", role: "에코", title: "Closer", gridColumn: 2, gridRow: 3, icon: "echo" },
 ];
 
 const STATUS_LABELS: Record<PipelineStatus, string> = {
@@ -56,12 +56,6 @@ const CONTROL_LABELS: Record<PipelineControlAction, string> = {
   cancel: "중단",
   retry: "재시도",
 };
-
-const MOBILE_TABS = [
-  { key: "board", label: "운영보드" },
-  { key: "activity", label: "활동" },
-  { key: "control", label: "제어" },
-] as const;
 
 const STAGE_LABELS: Record<PipelineStage, string> = {
   trigger: "트리거",
@@ -84,7 +78,58 @@ const AGENT_LABELS: Record<string, string> = {
   Echo: "에코",
 };
 
-function statusTone(status: PipelineStatus | null): string {
+const STAGE_GUIDE: Record<
+  Exclude<PipelineStage, "done">,
+  {
+    summary: string;
+    handoff: string;
+    focus: string;
+  }
+> = {
+  trigger: {
+    summary: "유저 키워드를 해석해 목표 장르/톤/제약을 확정합니다.",
+    handoff: "기획 브리프를 Architect로 전달",
+    focus: "입력 품질, 금칙어, 목적 정렬",
+  },
+  plan: {
+    summary: "기획서/레퍼런스/구현 범위를 결정합니다.",
+    handoff: "스타일 시스템 요구사항을 Stylist로 전달",
+    focus: "요구사항 정확도, 범위 잠금",
+  },
+  style: {
+    summary: "디자인 토큰과 컴포넌트 계약을 생성합니다.",
+    handoff: "빌드 가능한 스타일 규격을 Builder에 전달",
+    focus: "시각 일관성, 컴포넌트 계약",
+  },
+  build: {
+    summary: "게임 아티팩트와 UI 코드를 빌드합니다.",
+    handoff: "검증 가능한 산출물을 Sentinel에 전달",
+    focus: "실행 가능 산출물, 의존성 무결성",
+  },
+  qa: {
+    summary: "플레이 테스트, 품질 게이트, 스크린샷 검수를 수행합니다.",
+    handoff: "게시 승인 패키지를 Publisher로 전달",
+    focus: "결함 검출, 재시도 필요성",
+  },
+  publish: {
+    summary: "배포/스토리지/아카이브를 동기화합니다.",
+    handoff: "최종 공지 컨텍스트를 Echo에 전달",
+    focus: "배포 상태, 링크 유효성",
+  },
+  echo: {
+    summary: "최종 결과를 공지하고 운영 채널에 상태를 남깁니다.",
+    handoff: "파이프라인 종료 보고",
+    focus: "커뮤니케이션 완결성",
+  },
+};
+
+const MOBILE_TABS = [
+  { key: "board", label: "협업보드" },
+  { key: "activity", label: "라이브로그" },
+  { key: "control", label: "실행/승인" },
+] as const;
+
+function statusTone(status: PipelineStatus | null): "success" | "error" | "running" | "warn" | "idle" | "muted" {
   switch (status) {
     case "success":
       return "success";
@@ -106,8 +151,8 @@ function statusTone(status: PipelineStatus | null): string {
 function compactMessage(message?: string | null): string {
   if (!message) return "대기중";
   const normalized = message.replace(/\s+/g, " ").trim();
-  if (normalized.length <= 84) return normalized;
-  return `${normalized.slice(0, 84)}…`;
+  if (normalized.length <= 86) return normalized;
+  return `${normalized.slice(0, 86)}…`;
 }
 
 function qualitySignals(log: PipelineLog | null): { fatal: number; warning: number } {
@@ -189,7 +234,7 @@ function AgentGlyph({
   );
 }
 
-export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] }) {
+export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
   const [logs, setLogs] = useState<PipelineLog[]>(initialLogs);
   const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialLogs[0]?.pipeline_id ?? null);
   const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary | null>(null);
@@ -197,8 +242,14 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
   const [feedback, setFeedback] = useState<string>("");
   const [pollMode, setPollMode] = useState<"idle" | "polling">("idle");
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
+  const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("trigger");
+  const [agentPresenceEnabled, setAgentPresenceEnabled] = useState(true);
 
   useEffect(() => {
+    if (previewMode) {
+      return;
+    }
+
     let closed = false;
     let realtimeReceived = false;
 
@@ -225,7 +276,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         const recent = await fetchRecentPipelineLogs(undefined, 220);
         if (!closed) upsertLogs(recent);
       } catch {
-        // ignore network fallback errors
+        // polling fallback best-effort
       }
     };
 
@@ -247,7 +298,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       window.clearInterval(interval);
       channel.unsubscribe();
     };
-  }, [pollMode]);
+  }, [pollMode, previewMode]);
 
   const pipelines = useMemo(() => {
     const sorted = [...logs].sort((a, b) => b.created_at.localeCompare(a.created_at));
@@ -281,6 +332,19 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
     return map;
   }, [selectedLogs]);
 
+  useEffect(() => {
+    const waitingStage = pipelineSummary?.waiting_for_stage;
+    if (waitingStage && waitingStage !== "done") {
+      setSelectedStage(waitingStage);
+      return;
+    }
+
+    const firstExisting = AGENT_LAYOUT.find((agent) => latestStageMap.has(agent.stage));
+    if (firstExisting) {
+      setSelectedStage(firstExisting.stage);
+    }
+  }, [pipelineSummary?.waiting_for_stage, latestStageMap]);
+
   const globalStatus = useMemo(() => {
     const counts: Record<string, number> = { queued: 0, running: 0, retry: 0, error: 0, success: 0, skipped: 0 };
     for (const item of pipelines) {
@@ -299,35 +363,71 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
     [selectedLogs],
   );
 
-  const refreshSummary = async (pipelineId: string | null) => {
-    if (!pipelineId) {
-      setPipelineSummary(null);
-      return;
-    }
-    const response = await fetch(`/api/pipelines/status?pipelineId=${encodeURIComponent(pipelineId)}`, {
-      method: "GET",
-      cache: "no-store",
-    });
-    const payload = (await response.json().catch(() => null)) as PipelineSummary | { error?: string; detail?: string } | null;
-    if (!response.ok) {
-      setPipelineSummary(null);
-      setFeedback(
-        `상태 조회 실패: ${(payload as { detail?: string; error?: string } | null)?.detail ?? (payload as { error?: string } | null)?.error ?? "unknown_error"}`,
-      );
-      return;
-    }
-    setPipelineSummary(payload as PipelineSummary);
-  };
+  const selectedStageLog = latestStageMap.get(selectedStage) ?? null;
+  const selectedAgent = AGENT_LAYOUT.find((item) => item.stage === selectedStage) ?? AGENT_LAYOUT[0];
+  const selectedSignals = qualitySignals(selectedStageLog);
+
+  const recentFailures = useMemo(
+    () => selectedLogs.filter((log) => log.status === "error" || log.status === "retry").slice(0, 6),
+    [selectedLogs],
+  );
+
+  const refreshSummary = useCallback(
+    async (pipelineId: string | null) => {
+      if (!pipelineId) {
+        setPipelineSummary(null);
+        return;
+      }
+
+      if (previewMode) {
+        const latest = logs.find((log) => log.pipeline_id === pipelineId) ?? null;
+        setPipelineSummary({
+          pipeline_id: pipelineId,
+          keyword: "preview-mission",
+          source: "console",
+          status: latest?.status ?? "running",
+          execution_mode: "manual",
+          waiting_for_stage: latest?.stage ?? "build",
+          pipeline_version: "preview-v1",
+          error_reason: latest?.reason ?? null,
+          created_at: latest?.created_at ?? new Date().toISOString(),
+          updated_at: latest?.created_at ?? new Date().toISOString(),
+        });
+        return;
+      }
+
+      const response = await fetch(`/api/pipelines/status?pipelineId=${encodeURIComponent(pipelineId)}`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = (await response.json().catch(() => null)) as PipelineSummary | { error?: string; detail?: string } | null;
+      if (!response.ok) {
+        setPipelineSummary(null);
+        setFeedback(
+          `상태 조회 실패: ${(payload as { detail?: string; error?: string } | null)?.detail ?? (payload as { error?: string } | null)?.error ?? "unknown_error"}`,
+        );
+        return;
+      }
+      setPipelineSummary(payload as PipelineSummary);
+    },
+    [previewMode, logs],
+  );
 
   useEffect(() => {
     void refreshSummary(selectedPipelineId);
-  }, [selectedPipelineId]);
+  }, [selectedPipelineId, refreshSummary]);
 
   const runControl = async (action: PipelineControlAction) => {
     if (!selectedPipelineId) {
       setFeedback("파이프라인을 먼저 선택해주세요.");
       return;
     }
+
+    if (previewMode) {
+      setFeedback(`[프리뷰] ${CONTROL_LABELS[action]} 시뮬레이션 완료`);
+      return;
+    }
+
     setBusyAction(action);
     setFeedback(`${CONTROL_LABELS[action]} 요청 전송 중...`);
 
@@ -345,7 +445,9 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
       }
 
       const typed = payload as PipelineControlResponse;
-      setFeedback(`${CONTROL_LABELS[action]} 완료 · 상태=${STATUS_LABELS[typed.status]} · 대기단계=${typed.waiting_for_stage ? STAGE_LABELS[typed.waiting_for_stage] : "-"}`);
+      setFeedback(
+        `${CONTROL_LABELS[action]} 완료 · 상태=${STATUS_LABELS[typed.status]} · 대기단계=${typed.waiting_for_stage ? STAGE_LABELS[typed.waiting_for_stage] : "-"}`,
+      );
       await refreshSummary(selectedPipelineId);
       const recent = await fetchRecentPipelineLogs(undefined, 220);
       setLogs(recent);
@@ -357,24 +459,31 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
   };
 
   return (
-    <section className="studio-control-deck">
-      <section className="surface mission-toolbar">
+    <section className={`ops-console-deck${agentPresenceEnabled ? "" : " agent-presence-off"}`}>
+      <section className="surface ops-command-head">
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">운영 데크</p>
-            <h3 className="section-title">멀티 에이전트 운영실</h3>
-            <p className="section-subtitle">선택 파이프라인 중심으로 지금 누가 무엇을 하는지 실시간으로 표시합니다.</p>
+            <p className="eyebrow">Ops Command</p>
+            <h3 className="section-title">멀티 에이전트 협업 관제</h3>
+            <p className="section-subtitle">한 파이프라인의 협업 흐름을 추적하고, 필요한 순간에 즉시 제어합니다.</p>
           </div>
-          <div className="mission-status-inline">
-            <span className="status-chip tone-running">동작 {globalStatus.running}</span>
-            <span className="status-chip tone-warn">재시도 {globalStatus.retry}</span>
-            <span className="status-chip tone-error">오류 {globalStatus.error}</span>
-            <span className="status-chip tone-success">완료 {globalStatus.success}</span>
-            {pollMode === "polling" ? <span className="status-chip tone-warn">폴링 보조</span> : null}
+          <div className="ops-status-strip">
+            <span className="status-chip tone-running">running {globalStatus.running}</span>
+            {globalStatus.retry > 0 ? <span className="status-chip tone-warn">retry {globalStatus.retry}</span> : null}
+            {globalStatus.error > 0 ? <span className="status-chip tone-error">error {globalStatus.error}</span> : null}
+            <span className="status-chip tone-success">success {globalStatus.success}</span>
+            {pollMode === "polling" ? <span className="status-chip tone-warn">polling</span> : null}
+            <button
+              type="button"
+              className="button button-ghost ops-agent-toggle"
+              onClick={() => setAgentPresenceEnabled((prev) => !prev)}
+            >
+              연출 레이어 {agentPresenceEnabled ? "ON" : "OFF"}
+            </button>
           </div>
         </div>
 
-        <div className="mission-toolbar-grid">
+        <div className="ops-command-grid">
           <label className="field">
             <span>관측 파이프라인</span>
             <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
@@ -387,7 +496,7 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
             </select>
           </label>
 
-          <div className="mission-control-buttons">
+          <div className="ops-command-buttons">
             {(["pause", "resume", "cancel", "retry"] as PipelineControlAction[]).map((action) => (
               <button
                 key={action}
@@ -402,15 +511,20 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
           </div>
         </div>
 
-        <div className="mission-context-row">
-          <span className="terminal-tag">파이프라인: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
-          <span className="terminal-tag subtle">상태: {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}</span>
-          <span className="terminal-tag subtle">모드: {pipelineSummary?.execution_mode === "manual" ? "수동" : pipelineSummary?.execution_mode === "auto" ? "자동" : "-"}</span>
-          <span className="terminal-tag subtle">대기 단계: {pipelineSummary?.waiting_for_stage ? STAGE_LABELS[pipelineSummary.waiting_for_stage] : "-"}</span>
+        <div className="ops-context-tags">
+          <span className="terminal-tag">pipeline: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
+          {pipelineSummary?.status ? <span className="terminal-tag subtle">status: {STATUS_LABELS[pipelineSummary.status]}</span> : null}
+          {pipelineSummary?.execution_mode ? (
+            <span className="terminal-tag subtle">mode: {pipelineSummary.execution_mode}</span>
+          ) : null}
+          {pipelineSummary?.waiting_for_stage ? (
+            <span className="terminal-tag subtle">waiting: {STAGE_LABELS[pipelineSummary.waiting_for_stage]}</span>
+          ) : null}
         </div>
+
         {feedback ? <p className="inline-feedback">{feedback}</p> : null}
 
-        <div className="mission-mobile-tabs">
+        <div className="ops-mobile-tabs">
           {MOBILE_TABS.map((tab) => (
             <button
               key={tab.key}
@@ -424,94 +538,158 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </div>
       </section>
 
-      <section className={`surface war-room-shell mission-pane ${mobileTab === "board" ? "is-active" : ""}`}>
-        <div className="war-room-layout">
-          <section className="war-room-map">
-            <div className="war-room-map-head">
-              <div className="war-room-counter-strip">
-                <span className="war-counter">
+      <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
+        <div className="ops-main-grid">
+          <section className="ops-collab-graph">
+            <div className="section-head compact">
+              <div>
+                <p className="eyebrow">Collab Graph</p>
+                <h3 className="section-title">에이전트 작업대</h3>
+              </div>
+              <div className="ops-counters">
+                <span>
                   <strong>{telemetry.found}</strong>
-                  <small>기획 완료</small>
+                  <small>기획</small>
                 </span>
-                <span className="war-counter">
+                <span>
                   <strong>{telemetry.built}</strong>
-                  <small>빌드 완료</small>
+                  <small>빌드</small>
                 </span>
-                <span className="war-counter">
+                <span>
                   <strong>{telemetry.sent}</strong>
-                  <small>게시 완료</small>
+                  <small>게시</small>
                 </span>
-                <span className="war-counter">
+                <span>
                   <strong>{telemetry.replied}</strong>
-                  <small>홍보 완료</small>
+                  <small>공유</small>
                 </span>
               </div>
             </div>
 
-            <div className="war-room-canvas">
-              <svg className="war-room-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            <div className="ops-graph-canvas">
+              <svg className="ops-graph-links" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
                 <path d="M17 16 L50 16 L83 16" />
                 <path d="M17 16 L17 50 L50 50 L83 50" />
                 <path d="M50 16 L50 50" />
                 <path d="M83 16 L83 50 L50 82" />
               </svg>
 
-              <div className="war-room-node-grid">
+              <div className="ops-node-grid">
                 {AGENT_LAYOUT.map((agent) => {
                   const stageLog = latestStageMap.get(agent.stage) ?? null;
                   const tone = statusTone(stageLog?.status ?? null);
                   const waiting = pipelineSummary?.waiting_for_stage === agent.stage;
-                  const signals = qualitySignals(stageLog);
                   const active = stageLog?.status === "running" || waiting;
+                  const signals = qualitySignals(stageLog);
+                  const selected = selectedStage === agent.stage;
+
                   return (
-                    <article
+                    <button
+                      type="button"
                       key={agent.stage}
-                      className={`war-node tone-${tone}${waiting ? " waiting" : ""}${active ? " is-live" : ""}`}
+                      className={`ops-node tone-${tone}${waiting ? " waiting" : ""}${active ? " is-live" : ""}${selected ? " is-selected" : ""}`}
                       style={{ gridColumn: `${agent.gridColumn} / span 1`, gridRow: `${agent.gridRow} / span 1` }}
+                      onClick={() => setSelectedStage(agent.stage)}
                     >
-                      <div className="war-node-top">
-                        <AgentGlyph icon={agent.icon} tone={tone} active={active} />
+                      <div className="ops-node-top">
+                        {agentPresenceEnabled ? <AgentGlyph icon={agent.icon} tone={tone} active={active} /> : null}
                         <div>
                           <p>{agent.role}</p>
                           <h4>{agent.title}</h4>
                         </div>
                       </div>
-                      <p className="war-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "유휴"))}</p>
-                      <div className="war-node-foot">
-                        <span className={`status-chip tone-${tone}`}>
-                          {stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "유휴"}
-                        </span>
+                      <p className="ops-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "유휴"))}</p>
+                      <div className="ops-node-foot">
+                        <span className={`status-chip tone-${tone}`}>{stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "유휴"}</span>
                         <span>{stageLog ? new Date(stageLog.created_at).toLocaleTimeString() : "-"}</span>
                       </div>
                       {(signals.fatal > 0 || signals.warning > 0) && (
-                        <p className="war-node-signal">
+                        <p className="ops-node-signal">
                           치명 {signals.fatal} · 경고 {signals.warning}
                         </p>
                       )}
-                    </article>
+                    </button>
                   );
                 })}
               </div>
             </div>
           </section>
 
-          <aside className="war-room-activity">
+          <section className="ops-workbench">
             <div className="section-head compact">
               <div>
-                <p className="eyebrow">활동 레일</p>
-                <h3 className="section-title">실시간 임무 피드</h3>
+                <p className="eyebrow">Workbench</p>
+                <h3 className="section-title">{STAGE_LABELS[selectedStage]} 작업 상세</h3>
               </div>
-              <span className="muted-text">{selectedLogs.length}개 로그</span>
+              {agentPresenceEnabled ? (
+                <AgentGlyph
+                  icon={selectedAgent.icon}
+                  tone={statusTone(selectedStageLog?.status ?? null)}
+                  active={selectedStageLog?.status === "running" || pipelineSummary?.waiting_for_stage === selectedStage}
+                />
+              ) : null}
             </div>
 
-            <ul className="war-activity-list">
+            <div className="ops-workbench-card">
+              <p>{STAGE_GUIDE[selectedStage].summary}</p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>핵심 포커스:</strong> {STAGE_GUIDE[selectedStage].focus}
+                </li>
+                <li>
+                  <strong>핸드오프:</strong> {STAGE_GUIDE[selectedStage].handoff}
+                </li>
+                <li>
+                  <strong>최신 메시지:</strong> {compactMessage(selectedStageLog?.message)}
+                </li>
+              </ul>
+            </div>
+
+            <div className="ops-workbench-meta">
+              <span className={`status-chip tone-${statusTone(selectedStageLog?.status ?? null)}`}>
+                {selectedStageLog ? STATUS_LABELS[selectedStageLog.status] : "유휴"}
+              </span>
+              {selectedSignals.fatal > 0 ? <span className="terminal-tag subtle">fatal {selectedSignals.fatal}</span> : null}
+              {selectedSignals.warning > 0 ? <span className="terminal-tag subtle">warning {selectedSignals.warning}</span> : null}
+              <span className="terminal-tag subtle">
+                updated {selectedStageLog ? new Date(selectedStageLog.created_at).toLocaleTimeString() : "-"}
+              </span>
+            </div>
+
+            <div className="ops-workbench-actions">
+              <button className="button button-ghost" type="button" onClick={() => void runControl("pause")} disabled={!selectedPipelineId || busyAction !== null}>
+                일시정지
+              </button>
+              <button className="button button-primary" type="button" onClick={() => void runControl("resume")} disabled={!selectedPipelineId || busyAction !== null}>
+                재개
+              </button>
+              <button className="button button-danger" type="button" onClick={() => void runControl("cancel")} disabled={!selectedPipelineId || busyAction !== null}>
+                중단
+              </button>
+              <button className="button button-ghost" type="button" onClick={() => void runControl("retry")} disabled={!selectedPipelineId || busyAction !== null}>
+                재시도
+              </button>
+            </div>
+          </section>
+
+          <aside className="ops-live-log">
+            <div className="section-head compact">
+              <div>
+                <p className="eyebrow">Live Rail</p>
+                <h3 className="section-title">실시간 로그</h3>
+              </div>
+              <span className="muted-text">{selectedLogs.length} logs</span>
+            </div>
+
+            <ul className="ops-log-list">
               {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
-              {selectedLogs.slice(0, 22).map((log) => {
+              {selectedLogs.slice(0, 26).map((log) => {
                 const tone = statusTone(log.status);
                 const signals = qualitySignals(log);
+                const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "scout";
                 return (
-                  <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`war-activity-item tone-${tone}`}>
-                    <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
+                  <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}${agentPresenceEnabled ? "" : " no-agent"}`}>
+                    {agentPresenceEnabled ? <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} /> : null}
                     <div>
                       <strong>
                         {STAGE_LABELS[log.stage]} · {AGENT_LABELS[log.agent_name] ?? log.agent_name}
@@ -523,7 +701,10 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
                         </small>
                       )}
                     </div>
-                    <time>{new Date(log.created_at).toLocaleTimeString()}</time>
+                    <div className="ops-log-item-meta">
+                      <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
+                      <time>{new Date(log.created_at).toLocaleTimeString()}</time>
+                    </div>
                   </li>
                 );
               })}
@@ -532,15 +713,15 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </div>
       </section>
 
-      <section className={`surface mission-activity-pane mission-pane ${mobileTab === "activity" ? "is-active" : ""}`}>
+      <section className={`surface ops-mobile-log-pane ops-pane ${mobileTab === "activity" ? "is-active" : ""}`}>
         <div className="section-head compact">
           <div>
-            <p className="eyebrow">활동</p>
+            <p className="eyebrow">Activity</p>
             <h3 className="section-title">모바일 이벤트 피드</h3>
           </div>
           <span className="muted-text">{selectedLogs.length}개 로그</span>
         </div>
-        <ul className="activity-list mission-activity-list">
+        <ul className="activity-list">
           {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
           {selectedLogs.slice(0, 18).map((log) => {
             const signals = qualitySignals(log);
@@ -562,39 +743,85 @@ export function StudioControlDeck({ initialLogs }: { initialLogs: PipelineLog[] 
         </ul>
       </section>
 
-      <section className={`surface mission-control-pane mission-pane ${mobileTab === "control" ? "is-active" : ""}`}>
-        <div className="mission-control-grid">
-          <TriggerForm
-            className="mission-control-card"
-            onTriggered={(item) => {
-              setSelectedPipelineId(item.pipelineId);
-              setFeedback(`신규 파이프라인 등록: ${item.pipelineId}`);
-            }}
-          />
-          <ManualApprovalForm
-            className="mission-control-card"
-            defaultPipelineId={selectedPipelineId ?? undefined}
-            onApproved={({ pipelineId }) => {
-              setSelectedPipelineId(pipelineId);
-              void refreshSummary(pipelineId);
-            }}
-          />
-        </div>
-      </section>
-
-      <section className="surface mission-stage-strip">
-        {STAGE_FLOW.map((lane) => {
-          const stageLog = latestStageMap.get(lane.stage) ?? null;
-          const tone = statusTone(stageLog?.status ?? null);
-          const waiting = pipelineSummary?.waiting_for_stage === lane.stage;
-          return (
-            <article key={lane.stage} className={`mission-stage-card tone-${tone}${waiting ? " waiting" : ""}`}>
-              <p className="flow-lane-kicker">{lane.agent}</p>
-              <strong>{lane.label}</strong>
-              <span className={`status-chip tone-${tone}`}>{stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "-"}</span>
+      <section className={`surface ops-utility-shell ops-pane ${mobileTab === "control" ? "is-active" : ""}`}>
+        <div className="ops-utility-grid">
+          {previewMode ? (
+            <article className="surface form-panel ops-utility-card">
+              <div className="section-head compact">
+                <div>
+                  <p className="eyebrow">Preview</p>
+                  <h3 className="section-title">실행/승인 시뮬레이션</h3>
+                </div>
+              </div>
+              <p className="muted-text">프리뷰 모드에서는 실제 트리거/승인 요청을 전송하지 않습니다.</p>
+              <p className="inline-feedback">상단 제어 버튼은 시뮬레이션 피드백만 제공합니다.</p>
             </article>
-          );
-        })}
+          ) : (
+            <>
+              <TriggerForm
+                className="ops-utility-card"
+                onTriggered={(item) => {
+                  setSelectedPipelineId(item.pipelineId);
+                  setFeedback(`신규 파이프라인 등록: ${item.pipelineId}`);
+                }}
+              />
+
+              <ManualApprovalForm
+                className="ops-utility-card"
+                defaultPipelineId={selectedPipelineId ?? undefined}
+                onApproved={({ pipelineId }) => {
+                  setSelectedPipelineId(pipelineId);
+                  void refreshSummary(pipelineId);
+                }}
+              />
+            </>
+          )}
+
+          <article className="surface form-panel ops-utility-card">
+            <div className="section-head compact">
+              <div>
+                <p className="eyebrow">Failure Focus</p>
+                <h3 className="section-title">최근 실패 원인</h3>
+              </div>
+            </div>
+
+            {recentFailures.length === 0 ? (
+              <p className="muted-text">최근 실패가 없습니다.</p>
+            ) : (
+              <ul className="bullet-list compact">
+                {recentFailures.map((log) => (
+                  <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-failure`}>
+                    <strong>{STAGE_LABELS[log.stage]}:</strong> {compactMessage(log.reason ?? log.message)}
+                  </li>
+                ))}
+              </ul>
+            )}
+          </article>
+
+          <article className="surface form-panel ops-utility-card">
+            <div className="section-head compact">
+              <div>
+                <p className="eyebrow">Pipeline Utility</p>
+                <h3 className="section-title">배포/아카이브 상태</h3>
+              </div>
+            </div>
+
+            <ul className="bullet-list compact">
+              <li>
+                <strong>현재 파이프라인:</strong> {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}
+              </li>
+              <li>
+                <strong>실행 모드:</strong> {pipelineSummary?.execution_mode ?? "-"}
+              </li>
+              <li>
+                <strong>대기 단계:</strong> {pipelineSummary?.waiting_for_stage ? STAGE_LABELS[pipelineSummary.waiting_for_stage] : "-"}
+              </li>
+              <li>
+                <strong>최근 상태:</strong> {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}
+              </li>
+            </ul>
+          </article>
+        </div>
       </section>
     </section>
   );

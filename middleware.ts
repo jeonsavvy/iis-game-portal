@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+const PREVIEW_MODE_ENABLED = process.env.IIS_DEMO_PREVIEW === "1";
+
 function hasSupabaseAuthCookie(request: NextRequest): boolean {
   const cookieNames = request.cookies.getAll().map((cookie) => cookie.name);
   return cookieNames.some(
@@ -12,6 +14,10 @@ function hasSupabaseAuthCookie(request: NextRequest): boolean {
 }
 
 export function middleware(request: NextRequest) {
+  if (PREVIEW_MODE_ENABLED) {
+    return NextResponse.next();
+  }
+
   if (request.nextUrl.pathname.startsWith("/admin") && !hasSupabaseAuthCookie(request)) {
     const redirectUrl = request.nextUrl.clone();
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;

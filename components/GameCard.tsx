@@ -1,42 +1,45 @@
+import Image from "next/image";
 import Link from "next/link";
 
 import type { Database } from "@/types/database";
 
 type Game = Database["public"]["Tables"]["games_metadata"]["Row"];
 
-function genreTone(genre: string): string {
-  const normalized = genre.toLowerCase();
-  if (normalized.includes("puzzle")) return "puzzle";
-  if (normalized.includes("survival")) return "survival";
-  if (normalized.includes("score")) return "score";
-  return "arcade";
-}
+type GameCardVariant = "default" | "featured" | "compact";
 
-export function GameCard({ game }: { game: Game }) {
-  const createdAtLabel = new Date(game.created_at).toLocaleDateString("ko-KR", {
+function formatDateLabel(createdAt: string): string {
+  return new Date(createdAt).toLocaleDateString("ko-KR", {
     month: "short",
     day: "numeric",
   });
+}
+
+export function GameCard({ game, variant = "default" }: { game: Game; variant?: GameCardVariant }) {
+  const isPlayable = game.status === "active";
+  const imageUrl = game.thumbnail_url ?? game.screenshot_url;
 
   return (
-    <article className={`game-card tone-${genreTone(game.genre)}`}>
-      <div className="game-card-art" aria-hidden="true">
-        <div className="game-card-noise" />
-        <div className="game-card-glow" />
-        <div className="game-card-topline">
+    <article className={`arcade-game-card variant-${variant}`}>
+      <Link className="arcade-game-card-media" href={`/play/${game.id}`}>
+        {imageUrl ? (
+          <Image className="arcade-game-card-image" src={imageUrl} alt={`${game.name} cover`} fill sizes="(max-width: 820px) 100vw, 33vw" unoptimized />
+        ) : (
+          <div className="arcade-game-card-fallback" aria-hidden="true" />
+        )}
+        <div className="arcade-game-card-badges">
           <span className="pill">{game.genre}</span>
-          <span className="game-card-date">{createdAtLabel}</span>
+          <span className={`status-chip ${isPlayable ? "tone-success" : "tone-warn"}`}>{isPlayable ? "PLAYABLE" : "COMING"}</span>
         </div>
-        <div className="game-card-art-copy">
-          <h3>{game.name}</h3>
-          <p>{game.slug}</p>
-        </div>
-      </div>
+      </Link>
 
-      <div className="game-card-body">
-        <div className="game-card-actions">
+      <div className="arcade-game-card-body">
+        <h4>{game.name}</h4>
+        <p>{game.slug}</p>
+
+        <div className="arcade-game-card-foot">
+          <span>{formatDateLabel(game.created_at)}</span>
           <Link className="button button-primary" href={`/play/${game.id}`}>
-            ▶ Play
+            {isPlayable ? "지금 플레이" : "상세 보기"}
           </Link>
         </div>
       </div>

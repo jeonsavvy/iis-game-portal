@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import "./globals.css";
+import { SurfaceBackdrop } from "@/components/SurfaceBackdrop";
 
 export const metadata: Metadata = {
   title: "IIS Arcade",
@@ -35,9 +36,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
   return (
     <html lang="ko">
       <body>
-        <div className="app-bg-orb orb-a" aria-hidden="true" />
-        <div className="app-bg-orb orb-b" aria-hidden="true" />
-        <div className="app-grid" aria-hidden="true" />
+        <SurfaceBackdrop />
         <nav className="topbar">
           <div className="brand-block">
             <strong>IIS Arcade</strong>
@@ -49,9 +48,13 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
             <Link className="nav-link" href="/admin">
               스튜디오 콘솔
             </Link>
-            <a className="donation-link nav-link support" href="https://www.paypal.com/ncp/payment/FLVUVTZLLCKVY" target="_blank" rel="noreferrer">
-              💖 후원하기
-            </a>
+            {paypalDonationUrl ? (
+              <a className="donation-link nav-link support" href={paypalDonationUrl} target="_blank" rel="noreferrer">
+                💖 후원하기
+              </a>
+            ) : (
+              <span className="nav-link support donation-disabled">💖 후원 준비중</span>
+            )}
           </div>
         </nav>
         <main className="main-shell">{children}</main>
