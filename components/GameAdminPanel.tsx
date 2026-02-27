@@ -35,7 +35,14 @@ function resolveDeleteErrorMessage(data: DeleteResponse): string {
         ? (data.details as Record<string, unknown>)
         : null;
 
+  const nestedDetails = nestedDetail?.details;
+  const nestedDetailsRecord = nestedDetails && typeof nestedDetails === "object" ? (nestedDetails as Record<string, unknown>) : null;
+  const archive = nestedDetailsRecord?.archive;
+  const archiveRecord = archive && typeof archive === "object" ? (archive as Record<string, unknown>) : null;
+  const archiveReason = typeof archiveRecord?.reason === "string" ? archiveRecord.reason : null;
+
   const fromNested =
+    archiveReason ||
     (nestedDetail && typeof nestedDetail.reason === "string" && nestedDetail.reason) ||
     (nestedDetail && typeof nestedDetail.error === "string" && nestedDetail.error) ||
     (typeof data.detail === "string" ? data.detail : null);

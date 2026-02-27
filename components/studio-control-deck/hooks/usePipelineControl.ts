@@ -30,8 +30,36 @@ type UsePipelineControlResult = {
 
 type ErrorResponse = {
   error?: string;
-  detail?: string;
+  detail?: unknown;
+  reason?: string;
+  code?: string;
 };
+
+function resolveErrorMessage(payload: ErrorResponse | null | undefined): string {
+  if (!payload) return "unknown_error";
+  if (typeof payload.detail === "string" && payload.detail.trim()) {
+    return payload.detail;
+  }
+  if (payload.detail && typeof payload.detail === "object") {
+    const row = payload.detail as Record<string, unknown>;
+    if (typeof row.reason === "string" && row.reason.trim()) {
+      return row.reason;
+    }
+    if (typeof row.error === "string" && row.error.trim()) {
+      return row.error;
+    }
+  }
+  if (typeof payload.reason === "string" && payload.reason.trim()) {
+    return payload.reason;
+  }
+  if (typeof payload.error === "string" && payload.error.trim()) {
+    return payload.error;
+  }
+  if (typeof payload.code === "string" && payload.code.trim()) {
+    return payload.code;
+  }
+  return "unknown_error";
+}
 
 export function usePipelineControl({
   previewMode,
@@ -79,7 +107,12 @@ export function usePipelineControl({
       if (!response.ok) {
         setPipelineSummary(null);
         const typedError = payload as ErrorResponse | null;
-        setFeedback(`상태 조회 실패: ${typedError?.detail ?? typedError?.error ?? "unknown_error"}`);
+        const reason = resolveErrorMessage(typedError);
+        if (response.status === 404) {
+          setFeedback(`상태 조회 실패: ${reason} (현재 코어 엔진에서 해당 파이프라인을 찾지 못했습니다)`);
+        } else {
+          setFeedback(`상태 조회 실패: ${reason}`);
+        }
         return;
       }
 
@@ -116,7 +149,12 @@ export function usePipelineControl({
         const payload = (await response.json().catch(() => null)) as PipelineControlResponse | ErrorResponse | null;
         if (!response.ok) {
           const typedError = payload as ErrorResponse | null;
-          setFeedback(`제어 실패: ${typedError?.detail ?? typedError?.error ?? "unknown_error"}`);
+          const reason = resolveErrorMessage(typedError);
+          if (response.status === 404) {
+            setFeedback(`제어 실패: ${reason} (선택 파이프라인이 현재 코어 엔진에 없습니다)`);
+          } else {
+            setFeedback(`제어 실패: ${reason}`);
+          }
           return;
         }
 
@@ -144,4 +182,3 @@ export function usePipelineControl({
     runControl,
   };
 }
-
