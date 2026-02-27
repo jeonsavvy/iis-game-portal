@@ -1,0 +1,13 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Time Breakers preview artwork</title>
+  <desc id="desc">Futuristic time fracture rings with cyan-magenta glow.</desc>
+  <rect width="1600" height="900" fill="#0B1022"/>
+  <g opacity=".9">
+    <circle cx="800" cy="450" r="260" stroke="#22D3EE" stroke-width="16"/>
+    <circle cx="800" cy="450" r="200" stroke="#A855F7" stroke-width="12"/>
+    <circle cx="800" cy="450" r="140" stroke="#38BDF8" stroke-width="8"/>
+  </g>
+  <path d="M800 130V770M480 450H1120" stroke="#F8FAFC" stroke-opacity=".42" stroke-width="4" stroke-dasharray="16 20"/>
+  <path d="M690 340L930 560" stroke="#F472B6" stroke-width="10" stroke-linecap="round" opacity=".75"/>
+  <path d="M910 330L680 575" stroke="#67E8F9" stroke-width="8" stroke-linecap="round" opacity=".75"/>
+</svg>

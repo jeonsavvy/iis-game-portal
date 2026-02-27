@@ -2,14 +2,48 @@ import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { cache } from "react";
 
 import { PlayInfoTabs } from "@/components/PlayInfoTabs";
 import { PREVIEW_GAMES, getPreviewGameById } from "@/lib/demo/preview-data";
+import { parseLegacySandboxAllowlist, resolveGameIframeSandboxPolicy } from "@/lib/games/sandbox-policy";
 import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
+type SimilarGame = Pick<GameRow, "id" | "name" | "genre" | "thumbnail_url" | "screenshot_url">;
+
+type GameLookupResult = {
+  game: GameRow | null;
+  errorMessage: string | null;
+};
+
+const getGameById = cache(async (id: string): Promise<GameLookupResult> => {
+  try {
+    const supabase = await createSupabaseServerClient();
+    const { data: game, error } = await supabase.from("games_metadata").select("*").eq("id", id).maybeSingle();
+    if (error || !game) {
+      return { game: null, errorMessage: null };
+    }
+    return { game, errorMessage: null };
+  } catch (error) {
+    return {
+      game: null,
+      errorMessage: error instanceof Error ? error.message : "unknown_error",
+    };
+  }
+});
+
+function getPreviewSimilarGames(gameId: string): SimilarGame[] {
+  return PREVIEW_GAMES.filter((game) => game.id !== gameId).slice(0, 4).map((game) => ({
+    id: game.id,
+    name: game.name,
+    genre: game.genre,
+    thumbnail_url: game.thumbnail_url,
+    screenshot_url: game.screenshot_url,
+  }));
+}
 
 function pickReviewFromMetadata(metadata: unknown, slug: string): string | null {
   if (!metadata || typeof metadata !== "object") return null;
@@ -22,9 +56,9 @@ function pickReviewFromMetadata(metadata: unknown, slug: string): string | null 
   return normalized || null;
 }
 
-async function resolveAiReviewFallback(game: GameRow): Promise<string | null> {
-  if (game.ai_review && game.ai_review.trim()) {
-    return game.ai_review.trim();
+const resolveAiReviewFallback = cache(async (slug: string, aiReview: string | null): Promise<string | null> => {
+  if (aiReview && aiReview.trim()) {
+    return aiReview.trim();
   }
 
   let adminClient;
@@ -45,11 +79,11 @@ async function resolveAiReviewFallback(game: GameRow): Promise<string | null> {
   if (typedLogs.length === 0) return null;
 
   for (const log of typedLogs) {
-    const review = pickReviewFromMetadata(log.metadata, game.slug);
+    const review = pickReviewFromMetadata(log.metadata, slug);
     if (review) return review;
   }
   return null;
-}
+});
 
 function controlsByGenre(genre: string): string[] {
   const normalized = genre.toLowerCase();
@@ -80,41 +114,53 @@ function overviewByGame(game: GameRow): string[] {
 export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
   const { id } = await params;
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
+  if (previewMode) {
+    const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
+    const ogImage = previewGame.screenshot_url || previewGame.thumbnail_url || undefined;
+    const description = previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+    return {
+      title: `${previewGame.name} - IIS Arcade`,
+      description,
+      openGraph: {
+        title: `${previewGame.name} - IIS Arcade`,
+        description,
+        images: ogImage ? [ogImage] : [],
+        type: "website",
+      },
+      twitter: {
+        card: "summary_large_image",
+        title: previewGame.name,
+        description,
+        images: ogImage ? [ogImage] : [],
+      },
+    };
+  }
 
-  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
-  try {
-    supabase = await createSupabaseServerClient();
-  } catch {
+  const { game, errorMessage } = await getGameById(id);
+
+  if (errorMessage) {
     return { title: "IIS Arcade" };
   }
-
-  const { data: game } = await supabase.from("games_metadata").select("*").eq("id", id).single();
-
   if (!game) {
-    if (previewMode) {
-      const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
-      return { title: `${previewGame.name} - IIS Arcade` };
-    }
     return { title: "Game Not Found" };
   }
-  const typedGame = game as unknown as GameRow;
-  const resolvedAiReview = await resolveAiReviewFallback(typedGame);
+  const resolvedAiReview = await resolveAiReviewFallback(game.slug, game.ai_review);
 
-  const ogImage = typedGame.screenshot_url || typedGame.thumbnail_url || undefined;
-  const defaultDescription = `${typedGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+  const ogImage = game.screenshot_url || game.thumbnail_url || undefined;
+  const defaultDescription = `${game.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
 
   return {
-    title: `${typedGame.name} - IIS Arcade`,
+    title: `${game.name} - IIS Arcade`,
     description: resolvedAiReview || defaultDescription,
     openGraph: {
-      title: `${typedGame.name} - IIS Arcade`,
+      title: `${game.name} - IIS Arcade`,
       description: resolvedAiReview || defaultDescription,
       images: ogImage ? [ogImage] : [],
       type: "website",
     },
     twitter: {
       card: "summary_large_image",
-      title: typedGame.name,
+      title: game.name,
       description: resolvedAiReview || defaultDescription,
       images: ogImage ? [ogImage] : [],
     },
@@ -124,76 +170,58 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
 export default async function PlayPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
-
-  let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
-  try {
-    supabase = await createSupabaseServerClient();
-  } catch (error) {
-    if (!previewMode) {
-      return (
-        <section className="card" style={{ display: "grid", gap: 8 }}>
-          <h1 style={{ margin: 0 }}>게임 플레이</h1>
-          <p style={{ margin: 0 }}>Supabase 구성이 올바르지 않아 게임 데이터를 불러오지 못했습니다.</p>
-          <p style={{ margin: 0, color: "var(--muted)" }}>{error instanceof Error ? error.message : "unknown_error"}</p>
-        </section>
-      );
-    }
-
+  if (previewMode) {
     const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
-    const previewSimilar = PREVIEW_GAMES.filter((game) => game.id !== previewGame.id).slice(0, 4).map((game) => ({
-      id: game.id,
-      name: game.name,
-      genre: game.genre,
-      thumbnail_url: game.thumbnail_url,
-      screenshot_url: game.screenshot_url,
-    }));
-
-    return renderPlayPage(previewGame, previewSimilar, previewGame.ai_review, true);
+    return renderPlayPage(previewGame, getPreviewSimilarGames(previewGame.id), previewGame.ai_review, true);
   }
 
-  const { data: game } = await supabase.from("games_metadata").select("*").eq("id", id).single();
+  const { game, errorMessage } = await getGameById(id);
+
+  if (errorMessage) {
+    return (
+      <section className="card" style={{ display: "grid", gap: 8 }}>
+        <h1 style={{ margin: 0 }}>게임 플레이</h1>
+        <p style={{ margin: 0 }}>Supabase 구성이 올바르지 않아 게임 데이터를 불러오지 못했습니다.</p>
+        <p style={{ margin: 0, color: "var(--muted)" }}>{errorMessage}</p>
+      </section>
+    );
+  }
+
   if (!game) {
-    if (previewMode) {
-      const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
-      const previewSimilar = PREVIEW_GAMES.filter((item) => item.id !== previewGame.id).slice(0, 4).map((item) => ({
-        id: item.id,
-        name: item.name,
-        genre: item.genre,
-        thumbnail_url: item.thumbnail_url,
-        screenshot_url: item.screenshot_url,
-      }));
-      return renderPlayPage(previewGame, previewSimilar, previewGame.ai_review, true);
-    }
     notFound();
   }
 
-  const typedGame = game as unknown as GameRow;
-  const resolvedAiReview = await resolveAiReviewFallback(typedGame);
+  const supabase = await createSupabaseServerClient();
+  const resolvedAiReview = await resolveAiReviewFallback(game.slug, game.ai_review);
 
   const { data: similarRows } = await supabase
     .from("games_metadata")
     .select("id,name,genre,thumbnail_url,screenshot_url")
-    .eq("genre", typedGame.genre)
-    .neq("id", typedGame.id)
+    .eq("genre", game.genre)
+    .neq("id", game.id)
     .eq("status", "active")
     .order("updated_at", { ascending: false })
     .limit(6);
 
-  const similarGames = (similarRows ?? []) as Array<Pick<GameRow, "id" | "name" | "genre" | "thumbnail_url" | "screenshot_url">>;
+  const similarGames = (similarRows ?? []) as SimilarGame[];
 
-  return renderPlayPage(typedGame, similarGames, resolvedAiReview, false);
+  return renderPlayPage(game, similarGames, resolvedAiReview, false);
 }
 
 function renderPlayPage(
   typedGame: GameRow,
-  similarGames: Array<Pick<GameRow, "id" | "name" | "genre" | "thumbnail_url" | "screenshot_url">>,
+  similarGames: SimilarGame[],
   resolvedAiReview: string | null,
   previewMode: boolean,
 ) {
   const legacyGameSandboxMode = process.env.LEGACY_GAME_SANDBOX === "1";
-  const iframeSandboxPolicy = legacyGameSandboxMode
-    ? "allow-scripts allow-same-origin allow-forms"
-    : "allow-scripts";
+  const legacySandboxAllowlist = parseLegacySandboxAllowlist(process.env.LEGACY_GAME_SANDBOX_ALLOWLIST);
+  const iframeSandboxPolicy = resolveGameIframeSandboxPolicy({
+    legacySandboxMode: legacyGameSandboxMode,
+    gameId: typedGame.id,
+    gameSlug: typedGame.slug,
+    legacyAllowlist: legacySandboxAllowlist,
+  });
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
   const createdAt = new Date(typedGame.created_at).toLocaleString("ko-KR");
   const updatedAt = new Date(typedGame.updated_at).toLocaleString("ko-KR");
@@ -220,7 +248,7 @@ function renderPlayPage(
           <Link className="button button-ghost" href="/">
             아케이드 홈
           </Link>
-          <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noreferrer">
+          <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noopener noreferrer">
             새 탭에서 실행
           </a>
         </div>
@@ -253,6 +281,7 @@ function renderPlayPage(
                 height="100%"
                 style={{ border: 0 }}
                 sandbox={iframeSandboxPolicy}
+                referrerPolicy="no-referrer"
               />
             )}
           </div>

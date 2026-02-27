@@ -56,8 +56,20 @@ export async function forwardToCoreEngine({
     requestHeaders.set("Content-Type", "application/json");
   }
 
-  if (process.env.CORE_ENGINE_API_TOKEN && !requestHeaders.has("Authorization")) {
-    requestHeaders.set("Authorization", `Bearer ${process.env.CORE_ENGINE_API_TOKEN}`);
+  const configuredApiToken = process.env.CORE_ENGINE_API_TOKEN?.trim();
+  const hasAuthorizationHeader = Boolean(requestHeaders.get("Authorization")?.trim());
+  const productionMode = process.env.NODE_ENV === "production";
+  if (productionMode && !configuredApiToken && !hasAuthorizationHeader) {
+    return jsonError({
+      status: 500,
+      error: "CORE_ENGINE_API_TOKEN is missing",
+      code: "core_engine_api_token_missing",
+      headers: responseHeaders,
+    });
+  }
+
+  if (configuredApiToken && !requestHeaders.has("Authorization")) {
+    requestHeaders.set("Authorization", `Bearer ${configuredApiToken}`);
   }
 
   try {
@@ -93,4 +105,3 @@ export async function forwardToCoreEngine({
     });
   }
 }
-

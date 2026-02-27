@@ -4,7 +4,25 @@ import Link from "next/link";
 import "./globals.css";
 import { SurfaceBackdrop } from "@/components/SurfaceBackdrop";
 
+function resolveMetadataBase(rawUrl: string | undefined): URL | undefined {
+  const candidate = rawUrl?.trim() || (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000");
+  if (!candidate) {
+    return undefined;
+  }
+
+  try {
+    const parsedUrl = new URL(candidate);
+    if (parsedUrl.protocol !== "https:" && parsedUrl.protocol !== "http:") {
+      return undefined;
+    }
+    return parsedUrl;
+  } catch {
+    return undefined;
+  }
+}
+
 export const metadata: Metadata = {
+  metadataBase: resolveMetadataBase(process.env.NEXT_PUBLIC_SITE_URL),
   title: "IIS Arcade",
   description: "Infinite Indie Studio 게임 포털",
 };

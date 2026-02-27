@@ -14,32 +14,50 @@ type JsonErrorArgs = {
   headers?: HeadersInit;
 };
 
+function sanitizeErrorString(value: unknown): string | null {
+  if (typeof value !== "string") {
+    return null;
+  }
+  const trimmed = value.trim();
+  return trimmed || null;
+}
+
+function sanitizeCode(value: unknown): string | undefined {
+  if (typeof value !== "string") {
+    return undefined;
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  return /^[a-z0-9_.:-]{2,80}$/i.test(trimmed) ? trimmed : undefined;
+}
+
 export function jsonError({ status, error, detail, code, headers }: JsonErrorArgs): NextResponse {
-  const payload: NormalizedApiError = { error };
+  const safeError = sanitizeErrorString(error) ?? "Unknown error";
+  const safeCode = sanitizeCode(code);
+  const payload: NormalizedApiError = { error: safeError };
   if (detail !== undefined) {
     payload.detail = detail;
   }
-  if (code) {
-    payload.code = code;
+  if (safeCode) {
+    payload.code = safeCode;
   }
   return NextResponse.json(payload, { status, headers });
 }
 
 export function normalizeCoreErrorPayload(payload: unknown, statusText: string): NormalizedApiError {
+  const fallbackError = sanitizeErrorString(statusText) ?? "Core engine request failed";
+
   if (payload && typeof payload === "object") {
     const row = payload as Record<string, unknown>;
     const nestedDetail = row.detail;
     const detailRecord = nestedDetail && typeof nestedDetail === "object" ? (nestedDetail as Record<string, unknown>) : null;
-    const detailReason = detailRecord && typeof detailRecord.reason === "string" ? detailRecord.reason : null;
-    const reason = typeof row.reason === "string" ? row.reason : null;
-    const code = typeof row.code === "string" ? row.code : detailReason ?? reason ?? undefined;
+    const detailReason = sanitizeErrorString(detailRecord?.reason);
+    const reason = sanitizeErrorString(row.reason);
+    const code = sanitizeCode(row.code) ?? sanitizeCode(detailReason) ?? sanitizeCode(reason);
 
-    const baseError =
-      typeof row.error === "string" && row.error.trim()
-        ? row.error
-        : typeof nestedDetail === "string" && nestedDetail.trim()
-          ? nestedDetail
-          : code ?? statusText;
+    const baseError = sanitizeErrorString(row.error) ?? sanitizeErrorString(nestedDetail) ?? code ?? fallbackError;
 
     const normalized: NormalizedApiError = { error: baseError };
     if (nestedDetail !== undefined) {
@@ -53,10 +71,20 @@ export function normalizeCoreErrorPayload(payload: unknown, statusText: string):
     return normalized;
   }
 
-  if (typeof payload === "string" && payload.trim()) {
-    return { error: payload, detail: payload };
+  const payloadError = sanitizeErrorString(payload);
+  if (payloadError) {
+    return { error: payloadError, detail: payloadError };
   }
 
-  return { error: statusText || "Core engine request failed" };
+  return { error: fallbackError };
 }
 
+export function coreEngineUnavailableError(error: unknown, headers?: HeadersInit): NextResponse {
+  return jsonError({
+    status: 502,
+    error: "Core engine unavailable",
+    detail: error instanceof Error ? error.message : "unknown_error",
+    code: "core_engine_unavailable",
+    headers,
+  });
+}

@@ -1,0 +1,18 @@
+<svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <title>IIS Arcade Icon</title>
+  <defs>
+    <linearGradient id="bg" x1="8" y1="8" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0EA5E9" />
+      <stop offset="1" stop-color="#7C3AED" />
+    </linearGradient>
+    <linearGradient id="stroke" x1="14" y1="18" x2="50" y2="46" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#F8FAFC" />
+      <stop offset="1" stop-color="#BFDBFE" />
+    </linearGradient>
+  </defs>
+  <rect x="4" y="4" width="56" height="56" rx="16" fill="#020617" />
+  <rect x="8" y="8" width="48" height="48" rx="12" fill="url(#bg)" fill-opacity="0.3" />
+  <path d="M18 20V44" stroke="url(#stroke)" stroke-width="5" stroke-linecap="round" />
+  <path d="M30 20V44" stroke="url(#stroke)" stroke-width="5" stroke-linecap="round" />
+  <path d="M42 20H48V30H42V44H48" stroke="url(#stroke)" stroke-width="5" stroke-linecap="round" stroke-linejoin="round" />
+</svg>

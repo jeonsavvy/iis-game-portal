@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
-
-import { withAdminGuard } from "@/lib/api/admin-guard";
+import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
 import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 import { jsonError } from "@/lib/api/error-response";
 import { sanitizeTriggerKeyword } from "@/lib/text/trigger-keyword";
@@ -19,12 +17,7 @@ function resolveIdempotencyKey(request: Request): string {
 }
 
 export async function POST(request: Request) {
-  try {
-    const auth = await withAdminGuard("pipeline:write");
-    if (auth instanceof NextResponse) {
-      return auth;
-    }
-
+  return runAdminWriteRoute(request, async (auth) => {
     const body = (await request.json()) as {
       keyword?: string;
       execution_mode?: "auto" | "manual";
@@ -39,7 +32,7 @@ export async function POST(request: Request) {
       return jsonError({ status: 400, error: "keyword is required", code: "invalid_keyword" });
     }
 
-    return forwardToCoreEngine({
+    return await forwardToCoreEngine({
       path: "/api/v1/pipelines/trigger",
       method: "POST",
       timeoutMs: 15000,
@@ -54,12 +47,5 @@ export async function POST(request: Request) {
         idempotency_key: idempotencyKey,
       },
     });
-  } catch (error) {
-    return jsonError({
-      status: 502,
-      error: "Core engine unavailable",
-      detail: error instanceof Error ? error.message : "unknown_error",
-      code: "core_engine_unavailable",
-    });
-  }
+  });
 }

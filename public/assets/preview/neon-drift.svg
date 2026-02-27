@@ -1,0 +1,25 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Neon Drift preview artwork</title>
+  <desc id="desc">Purple and cyan outrun style background with glowing road lines.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#090B1A"/>
+      <stop offset="1" stop-color="#26114A"/>
+    </linearGradient>
+    <linearGradient id="lane" x1="0" y1="0" x2="0" y2="1">
+      <stop stop-color="#22D3EE"/>
+      <stop offset="1" stop-color="#A855F7"/>
+    </linearGradient>
+    <filter id="glow"><feGaussianBlur stdDeviation="6" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1220" cy="170" r="130" fill="#67E8F9" fill-opacity=".28"/>
+  <path d="M540 900L720 420H880L1060 900H540Z" fill="#0B132B"/>
+  <path d="M610 900L770 450H830L990 900H610Z" fill="url(#lane)" filter="url(#glow)" fill-opacity=".72"/>
+  <path d="M0 640C240 600 360 710 560 660C790 600 920 470 1220 520C1410 553 1520 620 1600 680V900H0V640Z" fill="#111827" fill-opacity=".75"/>
+  <g stroke="#22D3EE" stroke-width="3" opacity=".7" filter="url(#glow)">
+    <line x1="200" y1="740" x2="560" y2="640"/>
+    <line x1="1040" y1="610" x2="1460" y2="700"/>
+    <line x1="680" y1="690" x2="920" y2="630"/>
+  </g>
+</svg>

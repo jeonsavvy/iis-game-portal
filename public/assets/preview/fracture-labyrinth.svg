@@ -1,0 +1,21 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Fracture Labyrinth preview artwork</title>
+  <desc id="desc">Abstract puzzle grid with fractured geometric paths.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1600" y2="900">
+      <stop stop-color="#0B1022"/>
+      <stop offset="1" stop-color="#1E1B4B"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <g opacity=".72" stroke="#A78BFA" stroke-width="4">
+    <path d="M120 140H520V360H300V520H700V760H1400V120H1080V280H860V140H120Z"/>
+    <path d="M220 220H430V300H360V470H620V680H1260V220H1140V420H940V220H220Z" stroke="#67E8F9"/>
+  </g>
+  <g fill="#F8FAFC" fill-opacity=".85">
+    <rect x="500" y="350" width="28" height="28" rx="4"/>
+    <rect x="1064" y="278" width="28" height="28" rx="4"/>
+    <rect x="690" y="748" width="28" height="28" rx="4"/>
+  </g>
+  <path d="M0 820L260 690L420 760L710 600L980 710L1280 560L1600 700V900H0V820Z" fill="#111827" fill-opacity=".72"/>
+</svg>

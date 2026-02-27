@@ -1,0 +1,60 @@
+/* Surface-specific backdrop */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.app-backdrop.mode-arcade .orb-a {
+  background: #3b82f6;
+  opacity: 0.28;
+}
+
+.app-backdrop.mode-arcade .orb-b {
+  background: #8b5cf6;
+  opacity: 0.28;
+}
+
+.app-backdrop.mode-arcade .app-grid {
+  opacity: 0.46;
+}
+
+.app-backdrop.mode-play .orb-a {
+  background: #2563eb;
+  opacity: 0.18;
+}
+
+.app-backdrop.mode-play .orb-b {
+  background: #4f46e5;
+  opacity: 0.18;
+}
+
+.app-backdrop.mode-play .app-grid {
+  opacity: 0.3;
+}
+
+.app-backdrop.mode-ops .orb-a {
+  background: #0f172a;
+  opacity: 0.18;
+}
+
+.app-backdrop.mode-ops .orb-b {
+  background: #1e293b;
+  opacity: 0.18;
+}
+
+.app-backdrop.mode-ops .app-grid {
+  opacity: 0.2;
+}
+
+.ops-agent-toggle {
+  height: 28px;
+  padding: 4px 10px;
+  font-size: 12px;
+}
+
+.agent-presence-off .agent-glyph {
+  display: none;
+}
+

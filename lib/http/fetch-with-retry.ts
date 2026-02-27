@@ -1,4 +1,12 @@
 const ALWAYS_RETRYABLE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+const RETRYABLE_STATUS_CODES = new Set([429]);
+
+function normalizeAttemptCount(retries: number): number {
+  if (!Number.isFinite(retries)) {
+    return 1;
+  }
+  return Math.max(1, Math.trunc(retries));
+}
 
 function hasIdempotencyKey(headers: HeadersInit | undefined): boolean {
   if (!headers) return false;
@@ -9,12 +17,13 @@ function hasIdempotencyKey(headers: HeadersInit | undefined): boolean {
 }
 
 function resolveRetryAttempts(init: RequestInit, retries: number): number {
+  const normalizedRetries = normalizeAttemptCount(retries);
   const method = (init.method ?? "GET").trim().toUpperCase();
   if (ALWAYS_RETRYABLE_METHODS.has(method)) {
-    return retries;
+    return normalizedRetries;
   }
   if (method === "POST" && hasIdempotencyKey(init.headers)) {
-    return retries;
+    return normalizedRetries;
   }
   return 1;
 }
@@ -40,7 +49,12 @@ export async function fetchWithRetry(
         signal: controller.signal,
       });
 
-      if (!response.ok && response.status >= 500 && attempt < maxAttempts) {
+      const shouldRetryByStatus =
+        !response.ok &&
+        (response.status >= 500 || RETRYABLE_STATUS_CODES.has(response.status)) &&
+        attempt < maxAttempts;
+
+      if (shouldRetryByStatus) {
         continue;
       }
 

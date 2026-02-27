@@ -1,6 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
+import { shouldUseUnoptimizedImage } from "@/lib/images/optimization";
 import type { Database } from "@/types/database";
 
 type Game = Database["public"]["Tables"]["games_metadata"]["Row"];
@@ -22,7 +23,14 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
     <article className={`arcade-game-card variant-${variant}`}>
       <Link className="arcade-game-card-media" href={`/play/${game.id}`}>
         {imageUrl ? (
-          <Image className="arcade-game-card-image" src={imageUrl} alt={`${game.name} cover`} fill sizes="(max-width: 820px) 100vw, 33vw" unoptimized />
+          <Image
+            className="arcade-game-card-image"
+            src={imageUrl}
+            alt={`${game.name} cover`}
+            fill
+            sizes="(max-width: 820px) 100vw, 33vw"
+            unoptimized={shouldUseUnoptimizedImage(imageUrl)}
+          />
         ) : (
           <div className="arcade-game-card-fallback" aria-hidden="true" />
         )}

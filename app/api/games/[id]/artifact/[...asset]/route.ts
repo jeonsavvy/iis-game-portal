@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { ensureArtifactSecurityHeaders, ensureNoStoreHeaders } from "@/lib/api/response-headers";
 import { proxyArtifactResponse, resolveArtifactTarget } from "@/lib/games/artifact-proxy";
 
 export async function GET(
@@ -10,7 +11,8 @@ export async function GET(
   const requestedAsset = asset.join("/");
   const target = await resolveArtifactTarget(id, requestedAsset);
   if (target instanceof NextResponse) {
-    return target;
+    return ensureArtifactSecurityHeaders(ensureNoStoreHeaders(target));
   }
-  return proxyArtifactResponse(target);
+  const response = await proxyArtifactResponse(target);
+  return ensureArtifactSecurityHeaders(ensureNoStoreHeaders(response));
 }

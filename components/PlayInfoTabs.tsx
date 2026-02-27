@@ -4,6 +4,8 @@ import Image from "next/image";
 import Link from "next/link";
 import { useMemo, useState } from "react";
 
+import { shouldUseUnoptimizedImage } from "@/lib/images/optimization";
+
 type SimilarGame = {
   id: string;
   name: string;
@@ -83,7 +85,13 @@ export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, control
         {activeTab === "shots" ? (
           screenshotUrl ? (
             <div className="play-shot-gallery">
-              <Image src={screenshotUrl} alt={`${gameName} screenshot`} width={1600} height={900} unoptimized />
+              <Image
+                src={screenshotUrl}
+                alt={`${gameName} screenshot`}
+                width={1600}
+                height={900}
+                unoptimized={shouldUseUnoptimizedImage(screenshotUrl)}
+              />
             </div>
           ) : (
             <p className="muted-text">등록된 스크린샷이 없습니다.</p>
@@ -99,7 +107,13 @@ export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, control
                   <Link key={game.id} className="play-similar-card" href={`/play/${game.id}`}>
                     {thumb ? (
                       <div className="play-similar-media">
-                        <Image src={thumb} alt={`${game.name} thumbnail`} fill sizes="(max-width: 820px) 100vw, 20vw" unoptimized />
+                        <Image
+                          src={thumb}
+                          alt={`${game.name} thumbnail`}
+                          fill
+                          sizes="(max-width: 820px) 100vw, 20vw"
+                          unoptimized={shouldUseUnoptimizedImage(thumb)}
+                        />
                       </div>
                     ) : (
                       <div className="play-similar-fallback" />

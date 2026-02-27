@@ -1,0 +1,18 @@
+<svg width="1600" height="900" viewBox="0 0 1600 900" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Ember Survival preview artwork</title>
+  <desc id="desc">Warm ember palette with foggy mountains and a campfire silhouette.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="900">
+      <stop stop-color="#7C2D12"/>
+      <stop offset=".6" stop-color="#451A03"/>
+      <stop offset="1" stop-color="#111827"/>
+    </linearGradient>
+  </defs>
+  <rect width="1600" height="900" fill="url(#bg)"/>
+  <circle cx="1220" cy="180" r="120" fill="#FDBA74" fill-opacity=".35"/>
+  <path d="M0 560L260 430L520 540L760 420L980 520L1280 390L1600 540V900H0V560Z" fill="#1F2937" fill-opacity=".65"/>
+  <path d="M0 650L220 560L480 650L760 540L1030 620L1340 510L1600 620V900H0V650Z" fill="#0B1225" fill-opacity=".82"/>
+  <path d="M790 710C820 650 850 620 860 580C905 630 920 700 900 760C865 780 830 780 790 710Z" fill="#FB923C"/>
+  <path d="M820 720C845 680 850 640 845 610C875 640 880 690 870 730C850 744 835 744 820 720Z" fill="#FDE68A"/>
+  <rect x="760" y="760" width="160" height="14" rx="6" fill="#92400E"/>
+</svg>

@@ -27,6 +27,18 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
+      - name: Unit tests
+        run: npm test
+
+      - name: Install Playwright browsers
+        run: npx playwright install --with-deps chromium
+
+      - name: E2E smoke tests
+        run: npm run test:e2e
+
+      - name: Clean Next cache before build
+        run: npm run clean:next
+
       - name: Build
         run: npm run build
 
@@ -41,6 +53,7 @@ jobs:
       CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
       NEXT_PUBLIC_SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
       NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      NEXT_PUBLIC_SITE_URL: ${{ secrets.NEXT_PUBLIC_SITE_URL }}
       ADMIN_ALLOWED_EMAILS: ${{ secrets.ADMIN_ALLOWED_EMAILS }}
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       CORE_ENGINE_URL: ${{ secrets.CORE_ENGINE_URL }}
@@ -58,6 +71,9 @@ jobs:
 
       - name: Install
         run: npm ci
+
+      - name: Clean Next cache before OpenNext build
+        run: npm run clean:next
 
       - name: OpenNext build
         run: npx @opennextjs/cloudflare@1.16.5 build

@@ -78,6 +78,47 @@ function sectionRows(rows: GameRow[]) {
   };
 }
 
+function applyHomeFilters(
+  sourceRows: GameRow[],
+  {
+    genre,
+    sort,
+    q,
+    playableOnly,
+  }: {
+    genre: (typeof GENRE_OPTIONS)[number];
+    sort: (typeof SORT_OPTIONS)[number];
+    q: string;
+    playableOnly: boolean;
+  },
+): GameRow[] {
+  let rows = sourceRows.filter((game) => game.status !== "archived");
+
+  if (playableOnly) {
+    rows = rows.filter((game) => game.status === "active");
+  }
+
+  if (genre !== "all") {
+    rows = rows.filter((game) => game.genre === genre);
+  }
+
+  if (q) {
+    const keyword = q.toLowerCase();
+    rows = rows.filter((game) => game.name.toLowerCase().includes(keyword));
+  }
+
+  if (sort === "name") {
+    rows = [...rows].sort((a, b) => a.name.localeCompare(b.name));
+  } else {
+    rows = [...rows].sort((a, b) => parseDate(a.created_at) - parseDate(b.created_at));
+    if (sort === "newest") {
+      rows.reverse();
+    }
+  }
+
+  return rows;
+}
+
 export default async function HomePage({ searchParams }: { searchParams?: Promise<HomeSearchParams> }) {
   const params = searchParams ? await searchParams : {};
 
@@ -96,41 +137,41 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   let rows: GameRow[] = [];
   let loadError: string | null = null;
 
-  try {
-    const supabase = await createSupabaseServerClient();
-    let query = supabase.from("games_metadata").select("*").neq("status", "archived");
+  if (previewMode) {
+    rows = applyHomeFilters(PREVIEW_GAMES, { genre, sort, q, playableOnly });
+  } else {
+    try {
+      const supabase = await createSupabaseServerClient();
+      let query = supabase.from("games_metadata").select("*").neq("status", "archived");
 
-    if (playableOnly) {
-      query = query.eq("status", "active");
+      if (playableOnly) {
+        query = query.eq("status", "active");
+      }
+
+      if (genre !== "all") {
+        query = query.eq("genre", genre);
+      }
+
+      if (q) {
+        query = query.ilike("name", `%${q}%`);
+      }
+
+      if (sort === "name") {
+        query = query.order("name", { ascending: true });
+      } else {
+        query = query.order("created_at", { ascending: sort === "oldest" });
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        loadError = error.message;
+      } else {
+        rows = (data ?? []) as GameRow[];
+      }
+    } catch (error) {
+      loadError = error instanceof Error ? error.message : "알 수 없는 오류";
     }
-
-    if (genre !== "all") {
-      query = query.eq("genre", genre);
-    }
-
-    if (q) {
-      query = query.ilike("name", `%${q}%`);
-    }
-
-    if (sort === "name") {
-      query = query.order("name", { ascending: true });
-    } else {
-      query = query.order("created_at", { ascending: sort === "oldest" });
-    }
-
-    const { data, error } = await query;
-
-    if (error) {
-      loadError = error.message;
-    } else {
-      rows = (data ?? []) as GameRow[];
-    }
-  } catch (error) {
-    loadError = error instanceof Error ? error.message : "알 수 없는 오류";
-  }
-
-  if (previewMode && rows.length === 0) {
-    rows = PREVIEW_GAMES.filter((game) => game.status !== "archived");
   }
 
   const heroGame = resolveHeroGame(rows);

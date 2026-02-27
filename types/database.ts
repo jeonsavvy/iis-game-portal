@@ -79,7 +79,14 @@ export type Database = {
           player_fingerprint: string;
           created_at?: string;
         };
-        Update: never;
+        Update: {
+          id?: number;
+          game_id?: string;
+          player_name?: string;
+          score?: number;
+          player_fingerprint?: string;
+          created_at?: string;
+        };
         Relationships: [{ foreignKeyName: "leaderboard_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games_metadata"; referencedColumns: ["id"] }];
       };
       pipeline_logs: {
@@ -107,7 +114,18 @@ export type Database = {
           metadata?: Record<string, unknown>;
           created_at?: string;
         };
-        Update: never;
+        Update: {
+          id?: number;
+          pipeline_id?: string;
+          stage?: PipelineStage;
+          status?: PipelineStatus;
+          agent_name?: AgentName;
+          message?: string;
+          reason?: string | null;
+          attempt?: number;
+          metadata?: Record<string, unknown>;
+          created_at?: string;
+        };
         Relationships: [{ foreignKeyName: "pipeline_logs_pipeline_id_fkey"; columns: ["pipeline_id"]; isOneToOne: false; referencedRelation: "admin_config"; referencedColumns: ["id"] }];
       };
       games_metadata: {
@@ -162,8 +180,6 @@ export type Database = {
           created_at: string;
           updated_at: string;
         };
-        Insert: never;
-        Update: never;
         Relationships: [];
       };
     };

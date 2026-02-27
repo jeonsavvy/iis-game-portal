@@ -1,6 +1,4 @@
-import { NextResponse } from "next/server";
-
-import { withAdminGuard } from "@/lib/api/admin-guard";
+import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
 import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 import { jsonError } from "@/lib/api/error-response";
 
@@ -10,12 +8,7 @@ type DeleteGameBody = {
 };
 
 export async function POST(request: Request) {
-  try {
-    const auth = await withAdminGuard("pipeline:write");
-    if (auth instanceof NextResponse) {
-      return auth;
-    }
-
+  return runAdminWriteRoute(request, async (auth) => {
     const body = (await request.json()) as DeleteGameBody;
     const gameId = body.gameId?.trim();
     const confirmSlug = body.confirmSlug?.trim();
@@ -35,23 +28,16 @@ export async function POST(request: Request) {
       return jsonError({ status: 400, error: "Slug confirmation mismatch", code: "slug_mismatch" });
     }
 
-    return forwardToCoreEngine({
+    return await forwardToCoreEngine({
       path: `/api/v1/games/${encodeURIComponent(gameId)}`,
       method: "DELETE",
       timeoutMs: 20000,
-      retries: 2,
+      retries: 1,
       body: {
         delete_storage: true,
         delete_archive: true,
         reason: "admin_manual_delete",
       },
     });
-  } catch (error) {
-    return jsonError({
-      status: 502,
-      error: "Core engine unavailable",
-      detail: error instanceof Error ? error.message : "unknown_error",
-      code: "core_engine_unavailable",
-    });
-  }
+  });
 }
