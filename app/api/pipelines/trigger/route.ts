@@ -20,11 +20,9 @@ export async function POST(request: Request) {
   return runAdminWriteRoute(request, async (auth) => {
     const body = (await request.json()) as {
       keyword?: string;
-      execution_mode?: "auto" | "manual";
       pipeline_version?: string;
     };
     const keyword = sanitizeTriggerKeyword(body.keyword ?? "");
-    const executionMode = body.execution_mode === "manual" ? "manual" : "auto";
     const pipelineVersion = body.pipeline_version?.trim() || "forgeflow-v1";
     const idempotencyKey = resolveIdempotencyKey(request);
 
@@ -42,7 +40,7 @@ export async function POST(request: Request) {
         keyword,
         source: "console",
         requested_by: auth.userId,
-        execution_mode: executionMode,
+        execution_mode: "auto",
         pipeline_version: pipelineVersion,
         idempotency_key: idempotencyKey,
       },

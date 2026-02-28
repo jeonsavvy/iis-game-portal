@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { CollabBoard } from "@/components/studio-control-deck/CollabBoard";
 import { CommandHead } from "@/components/studio-control-deck/CommandHead";
@@ -21,6 +21,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
   const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("trigger");
   const [agentPresenceEnabled, setAgentPresenceEnabled] = useState(true);
+  const previousPipelineIdRef = useRef<string | null>(null);
 
   const {
     logs,
@@ -36,7 +37,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     refreshRecentLogs,
   } = usePipelineLogs({ initialLogs, previewMode });
 
-  const { pipelineSummary, busyAction, feedback, setFeedback, refreshSummary, runControl } = usePipelineControl({
+  const { pipelineSummary, controlAvailability, busyAction, feedback, setFeedback, runControl } = usePipelineControl({
     previewMode,
     logs,
     selectedPipelineId,
@@ -47,17 +48,34 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
   });
 
   useEffect(() => {
+    const pipelineChanged = previousPipelineIdRef.current !== selectedPipelineId;
+    if (pipelineChanged) {
+      previousPipelineIdRef.current = selectedPipelineId;
+    }
+
     const waitingStage = pipelineSummary?.waiting_for_stage;
     if (waitingStage && waitingStage !== "done") {
-      setSelectedStage(waitingStage);
+      if (selectedStage !== waitingStage) {
+        setSelectedStage(waitingStage);
+      }
       return;
     }
 
-    const firstExisting = AGENT_LAYOUT.find((agent) => latestStageMap.has(agent.stage));
-    if (firstExisting) {
-      setSelectedStage(firstExisting.stage);
+    if (pipelineChanged) {
+      const latestLog = selectedLogs[0];
+      if (latestLog && latestLog.stage !== "done") {
+        setSelectedStage(latestLog.stage);
+        return;
+      }
     }
-  }, [pipelineSummary?.waiting_for_stage, latestStageMap]);
+
+    if (!latestStageMap.has(selectedStage)) {
+      const firstExisting = AGENT_LAYOUT.find((agent) => latestStageMap.has(agent.stage));
+      if (firstExisting) {
+        setSelectedStage(firstExisting.stage);
+      }
+    }
+  }, [selectedPipelineId, selectedLogs, selectedStage, pipelineSummary?.waiting_for_stage, latestStageMap]);
 
   return (
     <section className={`ops-console-deck${agentPresenceEnabled ? "" : " agent-presence-off"}`}>
@@ -73,6 +91,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         feedback={feedback}
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
+        controlAvailability={controlAvailability}
         busyAction={busyAction}
         runControl={runControl}
       />
@@ -87,6 +106,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         selectedLogs={selectedLogs}
         agentPresenceEnabled={agentPresenceEnabled}
         selectedPipelineId={selectedPipelineId}
+        controlAvailability={controlAvailability}
         busyAction={busyAction}
         runControl={runControl}
       />
@@ -99,7 +119,6 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         selectedPipelineId={selectedPipelineId}
         setSelectedPipelineId={setSelectedPipelineId}
         setFeedback={setFeedback}
-        refreshSummary={refreshSummary}
         recentFailures={recentFailures}
         pipelineSummary={pipelineSummary}
       />

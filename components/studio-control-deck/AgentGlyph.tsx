@@ -7,9 +7,6 @@ import type { AgentIcon } from "@/components/studio-control-deck/config";
 export function AgentGlyph({ icon, tone, active }: { icon: AgentIcon; tone: string; active: boolean }) {
   const uid = useId().replace(/:/g, "");
   const [reducedMotion, setReducedMotion] = useState(false);
-  const gradA = `${uid}-a`;
-  const gradB = `${uid}-b`;
-  const radar = `${uid}-r`;
 
   useEffect(() => {
     const media = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -23,55 +20,46 @@ export function AgentGlyph({ icon, tone, active }: { icon: AgentIcon; tone: stri
     return () => media.removeListener(apply);
   }, []);
 
-  const antenna =
-    icon === "scout" ? (
-      <path d="M40 18 L40 10 M32 14 L40 10 L48 14" stroke="#dbeafe" strokeWidth="2" strokeLinecap="round" fill="none" />
-    ) : null;
-  const badge =
-    icon === "builder" ? (
-      <rect x="47" y="27" width="11" height="9" rx="2" fill="#93c5fd" stroke="#1e3a8a" strokeWidth="1" />
-    ) : icon === "publisher" ? (
-      <path d="M49 28 L58 34 L49 40 Z" fill="#fca5a5" />
-    ) : icon === "intel" ? (
-      <circle cx="53" cy="29" r="5" fill="#fde047" stroke="#854d0e" strokeWidth="1" />
-    ) : icon === "stylist" ? (
-      <path d="M50 27 C54 23 58 23 60 27 C57 30 53 31 49 30 Z" fill="#f5d0fe" />
-    ) : icon === "sentinel" ? (
-      <path d="M49 26 L58 26 L56 31 L51 31 Z" fill="#bbf7d0" />
-    ) : icon === "echo" ? (
-      <rect x="49" y="26" width="10" height="10" rx="2" fill="#fecdd3" />
-    ) : null;
+  const labelMap: Record<AgentIcon, string> = {
+    scout: "입",
+    intel: "설",
+    stylist: "연",
+    builder: "제",
+    sentinel: "검",
+    publisher: "배",
+    echo: "보",
+  };
+
+  const accentMap: Record<string, { start: string; end: string }> = {
+    running: { start: "#22d3ee", end: "#2563eb" },
+    success: { start: "#34d399", end: "#15803d" },
+    error: { start: "#fb7185", end: "#be123c" },
+    warn: { start: "#fbbf24", end: "#d97706" },
+    idle: { start: "#7dd3fc", end: "#1e40af" },
+  };
+  const accent = accentMap[tone] ?? accentMap.idle;
+  const gradientId = `glyph-grad-${uid}`;
 
   return (
-    <svg className={`agent-glyph tone-${tone}${active ? " is-active" : ""}`} viewBox="0 0 80 80" aria-hidden="true">
+    <svg className={`agent-glyph tone-${tone}${active ? " is-active" : ""}`} viewBox="0 0 80 80" aria-hidden="true" role="img">
       <defs>
-        <radialGradient id={gradA} cx="40%" cy="35%">
-          <stop offset="0%" stopColor="#fca5a5" />
-          <stop offset="65%" stopColor="#dc2626" />
-          <stop offset="100%" stopColor="#7f1d1d" />
-        </radialGradient>
-        <radialGradient id={gradB} cx="45%" cy="32%">
-          <stop offset="0%" stopColor="#1f2937" />
-          <stop offset="100%" stopColor="#020617" />
-        </radialGradient>
-        <radialGradient id={radar} cx="50%" cy="50%">
-          <stop offset="0%" stopColor="rgba(56,189,248,0.5)" />
-          <stop offset="100%" stopColor="rgba(15,23,42,0)" />
-        </radialGradient>
+        <linearGradient id={gradientId} x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stopColor={accent.start} />
+          <stop offset="100%" stopColor={accent.end} />
+        </linearGradient>
       </defs>
-
-      <circle cx="40" cy="40" r="36" fill={`url(#${radar})`} opacity="0.18">
-        {!reducedMotion && active ? <animate attributeName="r" values="32;37;32" dur="2.6s" repeatCount="indefinite" /> : null}
-      </circle>
-      <ellipse cx="40" cy="47" rx="21" ry="17" fill={`url(#${gradA})`} />
-      <ellipse cx="40" cy="44" rx="10" ry="10" fill={`url(#${gradB})`} />
-      <circle cx="34" cy="40" r="2.2" fill="#f8fafc" />
-      <circle cx="46" cy="40" r="2.2" fill="#f8fafc" />
-      <path d="M28 51 C34 57 46 57 52 51" stroke="#fecaca" strokeWidth="2" fill="none" strokeLinecap="round" />
-      <path d="M19 47 C14 46 11 42 11 37 C14 35 17 35 21 37" stroke="#dc2626" strokeWidth="4" fill="none" strokeLinecap="round" />
-      <path d="M61 47 C66 46 69 42 69 37 C66 35 63 35 59 37" stroke="#dc2626" strokeWidth="4" fill="none" strokeLinecap="round" />
-      {antenna}
-      {badge}
+      <rect x="8" y="8" width="64" height="64" rx="20" fill="rgba(15, 23, 42, 0.88)" stroke="rgba(148, 163, 184, 0.35)" />
+      <circle cx="40" cy="40" r="24" fill={`url(#${gradientId})`} opacity="0.92" />
+      <circle cx="40" cy="40" r="19" fill="rgba(3, 8, 16, 0.34)" />
+      {active && !reducedMotion ? (
+        <circle cx="40" cy="40" r="28" fill="none" stroke={accent.start} strokeWidth="2" opacity="0.42">
+          <animate attributeName="r" values="26;31;26" dur="1.8s" repeatCount="indefinite" />
+          <animate attributeName="opacity" values="0.42;0.15;0.42" dur="1.8s" repeatCount="indefinite" />
+        </circle>
+      ) : null}
+      <text x="40" y="47" textAnchor="middle" fill="#f8fafc" fontSize="20" fontWeight="700">
+        {labelMap[icon]}
+      </text>
     </svg>
   );
 }

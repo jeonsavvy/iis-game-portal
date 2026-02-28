@@ -114,8 +114,26 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
   }, [logs]);
 
   useEffect(() => {
-    if (!selectedPipelineId && pipelines.length > 0) {
-      setSelectedPipelineId(pipelines[0].pipeline_id);
+    if (pipelines.length === 0) {
+      if (selectedPipelineId) {
+        setSelectedPipelineId(null);
+      }
+      return;
+    }
+
+    const selected = selectedPipelineId ? pipelines.find((item) => item.pipeline_id === selectedPipelineId) ?? null : null;
+    const preferred =
+      pipelines.find((item) => item.status === "running") ??
+      pipelines.find((item) => item.status === "queued") ??
+      pipelines.find((item) => item.status === "retry") ??
+      pipelines.find((item) => item.status === "skipped") ??
+      pipelines[0];
+
+    const selectedIsTerminal = selected ? selected.status === "success" || selected.status === "error" : false;
+    if (!selected || selectedIsTerminal) {
+      if (preferred && preferred.pipeline_id !== selectedPipelineId) {
+        setSelectedPipelineId(preferred.pipeline_id);
+      }
     }
   }, [pipelines, selectedPipelineId]);
 
@@ -180,4 +198,3 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
     refreshRecentLogs,
   };
 }
-

@@ -8,7 +8,6 @@ type TriggerHistoryItem = {
   keyword: string;
   status: string;
   createdAt: string;
-  executionMode: "auto" | "manual";
   pipelineVersion: string;
 };
 
@@ -69,7 +68,6 @@ export function TriggerForm({
   className?: string;
 } = {}) {
   const [keyword, setKeyword] = useState("");
-  const [executionMode, setExecutionMode] = useState<"auto" | "manual">("auto");
   const [pipelineVersion, setPipelineVersion] = useState("forgeflow-v1");
   const [status, setStatus] = useState<string>("");
   const [history, setHistory] = useState<TriggerHistoryItem[]>([]);
@@ -88,7 +86,6 @@ export function TriggerForm({
           keyword: item.keyword ?? "",
           status: item.status ?? "unknown",
           createdAt: item.createdAt ?? new Date(0).toISOString(),
-          executionMode: (item.executionMode === "manual" ? "manual" : "auto") as TriggerHistoryItem["executionMode"],
           pipelineVersion: item.pipelineVersion?.trim() || "forgeflow-v1",
         }))
         .filter((item) => item.pipelineId.length > 0);
@@ -116,7 +113,6 @@ export function TriggerForm({
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         keyword: sanitizedKeyword,
-        execution_mode: executionMode,
         pipeline_version: pipelineVersion,
       }),
     });
@@ -136,7 +132,6 @@ export function TriggerForm({
         keyword: sanitizedKeyword,
         status: json.status,
         createdAt: new Date().toISOString(),
-        executionMode,
         pipelineVersion,
       },
       ...history,
@@ -154,9 +149,9 @@ export function TriggerForm({
       <div className="section-head compact">
         <div>
           <p className="eyebrow">실행 제어</p>
-          <h3 className="section-title">ForgeFlow 실행</h3>
+          <h3 className="section-title">자동 파이프라인 실행</h3>
         </div>
-        <p className="section-subtitle">키워드 기반으로 기획→빌드→QA→게시 파이프라인을 시작합니다.</p>
+        <p className="section-subtitle">키워드를 입력하면 자동 제작 파이프라인이 시작됩니다.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="stack gap-sm">
@@ -169,17 +164,6 @@ export function TriggerForm({
           minLength={1}
           maxLength={200}
         />
-        <label className="field">
-          <span>실행 모드</span>
-          <select
-            className="input"
-            value={executionMode}
-            onChange={(event) => setExecutionMode(event.target.value as "auto" | "manual")}
-          >
-            <option value="auto">자동 (auto)</option>
-            <option value="manual">수동 (manual)</option>
-          </select>
-        </label>
         <label className="field">
           <span>파이프라인 버전</span>
           <input

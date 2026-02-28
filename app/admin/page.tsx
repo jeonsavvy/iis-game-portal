@@ -39,9 +39,9 @@ function renderAdminSurface({
     <section className="console-page">
       <section className="surface console-hero">
         <div className="console-hero-copy">
-          <p className="eyebrow">운영 관제</p>
-          <h1 className="hero-title">스튜디오 임무 콘솔</h1>
-          <p className="section-subtitle">ForgeFlow 멀티에이전트 파이프라인을 운영실 관점에서 실행·승인·관측·제어합니다.</p>
+          <p className="eyebrow">운영 센터</p>
+          <h1 className="hero-title">게임 제작 운영 콘솔</h1>
+          <p className="section-subtitle">자동 제작 파이프라인의 실행 상태를 확인하고, 필요할 때 일시정지·재개·중단·재시도를 제어합니다.</p>
           <p className="muted-text">권한: {roleLabel} · {identityLabel}</p>
           {previewMode ? <p className="muted-text">프리뷰 모드: 실서버 호출 없이 샘플 데이터로 협업 인터페이스를 검수합니다.</p> : null}
         </div>

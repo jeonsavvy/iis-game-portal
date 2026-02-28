@@ -126,8 +126,8 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
     <section className="surface ops-danger-shell">
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">Danger Zone</p>
-          <h3 className="section-title">완전 삭제 (DB · 스토리지 · 아카이브)</h3>
+          <p className="eyebrow">삭제 관리</p>
+          <h3 className="section-title">게임 완전 삭제 (DB · 스토리지 · 아카이브)</h3>
         </div>
         <p className="section-subtitle">운영 로그는 보존하고, 선택한 게임 산출물만 완전 제거합니다.</p>
       </div>

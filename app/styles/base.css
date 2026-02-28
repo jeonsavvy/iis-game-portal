@@ -142,16 +142,6 @@ a {
   background: rgba(255, 255, 255, 0.03);
 }
 
-.nav-link.support {
-  color: #ffd2ea;
-  border-color: rgba(255, 182, 217, 0.2);
-  background: rgba(255, 182, 217, 0.05);
-}
-
-.donation-disabled {
-  color: #64748b;
-}
-
 .main-shell {
   position: relative;
   z-index: 1;
@@ -416,4 +406,3 @@ a {
   color: #bfdbfe;
   background: rgba(30, 41, 59, 0.5);
 }
-

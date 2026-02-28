@@ -21,6 +21,13 @@ type UsePipelineControlArgs = {
 
 type UsePipelineControlResult = {
   pipelineSummary: PipelineSummary | null;
+  controlAvailability: Record<
+    PipelineControlAction,
+    {
+      enabled: boolean;
+      reason: string;
+    }
+  >;
   busyAction: PipelineControlAction | null;
   feedback: string;
   setFeedback: (value: string) => void;
@@ -61,6 +68,44 @@ function resolveErrorMessage(payload: ErrorResponse | null | undefined): string 
   return "unknown_error";
 }
 
+function buildControlAvailability(pipelineSummary: PipelineSummary | null): Record<
+  PipelineControlAction,
+  {
+    enabled: boolean;
+    reason: string;
+  }
+> {
+  if (!pipelineSummary) {
+    return {
+      pause: { enabled: false, reason: "상태 로딩 중입니다." },
+      resume: { enabled: false, reason: "상태 로딩 중입니다." },
+      cancel: { enabled: false, reason: "상태 로딩 중입니다." },
+      retry: { enabled: false, reason: "상태 로딩 중입니다." },
+    };
+  }
+
+  const { status, waiting_for_stage: waitingForStage } = pipelineSummary;
+
+  return {
+    pause: {
+      enabled: status !== "success" && status !== "error",
+      reason: status === "success" || status === "error" ? "완료/실패 상태에서는 일시정지할 수 없습니다." : "",
+    },
+    resume: {
+      enabled: Boolean(waitingForStage),
+      reason: waitingForStage ? "" : "현재 재개할 대기 단계가 없습니다.",
+    },
+    cancel: {
+      enabled: status !== "success" && status !== "error",
+      reason: status === "success" || status === "error" ? "완료/실패 상태에서는 중단할 수 없습니다." : "",
+    },
+    retry: {
+      enabled: status === "error" || status === "skipped",
+      reason: status === "error" || status === "skipped" ? "" : "실패 또는 일시정지 상태에서만 재시도할 수 있습니다.",
+    },
+  };
+}
+
 export function usePipelineControl({
   previewMode,
   logs,
@@ -73,6 +118,7 @@ export function usePipelineControl({
   const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary | null>(null);
   const [busyAction, setBusyAction] = useState<PipelineControlAction | null>(null);
   const [feedback, setFeedback] = useState("");
+  const controlAvailability = buildControlAvailability(pipelineSummary);
 
   const refreshSummary = useCallback(
     async (pipelineId: string | null) => {
@@ -88,7 +134,7 @@ export function usePipelineControl({
           keyword: "preview-mission",
           source: "console",
           status: latest?.status ?? "running",
-          execution_mode: "manual",
+          execution_mode: "auto",
           waiting_for_stage: latest?.stage ?? "build",
           pipeline_version: "preview-v1",
           error_reason: latest?.reason ?? null,
@@ -132,6 +178,12 @@ export function usePipelineControl({
         return;
       }
 
+      const availability = buildControlAvailability(pipelineSummary)[action];
+      if (!availability.enabled) {
+        setFeedback(`${controlLabels[action]} 불가: ${availability.reason}`);
+        return;
+      }
+
       if (previewMode) {
         setFeedback(`[프리뷰] ${controlLabels[action]} 시뮬레이션 완료`);
         return;
@@ -170,11 +222,12 @@ export function usePipelineControl({
         setBusyAction(null);
       }
     },
-    [selectedPipelineId, previewMode, controlLabels, statusLabels, stageLabels, refreshSummary, refreshRecentLogs],
+    [selectedPipelineId, pipelineSummary, previewMode, controlLabels, statusLabels, stageLabels, refreshSummary, refreshRecentLogs],
   );
 
   return {
     pipelineSummary,
+    controlAvailability,
     busyAction,
     feedback,
     setFeedback,

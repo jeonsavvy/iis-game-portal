@@ -16,7 +16,7 @@ export function MobileActivityPane({ mobileTab, selectedLogs }: MobileActivityPa
     <section className={`surface ops-mobile-log-pane ops-pane ${mobileTab === "activity" ? "is-active" : ""}`}>
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">Activity</p>
+          <p className="eyebrow">모바일 로그</p>
           <h3 className="section-title">모바일 이벤트 피드</h3>
         </div>
         <span className="muted-text">{selectedLogs.length}개 로그</span>

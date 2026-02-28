@@ -22,6 +22,13 @@ type CollabBoardProps = {
   selectedLogs: PipelineLog[];
   agentPresenceEnabled: boolean;
   selectedPipelineId: string | null;
+  controlAvailability: Record<
+    PipelineControlAction,
+    {
+      enabled: boolean;
+      reason: string;
+    }
+  >;
   busyAction: PipelineControlAction | null;
   runControl: (action: PipelineControlAction) => Promise<void>;
 };
@@ -36,6 +43,7 @@ export function CollabBoard({
   selectedLogs,
   agentPresenceEnabled,
   selectedPipelineId,
+  controlAvailability,
   busyAction,
   runControl,
 }: CollabBoardProps) {
@@ -49,25 +57,25 @@ export function CollabBoard({
         <section className="ops-collab-graph">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">Collab Graph</p>
-              <h3 className="section-title">에이전트 작업대</h3>
+              <p className="eyebrow">작업 흐름</p>
+              <h3 className="section-title">단계별 진행 보드</h3>
             </div>
             <div className="ops-counters">
               <span>
                 <strong>{telemetry.found}</strong>
-                <small>기획</small>
+                <small>설계 완료</small>
               </span>
               <span>
                 <strong>{telemetry.built}</strong>
-                <small>빌드</small>
+                <small>제작 완료</small>
               </span>
               <span>
                 <strong>{telemetry.sent}</strong>
-                <small>게시</small>
+                <small>배포 완료</small>
               </span>
               <span>
                 <strong>{telemetry.replied}</strong>
-                <small>공유</small>
+                <small>보고 완료</small>
               </span>
             </div>
           </div>
@@ -124,8 +132,8 @@ export function CollabBoard({
         <section className="ops-workbench">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">Workbench</p>
-              <h3 className="section-title">{STAGE_LABELS[selectedStage]} 작업 상세</h3>
+              <p className="eyebrow">상세 정보</p>
+              <h3 className="section-title">{STAGE_LABELS[selectedStage]} 단계 상세</h3>
             </div>
             {agentPresenceEnabled ? (
               <AgentGlyph
@@ -163,16 +171,40 @@ export function CollabBoard({
           </div>
 
           <div className="ops-workbench-actions">
-            <button className="button button-ghost" type="button" onClick={() => void runControl("pause")} disabled={!selectedPipelineId || busyAction !== null}>
+            <button
+              className="button button-ghost"
+              type="button"
+              title={!controlAvailability.pause.enabled ? controlAvailability.pause.reason : undefined}
+              onClick={() => void runControl("pause")}
+              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.pause.enabled}
+            >
               일시정지
             </button>
-            <button className="button button-primary" type="button" onClick={() => void runControl("resume")} disabled={!selectedPipelineId || busyAction !== null}>
+            <button
+              className="button button-primary"
+              type="button"
+              title={!controlAvailability.resume.enabled ? controlAvailability.resume.reason : undefined}
+              onClick={() => void runControl("resume")}
+              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.resume.enabled}
+            >
               재개
             </button>
-            <button className="button button-danger" type="button" onClick={() => void runControl("cancel")} disabled={!selectedPipelineId || busyAction !== null}>
+            <button
+              className="button button-danger"
+              type="button"
+              title={!controlAvailability.cancel.enabled ? controlAvailability.cancel.reason : undefined}
+              onClick={() => void runControl("cancel")}
+              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.cancel.enabled}
+            >
               중단
             </button>
-            <button className="button button-ghost" type="button" onClick={() => void runControl("retry")} disabled={!selectedPipelineId || busyAction !== null}>
+            <button
+              className="button button-ghost"
+              type="button"
+              title={!controlAvailability.retry.enabled ? controlAvailability.retry.reason : undefined}
+              onClick={() => void runControl("retry")}
+              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.retry.enabled}
+            >
               재시도
             </button>
           </div>
@@ -181,10 +213,10 @@ export function CollabBoard({
         <aside className="ops-live-log">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">Live Rail</p>
+              <p className="eyebrow">실시간 이벤트</p>
               <h3 className="section-title">실시간 로그</h3>
             </div>
-            <span className="muted-text">{selectedLogs.length} logs</span>
+            <span className="muted-text">{selectedLogs.length}개</span>
           </div>
 
           <ul className="ops-log-list">

@@ -115,7 +115,7 @@ describe("POST /api/pipelines/trigger", () => {
           keyword: "neon drift",
           source: "console",
           requested_by: "user-1",
-          execution_mode: "manual",
+          execution_mode: "auto",
           pipeline_version: "forgeflow-v2",
           idempotency_key: "idem-123",
         }),

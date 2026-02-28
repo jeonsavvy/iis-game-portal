@@ -231,7 +231,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <form className="surface quick-discover-bar" method="GET">
         <div className="quick-discover-head">
           <div>
-            <p className="eyebrow">Quick Discover</p>
+            <p className="eyebrow">빠른 탐색</p>
             <h2 className="section-title">빠른 탐색</h2>
           </div>
           <details className="quick-discover-advanced">

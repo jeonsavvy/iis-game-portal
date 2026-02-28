@@ -10,7 +10,6 @@ Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 - `/login` : Studio Console 관리자 매직링크 로그인
 - `/admin` : Studio Console
   - 파이프라인 트리거
-  - 수동 단계 승인
   - Pause/Resume/Stop/Retry 오퍼레이터 제어
   - 실시간 파이프라인 로그
   - role 기반 접근 제어(`master_admin`)
@@ -28,15 +27,8 @@ Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 - `lib/supabase/*` : browser/server/admin/realtime 클라이언트
 - `lib/auth/rbac.ts` : role 체크 (`master_admin` 단일 운영 모드)
 - `lib/auth/admin-auth.ts` : 관리자 이메일 allowlist / next 경로 정규화
-- `types/pipeline.ts` : `Stylist`, `style` 포함
-- `app/api/pipelines/approve/route.ts` : 수동 단계 승인 프록시
+- `types/pipeline.ts` : 파이프라인/로그/제어 타입 정의
 - `app/api/pipelines/trigger/route.ts` : 코어 엔진 트리거 프록시
-
-## 후원 CTA (현재 정책)
-
-- GNB에는 **PayPal 외부 후원 링크**만 노출
-- 앱 내 결제 시스템이 아니라 외부 링크 이동 UX만 제공
-- URL은 HTTPS + allowlist(host) 검증 후 노출
 
 ## 로컬 실행
 
@@ -70,7 +62,6 @@ npm run build
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 - `NEXT_PUBLIC_SITE_URL` *(권장: canonical/OG 메타 기준 URL, 예: `https://arcade.example.com`)*
-- `NEXT_PUBLIC_PAYPAL_DONATION_URL`
 
 ### 서버 전용
 - `FEATURED_GAME_SLUG` *(선택: 홈 Hero 대표작 슬러그 고정)*
@@ -101,7 +92,6 @@ npm run build
 - `/admin`은 middleware 쿠키 게이트 + 서버측 RBAC 이중 검사
 - 외부 fetch는 timeout/retry 사용 (`fetchWithRetry`) + `429/5xx` 재시도
 - 비멱등 POST는 `Idempotency-Key` 없으면 재시도하지 않음
-- 후원 링크는 allowlist 필터링으로 오배치/피싱 위험 완화
 
 ## Cloudflare 배포
 
@@ -123,7 +113,6 @@ npm run build
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CORE_ENGINE_URL`
 - `CORE_ENGINE_API_TOKEN`
-- `NEXT_PUBLIC_PAYPAL_DONATION_URL`
 - `ADMIN_ALLOWED_EMAILS` *(권장: secret 또는 repo variable로 관리)*
 
 ## 트러블슈팅 (자주 보는 에러)

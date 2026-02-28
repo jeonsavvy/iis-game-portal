@@ -28,6 +28,13 @@ type CommandHeadProps = {
   feedback: string;
   mobileTab: MobileTabKey;
   setMobileTab: (tab: MobileTabKey) => void;
+  controlAvailability: Record<
+    PipelineControlAction,
+    {
+      enabled: boolean;
+      reason: string;
+    }
+  >;
   busyAction: PipelineControlAction | null;
   runControl: (action: PipelineControlAction) => Promise<void>;
 };
@@ -44,6 +51,7 @@ export function CommandHead({
   feedback,
   mobileTab,
   setMobileTab,
+  controlAvailability,
   busyAction,
   runControl,
 }: CommandHeadProps) {
@@ -51,18 +59,18 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">Ops Command</p>
-          <h3 className="section-title">멀티 에이전트 협업 관제</h3>
-          <p className="section-subtitle">한 파이프라인의 협업 흐름을 추적하고, 필요한 순간에 즉시 제어합니다.</p>
+          <p className="eyebrow">실행 제어</p>
+          <h3 className="section-title">자동 제작 파이프라인 관제</h3>
+          <p className="section-subtitle">한 파이프라인 상태를 기준으로, 가능한 제어만 정확히 실행합니다.</p>
         </div>
         <div className="ops-status-strip">
-          <span className="status-chip tone-running">running {globalStatus.running}</span>
-          {globalStatus.retry > 0 ? <span className="status-chip tone-warn">retry {globalStatus.retry}</span> : null}
-          {globalStatus.error > 0 ? <span className="status-chip tone-error">error {globalStatus.error}</span> : null}
-          <span className="status-chip tone-success">success {globalStatus.success}</span>
-          {pollMode === "polling" ? <span className="status-chip tone-warn">polling</span> : null}
+          <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
+          {globalStatus.retry > 0 ? <span className="status-chip tone-warn">재시도 {globalStatus.retry}</span> : null}
+          {globalStatus.error > 0 ? <span className="status-chip tone-error">실패 {globalStatus.error}</span> : null}
+          <span className="status-chip tone-success">완료 {globalStatus.success}</span>
+          {pollMode === "polling" ? <span className="status-chip tone-warn">폴링중</span> : null}
           <button type="button" className="button button-ghost ops-agent-toggle" onClick={onToggleAgentPresence}>
-            연출 레이어 {agentPresenceEnabled ? "ON" : "OFF"}
+            아이콘 표시 {agentPresenceEnabled ? "ON" : "OFF"}
           </button>
         </div>
       </div>
@@ -86,7 +94,8 @@ export function CommandHead({
               key={action}
               className={`button ${action === "cancel" ? "button-danger" : action === "resume" ? "button-primary" : "button-ghost"}`}
               type="button"
-              disabled={!selectedPipelineId || busyAction !== null}
+              title={!controlAvailability[action].enabled ? controlAvailability[action].reason : undefined}
+              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability[action].enabled}
               onClick={() => void runControl(action)}
             >
               {busyAction === action ? `${CONTROL_LABELS[action]}...` : CONTROL_LABELS[action]}
@@ -96,11 +105,10 @@ export function CommandHead({
       </div>
 
       <div className="ops-context-tags">
-        <span className="terminal-tag">pipeline: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
-        {pipelineSummary?.status ? <span className="terminal-tag subtle">status: {STATUS_LABELS[pipelineSummary.status]}</span> : null}
-        {pipelineSummary?.execution_mode ? <span className="terminal-tag subtle">mode: {pipelineSummary.execution_mode}</span> : null}
+        <span className="terminal-tag">파이프라인: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
+        {pipelineSummary?.status ? <span className="terminal-tag subtle">상태: {STATUS_LABELS[pipelineSummary.status]}</span> : null}
         {pipelineSummary?.waiting_for_stage ? (
-          <span className="terminal-tag subtle">waiting: {STAGE_LABELS[pipelineSummary.waiting_for_stage]}</span>
+          <span className="terminal-tag subtle">대기 단계: {STAGE_LABELS[pipelineSummary.waiting_for_stage]}</span>
         ) : null}
       </div>
 
