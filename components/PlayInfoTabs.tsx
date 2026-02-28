@@ -139,7 +139,7 @@ export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, control
             ))}
           </ul>
         ) : (
-          <p className="muted-text">리뷰 생성 대기 중이거나 생성에 실패했습니다. 운영 콘솔에서 최신 로그를 확인해주세요.</p>
+          <p className="muted-text">리뷰 생성 대기 중이거나 생성에 실패했습니다. 운영실에서 최신 로그를 확인해주세요.</p>
         )}
       </details>
     </section>

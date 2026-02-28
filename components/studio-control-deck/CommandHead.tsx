@@ -17,8 +17,6 @@ import type {
 type MobileTabKey = (typeof MOBILE_TABS)[number]["key"];
 
 type CommandHeadProps = {
-  agentPresenceEnabled: boolean;
-  onToggleAgentPresence: () => void;
   globalStatus: Record<PipelineStatus, number>;
   pollMode: "idle" | "polling";
   selectedPipelineId: string | null;
@@ -40,8 +38,6 @@ type CommandHeadProps = {
 };
 
 export function CommandHead({
-  agentPresenceEnabled,
-  onToggleAgentPresence,
   globalStatus,
   pollMode,
   selectedPipelineId,
@@ -59,9 +55,7 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">에이전트 사무실</p>
-          <h3 className="section-title">자동 제작 파이프라인 관제</h3>
-          <p className="section-subtitle">사무실 보드에서 진행 상태를 보고, 가능한 제어만 정확히 실행합니다.</p>
+          <h3 className="section-title">파이프라인</h3>
         </div>
         <div className="ops-status-strip">
           <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
@@ -69,9 +63,6 @@ export function CommandHead({
           {globalStatus.error > 0 ? <span className="status-chip tone-error">실패 {globalStatus.error}</span> : null}
           <span className="status-chip tone-success">완료 {globalStatus.success}</span>
           {pollMode === "polling" ? <span className="status-chip tone-warn">폴링중</span> : null}
-          <button type="button" className="button button-ghost ops-agent-toggle" onClick={onToggleAgentPresence}>
-            아이콘 표시 {agentPresenceEnabled ? "ON" : "OFF"}
-          </button>
         </div>
       </div>
 

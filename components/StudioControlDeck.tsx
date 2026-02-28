@@ -20,7 +20,6 @@ import type { PipelineLog, PipelineStage } from "@/types/pipeline";
 export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
   const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("trigger");
-  const [agentPresenceEnabled, setAgentPresenceEnabled] = useState(true);
   const previousPipelineIdRef = useRef<string | null>(null);
 
   const {
@@ -78,10 +77,8 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
   }, [selectedPipelineId, selectedLogs, selectedStage, pipelineSummary?.waiting_for_stage, latestStageMap]);
 
   return (
-    <section className={`ops-console-deck${agentPresenceEnabled ? "" : " agent-presence-off"}`}>
+    <section className="ops-console-deck">
       <CommandHead
-        agentPresenceEnabled={agentPresenceEnabled}
-        onToggleAgentPresence={() => setAgentPresenceEnabled((prev) => !prev)}
         globalStatus={globalStatus}
         pollMode={pollMode}
         selectedPipelineId={selectedPipelineId}
@@ -104,7 +101,6 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         selectedStage={selectedStage}
         setSelectedStage={setSelectedStage}
         selectedLogs={selectedLogs}
-        agentPresenceEnabled={agentPresenceEnabled}
         selectedPipelineId={selectedPipelineId}
         controlAvailability={controlAvailability}
         busyAction={busyAction}

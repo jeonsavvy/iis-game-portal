@@ -33,8 +33,7 @@ export function UtilityShell({
           <article className="surface form-panel ops-utility-card">
             <div className="section-head compact">
               <div>
-                <p className="eyebrow">Preview</p>
-                <h3 className="section-title">자동 실행 시뮬레이션</h3>
+                <h3 className="section-title">실행</h3>
               </div>
             </div>
             <p className="muted-text">프리뷰 모드에서는 실제 트리거/제어 요청을 전송하지 않습니다.</p>
@@ -53,8 +52,7 @@ export function UtilityShell({
         <article className="surface form-panel ops-utility-card">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">문제 추적</p>
-              <h3 className="section-title">최근 실패 원인</h3>
+              <h3 className="section-title">실패 내역</h3>
             </div>
           </div>
 
@@ -74,8 +72,7 @@ export function UtilityShell({
         <article className="surface form-panel ops-utility-card">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">상태 요약</p>
-              <h3 className="section-title">배포/아카이브 상태</h3>
+              <h3 className="section-title">상태</h3>
             </div>
           </div>
 

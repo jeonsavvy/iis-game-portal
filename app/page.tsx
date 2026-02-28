@@ -26,7 +26,6 @@ type HomeSearchParams = {
   genre?: string;
   sort?: string;
   q?: string;
-  playable?: string;
 };
 
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
@@ -84,19 +83,13 @@ function applyHomeFilters(
     genre,
     sort,
     q,
-    playableOnly,
   }: {
     genre: (typeof GENRE_OPTIONS)[number];
     sort: (typeof SORT_OPTIONS)[number];
     q: string;
-    playableOnly: boolean;
   },
 ): GameRow[] {
-  let rows = sourceRows.filter((game) => game.status !== "archived");
-
-  if (playableOnly) {
-    rows = rows.filter((game) => game.status === "active");
-  }
+  let rows = sourceRows.filter((game) => game.status === "active");
 
   if (genre !== "all") {
     rows = rows.filter((game) => game.genre === genre);
@@ -131,22 +124,17 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       ? (params.sort as (typeof SORT_OPTIONS)[number])
       : "newest";
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const playableOnly = params.playable === "1";
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
 
   let rows: GameRow[] = [];
   let loadError: string | null = null;
 
   if (previewMode) {
-    rows = applyHomeFilters(PREVIEW_GAMES, { genre, sort, q, playableOnly });
+    rows = applyHomeFilters(PREVIEW_GAMES, { genre, sort, q });
   } else {
     try {
       const supabase = await createSupabaseServerClient();
-      let query = supabase.from("games_metadata").select("*").neq("status", "archived");
-
-      if (playableOnly) {
-        query = query.eq("status", "active");
-      }
+      let query = supabase.from("games_metadata").select("*").eq("status", "active");
 
       if (genre !== "all") {
         query = query.eq("genre", genre);
@@ -191,7 +179,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <p className="arcade-hero-description">
             {heroGame
               ? `${heroGame.genre} 장르 대표작을 바로 실행하거나 상세 화면에서 조작법과 연관 게임을 확인하세요.`
-              : "지금 생성된 게임이 없습니다. 스튜디오 콘솔에서 파이프라인을 실행하면 자동으로 등록됩니다."}
+              : "지금 생성된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
           </p>
           {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 실서버 연결 없이 샘플 데이터로 화면을 검수 중입니다.</p> : null}
           <div className="arcade-hero-actions">
@@ -206,7 +194,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
               </>
             ) : (
               <Link className="button button-ghost" href="/admin">
-                스튜디오 콘솔 이동
+                운영실 이동
               </Link>
             )}
           </div>
@@ -222,22 +210,15 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             <strong>{rows.length > 0 ? new Date(rows[0].updated_at).toLocaleDateString("ko-KR") : "-"}</strong>
           </div>
           <div className="arcade-hero-stat muted">
-            <span>큐레이션 기준</span>
-            <strong>{process.env.FEATURED_GAME_SLUG ? "FEATURED_GAME_SLUG" : "최신 플레이 가능 게임"}</strong>
+            <span>선정 기준</span>
+            <strong>{process.env.FEATURED_GAME_SLUG ? "고정 추천" : "최신 게임"}</strong>
           </div>
         </aside>
       </section>
 
       <form className="surface quick-discover-bar" method="GET">
         <div className="quick-discover-head">
-          <div>
-            <p className="eyebrow">빠른 탐색</p>
-            <h2 className="section-title">빠른 탐색</h2>
-          </div>
-          <details className="quick-discover-advanced">
-            <summary>고급 안내</summary>
-            <p>정렬+장르+검색으로 좁힌 뒤 플레이 가능만 켜면 즉시 실행 가능한 게임만 빠르게 찾을 수 있습니다.</p>
-          </details>
+          <h2 className="section-title">빠른 탐색</h2>
         </div>
 
         <div className="quick-discover-grid">
@@ -268,11 +249,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             <input className="input" name="q" defaultValue={q} placeholder="게임 이름으로 검색" />
           </label>
 
-          <label className="playable-filter-toggle">
-            <input type="checkbox" name="playable" value="1" defaultChecked={playableOnly} />
-            <span>플레이 가능한 게임만 보기</span>
-          </label>
-
           <button className="button button-primary" type="submit">
             필터 적용
           </button>
@@ -289,13 +265,13 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       {rows.length === 0 ? (
         <section className="surface arcade-empty-state">
           <h3>조건에 맞는 게임이 없습니다</h3>
-          <p>검색어를 조정하거나 스튜디오 콘솔에서 새로운 파이프라인을 실행해보세요.</p>
+          <p>검색어를 조정하거나 운영실에서 새로운 파이프라인을 실행해보세요.</p>
         </section>
       ) : (
         <>
           <section className="arcade-section">
             <div className="arcade-section-head">
-              <h3>지금 플레이 가능</h3>
+              <h3>추천 게임</h3>
               <span>{sections.playable.length}개</span>
             </div>
             <div className="arcade-game-grid featured-grid">
@@ -307,7 +283,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
           <section className="arcade-section">
             <div className="arcade-section-head">
-              <h3>최신 생성작</h3>
+              <h3>최신 게임</h3>
               <span>최근 생성 순</span>
             </div>
             <div className="arcade-game-grid">
@@ -319,7 +295,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
           <section className="arcade-section">
             <div className="arcade-section-head">
-              <h3>장르별 탐색</h3>
+              <h3>장르별 게임</h3>
               <span>장르 대표작</span>
             </div>
             <div className="arcade-game-grid compact-grid">
@@ -332,7 +308,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <section className="arcade-section two-column">
             <div>
               <div className="arcade-section-head">
-                <h3>큐레이터 픽 / 실험작</h3>
+                <h3>실험작</h3>
                 <span>탐색 추천</span>
               </div>
               <div className="arcade-game-grid compact-grid">

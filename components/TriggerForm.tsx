@@ -148,10 +148,8 @@ export function TriggerForm({
     <section className={`surface form-panel${className ? ` ${className}` : ""}`}>
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">실행 제어</p>
-          <h3 className="section-title">자동 파이프라인 실행</h3>
+          <h3 className="section-title">실행</h3>
         </div>
-        <p className="section-subtitle">키워드를 입력하면 자동 제작 파이프라인이 시작됩니다.</p>
       </div>
 
       <form onSubmit={handleSubmit} className="stack gap-sm">

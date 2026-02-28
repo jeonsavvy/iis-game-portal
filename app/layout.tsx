@@ -41,7 +41,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
               홈
             </Link>
             <Link className="nav-link" href="/admin">
-              스튜디오 콘솔
+              운영실
             </Link>
           </div>
         </nav>

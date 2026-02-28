@@ -23,7 +23,7 @@ function getErrorMessage(code: string | null | undefined): string | null {
 
   switch (code) {
     case "forbidden":
-      return "허용된 관리자 이메일만 Studio Console에 로그인할 수 있습니다.";
+      return "허용된 관리자 이메일만 운영실에 로그인할 수 있습니다.";
     case "missing_code":
       return "인증 코드가 누락되었습니다. 메일 링크를 다시 열어주세요.";
     case "exchange_failed":
@@ -98,9 +98,9 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
   return (
     <section className="card" style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 12 }}>
-      <h1 style={{ margin: 0 }}>스튜디오 콘솔 로그인</h1>
+      <h1 style={{ margin: 0 }}>운영실 로그인</h1>
       <p style={{ margin: 0, color: "#94a3b8" }}>
-        관리자 이메일만 로그인 가능합니다. 매직링크로 세션을 발급한 뒤 Studio Console로 이동합니다.
+        관리자 이메일만 로그인 가능합니다. 매직링크로 세션을 발급한 뒤 운영실로 이동합니다.
       </p>
       <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
         <label style={{ display: "grid", gap: 4 }}>

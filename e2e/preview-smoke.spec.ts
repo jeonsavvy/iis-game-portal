@@ -4,7 +4,7 @@ test("홈이 프리뷰 모드로 렌더링된다", async ({ page }) => {
   await page.goto("/");
 
   await expect(page.getByText("프리뷰 모드: 실서버 연결 없이 샘플 데이터로 화면을 검수 중입니다.")).toBeVisible();
-  await expect(page.getByRole("heading", { name: "지금 플레이 가능" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "추천 게임" })).toBeVisible();
 });
 
 test("플레이 페이지가 프리뷰 스테이지를 노출한다", async ({ page }) => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
-import { AGENT_LABELS, AGENT_LAYOUT, STAGE_GUIDE, STAGE_LABELS, STATUS_LABELS } from "@/components/studio-control-deck/config";
+import { AGENT_LABELS, AGENT_LAYOUT, STAGE_GUIDE, STATUS_LABELS } from "@/components/studio-control-deck/config";
 import { compactMessage, qualitySignals, statusTone } from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
@@ -20,7 +20,6 @@ type CollabBoardProps = {
   selectedStage: Exclude<PipelineStage, "done">;
   setSelectedStage: (stage: Exclude<PipelineStage, "done">) => void;
   selectedLogs: PipelineLog[];
-  agentPresenceEnabled: boolean;
   selectedPipelineId: string | null;
   controlAvailability: Record<
     PipelineControlAction,
@@ -41,7 +40,6 @@ export function CollabBoard({
   selectedStage,
   setSelectedStage,
   selectedLogs,
-  agentPresenceEnabled,
   selectedPipelineId,
   controlAvailability,
   busyAction,
@@ -57,8 +55,7 @@ export function CollabBoard({
         <section className="ops-collab-graph">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">사무실 메인 보드</p>
-              <h3 className="section-title">단계별 진행 보드</h3>
+              <h3 className="section-title">에이전트</h3>
             </div>
             <div className="ops-counters">
               <span>
@@ -106,7 +103,7 @@ export function CollabBoard({
                     onClick={() => setSelectedStage(agent.stage)}
                   >
                     <div className="ops-node-top">
-                      {agentPresenceEnabled ? <AgentGlyph icon={agent.icon} tone={tone} active={active} /> : null}
+                      <AgentGlyph icon={agent.icon} tone={tone} active={active} />
                       <div>
                         <p>{agent.role}</p>
                         <h4>{agent.title}</h4>
@@ -132,31 +129,18 @@ export function CollabBoard({
         <section className="ops-workbench">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">상세 정보</p>
-              <h3 className="section-title">{STAGE_LABELS[selectedStage]} 단계 상세</h3>
+              <h3 className="section-title">{selectedAgent.role}</h3>
             </div>
-            {agentPresenceEnabled ? (
-              <AgentGlyph
-                icon={selectedAgent.icon}
-                tone={statusTone(selectedStageLog?.status ?? null)}
-                active={selectedStageLog?.status === "running" || pipelineSummary?.waiting_for_stage === selectedStage}
-              />
-            ) : null}
+            <AgentGlyph
+              icon={selectedAgent.icon}
+              tone={statusTone(selectedStageLog?.status ?? null)}
+              active={selectedStageLog?.status === "running" || pipelineSummary?.waiting_for_stage === selectedStage}
+            />
           </div>
 
           <div className="ops-workbench-card">
-            <p>{STAGE_GUIDE[selectedStage].summary}</p>
-            <ul className="bullet-list compact">
-              <li>
-                <strong>핵심 포커스:</strong> {STAGE_GUIDE[selectedStage].focus}
-              </li>
-              <li>
-                <strong>핸드오프:</strong> {STAGE_GUIDE[selectedStage].handoff}
-              </li>
-              <li>
-                <strong>최신 메시지:</strong> {compactMessage(selectedStageLog?.message)}
-              </li>
-            </ul>
+            <p>{STAGE_GUIDE[selectedStage]}</p>
+            <p className="muted-text">최근: {compactMessage(selectedStageLog?.message)}</p>
           </div>
 
           <div className="ops-workbench-meta">
@@ -213,8 +197,7 @@ export function CollabBoard({
         <aside className="ops-live-log">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">실시간 이벤트</p>
-              <h3 className="section-title">실시간 로그</h3>
+              <h3 className="section-title">로그</h3>
             </div>
             <span className="muted-text">{selectedLogs.length}개</span>
           </div>
@@ -226,12 +209,10 @@ export function CollabBoard({
               const signals = qualitySignals(log);
               const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "scout";
               return (
-                <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}${agentPresenceEnabled ? "" : " no-agent"}`}>
-                  {agentPresenceEnabled ? <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} /> : null}
+                <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>
+                  <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} />
                   <div>
-                    <strong>
-                      {STAGE_LABELS[log.stage]} · {AGENT_LABELS[log.agent_name] ?? log.agent_name}
-                    </strong>
+                    <strong>에이전트: {AGENT_LABELS[log.agent_name] ?? log.agent_name}</strong>
                     <p>{compactMessage(log.message)}</p>
                     {(signals.fatal > 0 || signals.warning > 0) && (
                       <small>

@@ -1,6 +1,6 @@
 # iis-game-portal (IIS Arcade + Studio Console)
 
-IIS 게임 탐색/플레이/운영 콘솔용 Next.js(App Router) 포털입니다.  
+IIS 게임 탐색/플레이/운영실용 Next.js(App Router) 포털입니다.  
 Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 
 ## 주요 페이지

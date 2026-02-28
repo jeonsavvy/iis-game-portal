@@ -39,9 +39,7 @@ function renderAdminSurface({
     <section className="console-page">
       <section className="surface console-hero">
         <div className="console-hero-copy">
-          <p className="eyebrow">운영 센터</p>
-          <h1 className="hero-title">게임 제작 운영 콘솔</h1>
-          <p className="section-subtitle">자동 제작 파이프라인의 실행 상태를 확인하고, 필요할 때 일시정지·재개·중단·재시도를 제어합니다.</p>
+          <h1 className="hero-title">운영실</h1>
           <p className="muted-text">권한: {roleLabel} · {identityLabel}</p>
           {previewMode ? <p className="muted-text">프리뷰 모드: 실서버 호출 없이 샘플 데이터로 협업 인터페이스를 검수합니다.</p> : null}
         </div>
@@ -91,8 +89,8 @@ export default async function AdminPage() {
   } catch (error) {
     return (
       <section className="card" style={{ display: "grid", gap: 8 }}>
-        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
-        <p style={{ margin: 0 }}>Supabase 구성이 올바르지 않아 콘솔을 불러오지 못했습니다.</p>
+        <h1 style={{ margin: 0 }}>운영실</h1>
+        <p style={{ margin: 0 }}>Supabase 구성이 올바르지 않아 운영실을 불러오지 못했습니다.</p>
         <p style={{ margin: 0, color: "var(--muted)" }}>{error instanceof Error ? error.message : "unknown_error"}</p>
       </section>
     );
@@ -105,8 +103,8 @@ export default async function AdminPage() {
   if (!user) {
     return (
       <section className="card" style={{ display: "grid", gap: 8 }}>
-        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
-        <p style={{ margin: 0 }}>스튜디오 콘솔에 접근하려면 로그인이 필요합니다.</p>
+        <h1 style={{ margin: 0 }}>운영실</h1>
+        <p style={{ margin: 0 }}>운영실에 접근하려면 로그인이 필요합니다.</p>
         <Link className="button" href="/login?next=/admin">
           로그인 페이지로 이동
         </Link>
@@ -120,7 +118,7 @@ export default async function AdminPage() {
   if (!canReadPipelineLogs(role)) {
     return (
       <section className="card" style={{ display: "grid", gap: 8 }}>
-        <h1 style={{ margin: 0 }}>스튜디오 콘솔</h1>
+        <h1 style={{ margin: 0 }}>운영실</h1>
         <p style={{ margin: 0 }}>
           접근 권한이 없습니다. master_admin 권한이 필요합니다. (현재 로그인: {user.email ?? user.id})
         </p>
