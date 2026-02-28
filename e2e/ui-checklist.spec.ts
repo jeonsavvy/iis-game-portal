@@ -4,7 +4,7 @@ test("홈 화면이 hero + curated rail 구조를 유지한다", async ({ page }
   await page.goto("/");
 
   await expect(page.locator(".arcade-kicker")).toHaveText("IIS ARCADE");
-  await expect(page.getByText("빠른 탐색")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "빠른 탐색" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "큐레이터 픽 / 실험작" })).toBeVisible();
 
   await expect(page.locator(".arcade-hero-showcase")).toBeVisible();

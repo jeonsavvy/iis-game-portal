@@ -58,7 +58,6 @@ jobs:
       SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
       CORE_ENGINE_URL: ${{ secrets.CORE_ENGINE_URL }}
       CORE_ENGINE_API_TOKEN: ${{ secrets.CORE_ENGINE_API_TOKEN }}
-      NEXT_PUBLIC_PAYPAL_DONATION_URL: ${{ secrets.NEXT_PUBLIC_PAYPAL_DONATION_URL }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4

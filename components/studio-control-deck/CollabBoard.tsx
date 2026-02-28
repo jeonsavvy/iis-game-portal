@@ -57,7 +57,7 @@ export function CollabBoard({
         <section className="ops-collab-graph">
           <div className="section-head compact">
             <div>
-              <p className="eyebrow">작업 흐름</p>
+              <p className="eyebrow">사무실 메인 보드</p>
               <h3 className="section-title">단계별 진행 보드</h3>
             </div>
             <div className="ops-counters">

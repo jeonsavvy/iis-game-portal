@@ -59,9 +59,9 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <p className="eyebrow">실행 제어</p>
+          <p className="eyebrow">에이전트 사무실</p>
           <h3 className="section-title">자동 제작 파이프라인 관제</h3>
-          <p className="section-subtitle">한 파이프라인 상태를 기준으로, 가능한 제어만 정확히 실행합니다.</p>
+          <p className="section-subtitle">사무실 보드에서 진행 상태를 보고, 가능한 제어만 정확히 실행합니다.</p>
         </div>
         <div className="ops-status-strip">
           <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
