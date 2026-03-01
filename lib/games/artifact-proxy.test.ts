@@ -149,7 +149,7 @@ describe("proxyArtifactResponse", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("content-type")).toBe("application/javascript; charset=utf-8");
     expect(response.headers.get("x-content-type-options")).toBe("nosniff");
-    expect(response.headers.get("cross-origin-resource-policy")).toBe("same-origin");
+    expect(response.headers.get("cross-origin-resource-policy")).toBe("cross-origin");
     expect(response.headers.get("x-iis-artifact-proxy")).toBe("1");
     expect(response.headers.has("x-iis-artifact-source")).toBe(false);
   });

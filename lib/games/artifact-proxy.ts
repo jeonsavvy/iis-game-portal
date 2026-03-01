@@ -225,7 +225,9 @@ export async function proxyArtifactResponse(target: ArtifactTarget): Promise<Nex
       "content-type": resolveProxyContentType(upstreamContentType, target.contentTypeHint),
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
-      "cross-origin-resource-policy": "same-origin",
+      // sandbox iframe (without allow-same-origin) gets an opaque origin.
+      // strict same-origin CORP blocks loading its own proxied JS/CSS assets.
+      "cross-origin-resource-policy": "cross-origin",
       "x-iis-artifact-proxy": "1",
     },
   });
