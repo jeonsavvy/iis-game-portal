@@ -53,6 +53,23 @@ export function stageEvidence(log: PipelineLog | null): string[] {
   if (!log || !log.metadata || typeof log.metadata !== "object") return [];
   const metadata = log.metadata as Record<string, unknown>;
   const rows: string[] = [];
+  const deliverables = Array.isArray(metadata.deliverables)
+    ? metadata.deliverables.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+
+  if (typeof metadata.contract_status === "string" && metadata.contract_status.trim()) {
+    rows.push(`계약 ${metadata.contract_status}`);
+  }
+  const contributionScore = numberValue(metadata.contribution_score);
+  if (contributionScore !== null) {
+    rows.push(`기여 ${contributionScore.toFixed(1)}`);
+  }
+  if (typeof metadata.contract_summary === "string" && metadata.contract_summary.trim()) {
+    rows.push(compactMessage(metadata.contract_summary));
+  }
+  if (deliverables.length > 0) {
+    rows.push(`산출물 ${deliverables.slice(0, 2).join(" · ")}`);
+  }
 
   if (log.stage === "build") {
     const engine = metadata.genre_engine_selected;

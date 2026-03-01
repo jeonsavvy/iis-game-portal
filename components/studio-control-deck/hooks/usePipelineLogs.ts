@@ -35,8 +35,14 @@ function buildLogKey(log: PipelineLog): string {
 
 export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArgs): UsePipelineLogsResult {
   const [logs, setLogs] = useState<PipelineLog[]>(initialLogs);
-  const [selectedPipelineId, setSelectedPipelineId] = useState<string | null>(initialLogs[0]?.pipeline_id ?? null);
+  const [selectedPipelineId, setSelectedPipelineIdState] = useState<string | null>(initialLogs[0]?.pipeline_id ?? null);
+  const [selectionLocked, setSelectionLocked] = useState<boolean>(false);
   const [pollMode, setPollMode] = useState<"idle" | "polling">("idle");
+
+  const setSelectedPipelineId = useCallback((pipelineId: string | null) => {
+    setSelectionLocked(true);
+    setSelectedPipelineIdState(pipelineId);
+  }, []);
 
   const upsertLogs = useCallback((incoming: PipelineLog[]) => {
     setLogs((prev) => {
@@ -116,7 +122,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
   useEffect(() => {
     if (pipelines.length === 0) {
       if (selectedPipelineId) {
-        setSelectedPipelineId(null);
+        setSelectedPipelineIdState(null);
       }
       return;
     }
@@ -131,10 +137,20 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
 
     if (!selected) {
       if (preferred && preferred.pipeline_id !== selectedPipelineId) {
-        setSelectedPipelineId(preferred.pipeline_id);
+        setSelectionLocked(false);
+        setSelectedPipelineIdState(preferred.pipeline_id);
       }
+      return;
     }
-  }, [pipelines, selectedPipelineId]);
+
+    if (selectionLocked) {
+      return;
+    }
+
+    if (preferred && preferred.pipeline_id !== selectedPipelineId) {
+      setSelectedPipelineIdState(preferred.pipeline_id);
+    }
+  }, [pipelines, selectedPipelineId, selectionLocked]);
 
   const selectedLogs = useMemo(() => {
     if (!selectedPipelineId) {

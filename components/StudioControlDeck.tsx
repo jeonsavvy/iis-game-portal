@@ -16,6 +16,14 @@ import { usePipelineControl } from "@/components/studio-control-deck/hooks/usePi
 import { usePipelineLogs } from "@/components/studio-control-deck/hooks/usePipelineLogs";
 import type { PipelineLog, PipelineStage } from "@/types/pipeline";
 
+function isInteractiveStage(stage: PipelineStage): stage is Exclude<PipelineStage, "done"> {
+  return stage !== "done";
+}
+
+function isInteractiveLog(log: PipelineLog): log is PipelineLog & { stage: Exclude<PipelineStage, "done"> } {
+  return isInteractiveStage(log.stage);
+}
+
 export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
   const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("analyze");
@@ -49,8 +57,14 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     if (pipelineChanged) {
       previousPipelineIdRef.current = selectedPipelineId;
       const latestLog = selectedLogs[0];
-      if (latestLog && latestLog.stage !== "done") {
+      if (latestLog && isInteractiveStage(latestLog.stage)) {
         setSelectedStage(latestLog.stage);
+        return;
+      }
+
+      const latestInteractive = selectedLogs.find(isInteractiveLog);
+      if (latestInteractive) {
+        setSelectedStage(latestInteractive.stage);
         return;
       }
 

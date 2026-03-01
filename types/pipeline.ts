@@ -22,6 +22,17 @@ export type PipelineStage =
 export type PipelineStatus = "queued" | "running" | "success" | "error" | "retry" | "skipped";
 export type PipelineControlAction = "pause" | "resume" | "cancel" | "retry";
 
+export type PipelineLogMetadata = {
+  deliverables?: string[];
+  contract_status?: "pass" | "warn" | "fail" | string;
+  contract_summary?: string;
+  contribution_score?: number;
+  stage_contribution_summary?: Record<string, unknown>;
+  fatal_errors?: string[];
+  non_fatal_warnings?: string[];
+  [key: string]: unknown;
+};
+
 export type PipelineLog = {
   id?: number;
   pipeline_id: string;
@@ -31,7 +42,7 @@ export type PipelineLog = {
   message: string;
   reason: string | null;
   attempt: number;
-  metadata: Record<string, unknown>;
+  metadata: PipelineLogMetadata;
   created_at: string;
 };
 

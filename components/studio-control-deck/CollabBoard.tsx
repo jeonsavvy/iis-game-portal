@@ -49,6 +49,9 @@ export function CollabBoard({
   const selectedAgent = AGENT_LAYOUT.find((item) => item.stage === selectedStage) ?? AGENT_LAYOUT[0];
   const selectedSignals = qualitySignals(selectedStageLog);
   const selectedEvidence = stageEvidence(selectedStageLog);
+  const selectedDeliverables = Array.isArray(selectedStageLog?.metadata?.deliverables)
+    ? selectedStageLog.metadata.deliverables.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
@@ -139,6 +142,13 @@ export function CollabBoard({
 
           <div className="ops-workbench-card">
             <p className="muted-text">최근: {compactMessage(selectedStageLog?.message)}</p>
+            {selectedDeliverables.length > 0 ? (
+              <div className="ops-log-evidence">
+                {selectedDeliverables.slice(0, 4).map((deliverable) => (
+                  <span key={deliverable}>{deliverable}</span>
+                ))}
+              </div>
+            ) : null}
             {selectedEvidence.length > 0 ? (
               <ul className="ops-evidence-list">
                 {selectedEvidence.map((row) => (
@@ -215,12 +225,22 @@ export function CollabBoard({
               const signals = qualitySignals(log);
               const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "reporter";
               const evidence = stageEvidence(log);
+              const deliverables = Array.isArray(log.metadata?.deliverables)
+                ? log.metadata.deliverables.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+                : [];
               return (
                 <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>
                   <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} />
                   <div>
                     <strong>에이전트: {AGENT_LABELS[log.agent_name] ?? log.agent_name}</strong>
                     <p>{compactMessage(log.message)}</p>
+                    {deliverables.length > 0 ? (
+                      <div className="ops-log-evidence">
+                        {deliverables.slice(0, 2).map((item) => (
+                          <span key={item}>{item}</span>
+                        ))}
+                      </div>
+                    ) : null}
                     {evidence.length > 0 ? (
                       <div className="ops-log-evidence">
                         {evidence.slice(0, 2).map((item) => (
