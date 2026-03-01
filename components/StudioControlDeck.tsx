@@ -10,7 +10,6 @@ import {
   AGENT_LAYOUT,
   CONTROL_LABELS,
   MOBILE_TABS,
-  STAGE_LABELS,
   STATUS_LABELS,
 } from "@/components/studio-control-deck/config";
 import { usePipelineControl } from "@/components/studio-control-deck/hooks/usePipelineControl";
@@ -19,7 +18,7 @@ import type { PipelineLog, PipelineStage } from "@/types/pipeline";
 
 export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
-  const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("trigger");
+  const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("analyze");
   const previousPipelineIdRef = useRef<string | null>(null);
 
   const {
@@ -42,7 +41,6 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     selectedPipelineId,
     controlLabels: CONTROL_LABELS,
     statusLabels: STATUS_LABELS,
-    stageLabels: STAGE_LABELS,
     refreshRecentLogs,
   });
 
@@ -52,15 +50,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
       previousPipelineIdRef.current = selectedPipelineId;
     }
 
-    const waitingStage = pipelineSummary?.waiting_for_stage;
-    if (waitingStage && waitingStage !== "done") {
-      if (selectedStage !== waitingStage) {
-        setSelectedStage(waitingStage);
-      }
-      return;
-    }
-
-    if (pipelineChanged) {
+    if (pipelineChanged && !latestStageMap.has(selectedStage)) {
       const latestLog = selectedLogs[0];
       if (latestLog && latestLog.stage !== "done") {
         setSelectedStage(latestLog.stage);
@@ -74,7 +64,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         setSelectedStage(firstExisting.stage);
       }
     }
-  }, [selectedPipelineId, selectedLogs, selectedStage, pipelineSummary?.waiting_for_stage, latestStageMap]);
+  }, [selectedPipelineId, selectedLogs, selectedStage, latestStageMap]);
 
   return (
     <section className="ops-console-deck">

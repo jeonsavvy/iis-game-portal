@@ -4,7 +4,6 @@ import type {
   PipelineControlAction,
   PipelineControlResponse,
   PipelineLog,
-  PipelineStage,
   PipelineStatus,
   PipelineSummary,
 } from "@/types/pipeline";
@@ -15,7 +14,6 @@ type UsePipelineControlArgs = {
   selectedPipelineId: string | null;
   controlLabels: Record<PipelineControlAction, string>;
   statusLabels: Record<PipelineStatus, string>;
-  stageLabels: Record<PipelineStage, string>;
   refreshRecentLogs: () => Promise<void>;
 };
 
@@ -84,7 +82,7 @@ function buildControlAvailability(pipelineSummary: PipelineSummary | null): Reco
     };
   }
 
-  const { status, waiting_for_stage: waitingForStage } = pipelineSummary;
+  const { status } = pipelineSummary;
 
   return {
     pause: {
@@ -92,8 +90,8 @@ function buildControlAvailability(pipelineSummary: PipelineSummary | null): Reco
       reason: status === "success" || status === "error" ? "완료/실패 상태에서는 일시정지할 수 없습니다." : "",
     },
     resume: {
-      enabled: Boolean(waitingForStage),
-      reason: waitingForStage ? "" : "현재 재개할 대기 단계가 없습니다.",
+      enabled: status === "skipped",
+      reason: status === "skipped" ? "" : "일시정지 상태에서만 재개할 수 있습니다.",
     },
     cancel: {
       enabled: status !== "success" && status !== "error",
@@ -112,7 +110,6 @@ export function usePipelineControl({
   selectedPipelineId,
   controlLabels,
   statusLabels,
-  stageLabels,
   refreshRecentLogs,
 }: UsePipelineControlArgs): UsePipelineControlResult {
   const [pipelineSummary, setPipelineSummary] = useState<PipelineSummary | null>(null);
@@ -135,7 +132,6 @@ export function usePipelineControl({
           source: "console",
           status: latest?.status ?? "running",
           execution_mode: "auto",
-          waiting_for_stage: latest?.stage ?? "build",
           pipeline_version: "preview-v1",
           error_reason: latest?.reason ?? null,
           created_at: latest?.created_at ?? new Date().toISOString(),
@@ -212,7 +208,7 @@ export function usePipelineControl({
 
         const typed = payload as PipelineControlResponse;
         setFeedback(
-          `${controlLabels[action]} 완료 · 상태=${statusLabels[typed.status]} · 대기단계=${typed.waiting_for_stage ? stageLabels[typed.waiting_for_stage] : "-"}`,
+          `${controlLabels[action]} 완료 · 상태=${statusLabels[typed.status]}`,
         );
         await refreshSummary(selectedPipelineId);
         await refreshRecentLogs();
@@ -222,7 +218,7 @@ export function usePipelineControl({
         setBusyAction(null);
       }
     },
-    [selectedPipelineId, pipelineSummary, previewMode, controlLabels, statusLabels, stageLabels, refreshSummary, refreshRecentLogs],
+    [selectedPipelineId, pipelineSummary, previewMode, controlLabels, statusLabels, refreshSummary, refreshRecentLogs],
   );
 
   return {

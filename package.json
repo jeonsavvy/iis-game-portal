@@ -8,7 +8,7 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint . --ext .js,.jsx,.ts,.tsx",
-    "typecheck": "next typegen && tsc --noEmit --incremental false",
+    "typecheck": "npm run clean:next && next typegen && tsc --noEmit --incremental false",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "npm run clean:next && playwright test"

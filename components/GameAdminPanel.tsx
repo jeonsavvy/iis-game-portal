@@ -21,6 +21,7 @@ type DeleteResponse = {
   status?: string;
   slug?: string;
   deleted?: Record<string, boolean>;
+  warnings?: Array<{ code?: string; detail?: string }>;
   reason?: string;
   details?: Record<string, unknown>;
   detail?: Record<string, unknown> | string;
@@ -105,7 +106,11 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
       const deletedSummary = data.deleted
         ? `DB:${data.deleted.db ? "Y" : "N"} · Storage:${data.deleted.storage ? "Y" : "N"} · Archive:${data.deleted.archive ? "Y" : "N"}`
         : "삭제 결과 요약 없음";
-      setResultMessage(`삭제 완료: ${selectedGame.slug} (${deletedSummary})`);
+      const warningText =
+        data.warnings && data.warnings.length > 0
+          ? ` · 경고 ${data.warnings.length}건(${data.warnings.map((item) => item.code ?? "warning").join(", ")})`
+          : "";
+      setResultMessage(`삭제 완료: ${selectedGame.slug} (${deletedSummary})${warningText}`);
 
       const nextGames = games.filter((game) => game.id !== selectedGame.id);
       setGames(nextGames);

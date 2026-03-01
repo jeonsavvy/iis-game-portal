@@ -9,7 +9,6 @@ type Game = Database["public"]["Tables"]["games_metadata"]["Row"];
 type GameCardVariant = "default" | "featured" | "compact";
 
 export function GameCard({ game, variant = "default" }: { game: Game; variant?: GameCardVariant }) {
-  const isPlayable = game.status === "active";
   const imageUrl = game.thumbnail_url ?? game.screenshot_url;
 
   return (
@@ -28,17 +27,17 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
           <div className="arcade-game-card-fallback" aria-hidden="true" />
         )}
         <div className="arcade-game-card-badges">
-          <span className={`status-chip ${isPlayable ? "tone-success" : "tone-warn"}`}>{isPlayable ? "PLAYABLE" : "COMING"}</span>
+          <span className="status-chip tone-success">PLAY</span>
         </div>
       </Link>
 
       <div className="arcade-game-card-body">
         <h4>{game.name}</h4>
-        <p>{isPlayable ? "브라우저에서 즉시 실행" : "준비 중"}</p>
+        <p>브라우저에서 즉시 실행</p>
 
         <div className="arcade-game-card-foot">
           <Link className="button button-primary" href={`/play/${game.id}`}>
-            {isPlayable ? "지금 플레이" : "상세 보기"}
+            지금 플레이
           </Link>
         </div>
       </div>

@@ -55,7 +55,7 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <h3 className="section-title">파이프라인</h3>
+          <h3 className="section-title">자동 제작 관제</h3>
         </div>
         <div className="ops-status-strip">
           <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
@@ -98,9 +98,6 @@ export function CommandHead({
       <div className="ops-context-tags">
         <span className="terminal-tag">파이프라인: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>
         {pipelineSummary?.status ? <span className="terminal-tag subtle">상태: {STATUS_LABELS[pipelineSummary.status]}</span> : null}
-        {pipelineSummary?.waiting_for_stage ? (
-          <span className="terminal-tag subtle">대기 단계: {STAGE_LABELS[pipelineSummary.waiting_for_stage]}</span>
-        ) : null}
       </div>
 
       {feedback ? <p className="inline-feedback">{feedback}</p> : null}

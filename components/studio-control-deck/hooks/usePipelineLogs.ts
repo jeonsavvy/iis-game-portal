@@ -173,8 +173,8 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
     () => ({
       found: selectedLogs.filter((log) => log.stage === "plan" && log.status === "success").length,
       built: selectedLogs.filter((log) => log.stage === "build" && log.status === "success").length,
-      sent: selectedLogs.filter((log) => log.stage === "publish" && log.status === "success").length,
-      replied: selectedLogs.filter((log) => log.stage === "echo" && log.status === "success").length,
+      sent: selectedLogs.filter((log) => log.stage === "release" && log.status === "success").length,
+      replied: selectedLogs.filter((log) => log.stage === "report" && log.status === "success").length,
     }),
     [selectedLogs],
   );

@@ -20,121 +20,75 @@ type HomeSearchParams = {
 
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
 
+type HomeDataResult = {
+  rows: GameRow[];
+  error: string | null;
+};
+
 function parseDate(value: string): number {
   const parsed = Date.parse(value);
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
-function uniqueById(rows: GameRow[]): GameRow[] {
-  const map = new Map(rows.map((row) => [row.id, row]));
-  return Array.from(map.values());
-}
-
-function isExperimentalCandidate(game: GameRow): boolean {
-  const text = `${game.name} ${game.slug} ${game.genre}`.toLowerCase();
-  return /(lab|experimental|prototype|alpha|beta|test|sandbox|demo|실험|프로토)/.test(text);
-}
-
-function resolveHeroGame(rows: GameRow[]): GameRow | null {
-  if (rows.length === 0) return null;
-  const featuredSlug = process.env.FEATURED_GAME_SLUG?.trim().toLowerCase();
-  if (featuredSlug) {
-    const curated = rows.find((row) => row.status === "active" && row.slug.toLowerCase() === featuredSlug);
-    if (curated) return curated;
-  }
-
-  return rows.find((row) => row.status === "active") ?? rows[0] ?? null;
-}
-
-function sectionRows(rows: GameRow[]) {
-  const playable = rows.filter((row) => row.status === "active");
-
-  const latest = [...rows].sort((a, b) => parseDate(b.created_at) - parseDate(a.created_at));
-  const updated = [...rows].sort((a, b) => parseDate(b.updated_at) - parseDate(a.updated_at));
-  const curated = rows.filter(isExperimentalCandidate);
-
-  return {
-    playable: uniqueById(playable).slice(0, 8),
-    latest: uniqueById(latest).slice(0, 8),
-    curated: uniqueById(curated.length > 0 ? curated : latest).slice(0, 8),
-    updated: uniqueById(updated).slice(0, 8),
-  };
-}
-
-function applyHomeFilters(
-  sourceRows: GameRow[],
-  {
-    sort,
-    q,
-  }: {
-    sort: (typeof SORT_OPTIONS)[number];
-    q: string;
-  },
-): GameRow[] {
-  let rows = sourceRows.filter((game) => game.status === "active");
-
-  if (q) {
-    const keyword = q.toLowerCase();
-    rows = rows.filter((game) => game.name.toLowerCase().includes(keyword));
-  }
-
+function applySorting(rows: GameRow[], sort: (typeof SORT_OPTIONS)[number]): GameRow[] {
   if (sort === "name") {
-    rows = [...rows].sort((a, b) => a.name.localeCompare(b.name));
-  } else {
-    rows = [...rows].sort((a, b) => parseDate(a.created_at) - parseDate(b.created_at));
-    if (sort === "newest") {
-      rows.reverse();
-    }
+    return [...rows].sort((a, b) => a.name.localeCompare(b.name));
+  }
+  const sorted = [...rows].sort((a, b) => parseDate(a.created_at) - parseDate(b.created_at));
+  if (sort === "newest") {
+    sorted.reverse();
+  }
+  return sorted;
+}
+
+async function loadHomeRows({
+  previewMode,
+  sort,
+  q,
+}: {
+  previewMode: boolean;
+  sort: (typeof SORT_OPTIONS)[number];
+  q: string;
+}): Promise<HomeDataResult> {
+  if (previewMode) {
+    const filtered = PREVIEW_GAMES.filter((game) => game.status === "active");
+    const searched = q ? filtered.filter((game) => game.name.toLowerCase().includes(q.toLowerCase())) : filtered;
+    return { rows: applySorting(searched, sort), error: null };
   }
 
-  return rows;
+  try {
+    const supabase = await createSupabaseServerClient();
+    let query = supabase.from("games_metadata").select("*").eq("status", "active");
+    if (q) {
+      query = query.ilike("name", `%${q}%`);
+    }
+    if (sort === "name") {
+      query = query.order("name", { ascending: true });
+    } else {
+      query = query.order("created_at", { ascending: sort === "oldest" });
+    }
+
+    const { data, error } = await query;
+    if (error) {
+      return { rows: [], error: error.message };
+    }
+    return { rows: ((data ?? []) as GameRow[]).filter((game) => game.status === "active"), error: null };
+  } catch (error) {
+    return { rows: [], error: error instanceof Error ? error.message : "알 수 없는 오류" };
+  }
 }
 
 export default async function HomePage({ searchParams }: { searchParams?: Promise<HomeSearchParams> }) {
   const params = searchParams ? await searchParams : {};
-
+  const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   const sort =
     params.sort && SORT_OPTIONS.includes(params.sort as (typeof SORT_OPTIONS)[number])
       ? (params.sort as (typeof SORT_OPTIONS)[number])
       : "newest";
   const q = typeof params.q === "string" ? params.q.trim() : "";
-  const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
 
-  let rows: GameRow[] = [];
-  let loadError: string | null = null;
-
-  if (previewMode) {
-    rows = applyHomeFilters(PREVIEW_GAMES, { sort, q });
-  } else {
-    try {
-      const supabase = await createSupabaseServerClient();
-      let query = supabase.from("games_metadata").select("*").eq("status", "active");
-
-      if (q) {
-        query = query.ilike("name", `%${q}%`);
-      }
-
-      if (sort === "name") {
-        query = query.order("name", { ascending: true });
-      } else {
-        query = query.order("created_at", { ascending: sort === "oldest" });
-      }
-
-      const { data, error } = await query;
-
-      if (error) {
-        loadError = error.message;
-      } else {
-        rows = (data ?? []) as GameRow[];
-      }
-    } catch (error) {
-      loadError = error instanceof Error ? error.message : "알 수 없는 오류";
-    }
-  }
-
-  const heroGame = resolveHeroGame(rows);
-  const sections = sectionRows(rows);
-
+  const { rows, error } = await loadHomeRows({ previewMode, sort, q });
+  const heroGame = rows[0] ?? null;
   const heroImage = heroGame?.screenshot_url ?? heroGame?.thumbnail_url ?? null;
   const heroBackground = heroImage
     ? `linear-gradient(120deg, rgba(8,12,19,0.88) 0%, rgba(8,12,19,0.45) 52%, rgba(8,12,19,0.9) 100%), url(${heroImage})`
@@ -145,23 +99,18 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <section className="surface arcade-hero-showcase" style={{ backgroundImage: heroBackground }}>
         <div className="arcade-hero-content">
           <p className="arcade-kicker">IIS ARCADE</p>
-          <h1>{heroGame?.name ?? "게임을 탐색하고 바로 플레이하세요"}</h1>
+          <h1>{heroGame?.name ?? "자동 제작 게임을 바로 플레이하세요"}</h1>
           <p className="arcade-hero-description">
             {heroGame
-              ? "대표 게임을 바로 실행하고, 플레이 화면에서 조작법과 목표를 바로 확인하세요."
-              : "지금 생성된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
+              ? "지금 생성된 최신 게임을 바로 실행할 수 있습니다."
+              : "아직 등록된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
           </p>
-          {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 실서버 연결 없이 샘플 데이터로 화면을 검수 중입니다.</p> : null}
+          {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 샘플 데이터로 화면을 검수 중입니다.</p> : null}
           <div className="arcade-hero-actions">
             {heroGame ? (
-              <>
-                <Link className="button button-primary" href={`/play/${heroGame.id}`}>
-                  지금 플레이
-                </Link>
-                <Link className="button button-ghost" href={`/play/${heroGame.id}#overview`}>
-                  상세 보기
-                </Link>
-              </>
+              <Link className="button button-primary" href={`/play/${heroGame.id}`}>
+                지금 플레이
+              </Link>
             ) : (
               <Link className="button button-ghost" href="/admin">
                 운영실 이동
@@ -172,16 +121,12 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
         <aside className="arcade-hero-side">
           <div className="arcade-hero-stat">
-            <span>활성 게임</span>
-            <strong>{rows.filter((row) => row.status === "active").length}</strong>
-          </div>
-          <div className="arcade-hero-stat">
-            <span>검색 결과</span>
+            <span>등록 게임</span>
             <strong>{rows.length}</strong>
           </div>
           <div className="arcade-hero-stat muted">
-            <span>선정 기준</span>
-            <strong>{process.env.FEATURED_GAME_SLUG ? "고정 추천" : "최신 게임"}</strong>
+            <span>운영 모드</span>
+            <strong>완전 자동</strong>
           </div>
         </aside>
       </section>
@@ -209,75 +154,35 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           </label>
 
           <button className="button button-primary" type="submit">
-            필터 적용
+            적용
           </button>
         </div>
       </form>
 
-      {loadError && !previewMode ? (
+      {error && !previewMode ? (
         <section className="surface arcade-empty-state">
           <h3>데이터를 불러오지 못했습니다</h3>
-          <p>{loadError}</p>
+          <p>{error}</p>
         </section>
       ) : null}
 
       {rows.length === 0 ? (
         <section className="surface arcade-empty-state">
-          <h3>조건에 맞는 게임이 없습니다</h3>
-          <p>검색어를 조정하거나 운영실에서 새로운 파이프라인을 실행해보세요.</p>
+          <h3>표시할 게임이 없습니다</h3>
+          <p>운영실에서 제작을 실행하면 이 화면에 자동으로 반영됩니다.</p>
         </section>
       ) : (
-        <>
-          <section className="arcade-section">
-            <div className="arcade-section-head">
-              <h3>추천 게임</h3>
-              <span>{sections.playable.length}개</span>
-            </div>
-            <div className="arcade-game-grid featured-grid">
-              {sections.playable.map((game) => (
-                <GameCard key={`playable-${game.id}`} game={game} variant="featured" />
-              ))}
-            </div>
-          </section>
-
-          <section className="arcade-section">
-            <div className="arcade-section-head">
-              <h3>최신 게임</h3>
-              <span>최근 생성 순</span>
-            </div>
-            <div className="arcade-game-grid">
-              {sections.latest.map((game) => (
-                <GameCard key={`latest-${game.id}`} game={game} />
-              ))}
-            </div>
-          </section>
-
-          <section className="arcade-section two-column">
-            <div>
-              <div className="arcade-section-head">
-                <h3>실험작</h3>
-                <span>탐색 추천</span>
-              </div>
-              <div className="arcade-game-grid compact-grid">
-                {sections.curated.map((game) => (
-                  <GameCard key={`curated-${game.id}`} game={game} variant="compact" />
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <div className="arcade-section-head">
-                <h3>최근 업데이트</h3>
-                <span>개선 반영 순</span>
-              </div>
-              <div className="arcade-game-grid compact-grid">
-                {sections.updated.map((game) => (
-                  <GameCard key={`updated-${game.id}`} game={game} variant="compact" />
-                ))}
-              </div>
-            </div>
-          </section>
-        </>
+        <section className="arcade-section">
+          <div className="arcade-section-head">
+            <h3>게임 목록</h3>
+            <span>{rows.length}개</span>
+          </div>
+          <div className="arcade-game-grid featured-grid">
+            {rows.map((game) => (
+              <GameCard key={game.id} game={game} variant="featured" />
+            ))}
+          </div>
+        </section>
       )}
     </section>
   );

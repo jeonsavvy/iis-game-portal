@@ -56,7 +56,7 @@ export function CollabBoard({
         <section className="ops-collab-graph">
           <div className="section-head compact">
             <div>
-              <h3 className="section-title">에이전트</h3>
+              <h3 className="section-title">사무실 보드</h3>
             </div>
             <div className="ops-counters">
               <span>
@@ -90,8 +90,7 @@ export function CollabBoard({
               {AGENT_LAYOUT.map((agent) => {
                 const stageLog = latestStageMap.get(agent.stage) ?? null;
                 const tone = statusTone(stageLog?.status ?? null);
-                const waiting = pipelineSummary?.waiting_for_stage === agent.stage;
-                const active = stageLog?.status === "running" || waiting;
+                const active = stageLog?.status === "running";
                 const signals = qualitySignals(stageLog);
                 const selected = selectedStage === agent.stage;
 
@@ -99,7 +98,7 @@ export function CollabBoard({
                   <button
                     type="button"
                     key={agent.stage}
-                    className={`ops-node tone-${tone}${waiting ? " waiting" : ""}${active ? " is-live" : ""}${selected ? " is-selected" : ""}`}
+                    className={`ops-node tone-${tone}${active ? " is-live" : ""}${selected ? " is-selected" : ""}`}
                     style={{ gridColumn: `${agent.gridColumn} / span 1`, gridRow: `${agent.gridRow} / span 1` }}
                     onClick={() => setSelectedStage(agent.stage)}
                   >
@@ -110,9 +109,9 @@ export function CollabBoard({
                         <h4>{agent.title}</h4>
                       </div>
                     </div>
-                    <p className="ops-node-message">{compactMessage(stageLog?.message ?? (waiting ? "승인 대기중" : "유휴"))}</p>
+                    <p className="ops-node-message">{compactMessage(stageLog?.message ?? "유휴")}</p>
                     <div className="ops-node-foot">
-                      <span className={`status-chip tone-${tone}`}>{stageLog ? STATUS_LABELS[stageLog.status] : waiting ? "대기" : "유휴"}</span>
+                      <span className={`status-chip tone-${tone}`}>{stageLog ? STATUS_LABELS[stageLog.status] : "유휴"}</span>
                       <span>{stageLog ? new Date(stageLog.created_at).toLocaleTimeString() : "-"}</span>
                     </div>
                     {(signals.fatal > 0 || signals.warning > 0) && (
@@ -135,7 +134,7 @@ export function CollabBoard({
             <AgentGlyph
               icon={selectedAgent.icon}
               tone={statusTone(selectedStageLog?.status ?? null)}
-              active={selectedStageLog?.status === "running" || pipelineSummary?.waiting_for_stage === selectedStage}
+              active={selectedStageLog?.status === "running"}
             />
           </div>
 
@@ -160,6 +159,7 @@ export function CollabBoard({
             <span className="terminal-tag subtle">
               updated {selectedStageLog ? new Date(selectedStageLog.created_at).toLocaleTimeString() : "-"}
             </span>
+            {pipelineSummary?.error_reason ? <span className="terminal-tag subtle">reason {pipelineSummary.error_reason}</span> : null}
           </div>
 
           <div className="ops-workbench-actions">
@@ -205,7 +205,7 @@ export function CollabBoard({
         <aside className="ops-live-log">
           <div className="section-head compact">
             <div>
-              <h3 className="section-title">로그</h3>
+              <h3 className="section-title">실시간 이벤트</h3>
             </div>
             <span className="muted-text">{selectedLogs.length}개</span>
           </div>
@@ -215,7 +215,7 @@ export function CollabBoard({
             {selectedLogs.slice(0, 26).map((log) => {
               const tone = statusTone(log.status);
               const signals = qualitySignals(log);
-              const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "scout";
+              const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "reporter";
               const evidence = stageEvidence(log);
               return (
                 <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>

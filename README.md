@@ -29,6 +29,8 @@ Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
 - `lib/auth/admin-auth.ts` : 관리자 이메일 allowlist / next 경로 정규화
 - `types/pipeline.ts` : 파이프라인/로그/제어 타입 정의
 - `app/api/pipelines/trigger/route.ts` : 코어 엔진 트리거 프록시
+- `app/api/pipelines/control/route.ts` : 긴급 제어(pause/resume/cancel/retry) 프록시  
+  *(기존 approve 경로는 제거됨)*
 
 ## 로컬 실행
 
@@ -80,7 +82,7 @@ npm run build
 
 - `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용 (클라이언트 노출 금지)
 - Trigger/Approve 프록시는 로그인 + role 검사를 통과한 요청만 코어 엔진으로 전달
-- Write 계열 BFF(`trigger/approve/control/delete`)는 `Origin`을 앱 동일 출처로 강제해 sandbox iframe의 `Origin: null` 요청을 차단
+- Write 계열 BFF(`trigger/control/delete`)는 `Origin`을 앱 동일 출처로 강제해 sandbox iframe의 `Origin: null` 요청을 차단
 - Admin BFF(`pipeline:*`, `games/delete`) 응답은 기본 `Cache-Control: no-store`를 강제
 - `/play/[id]` iframe은 기본 sandbox를 `allow-scripts`로 제한해 same-origin 권한을 제거
 - artifact proxy는 `localhost/사설 IP` 소스를 차단하고, production에서는 `https` 소스만 허용

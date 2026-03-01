@@ -1,20 +1,22 @@
 export type AgentName =
-  | "Trigger"
-  | "Architect"
-  | "Stylist"
-  | "Builder"
-  | "Sentinel"
-  | "Publisher"
-  | "Echo";
+  | "analyzer"
+  | "planner"
+  | "designer"
+  | "developer"
+  | "qa_runtime"
+  | "qa_quality"
+  | "releaser"
+  | "reporter";
 
 export type PipelineStage =
-  | "trigger"
+  | "analyze"
   | "plan"
-  | "style"
+  | "design"
   | "build"
-  | "qa"
-  | "publish"
-  | "echo"
+  | "qa_runtime"
+  | "qa_quality"
+  | "release"
+  | "report"
   | "done";
 
 export type PipelineStatus = "queued" | "running" | "success" | "error" | "retry" | "skipped";
@@ -38,8 +40,7 @@ export type PipelineSummary = {
   keyword: string;
   source: "telegram" | "console";
   status: PipelineStatus;
-  execution_mode: "auto" | "manual";
-  waiting_for_stage: PipelineStage | null;
+  execution_mode: "auto";
   pipeline_version: string;
   error_reason: string | null;
   created_at: string;
@@ -49,8 +50,7 @@ export type PipelineSummary = {
 export type PipelineControlResponse = {
   pipeline_id: string;
   action: PipelineControlAction;
-  execution_mode: "auto" | "manual";
+  execution_mode: "auto";
   status: PipelineStatus;
-  waiting_for_stage: PipelineStage | null;
   error_reason: string | null;
 };

@@ -71,7 +71,7 @@ export function stageEvidence(log: PipelineLog | null): string[] {
     if (memoryHintApplied === true) rows.push("누적 메모리 반영");
   }
 
-  if (log.stage === "qa") {
+  if (log.stage === "qa_runtime" || log.stage === "qa_quality") {
     if (typeof log.reason === "string" && log.reason.trim()) rows.push(`사유 ${log.reason}`);
 
     const quality = numberValue(metadata.quality_score);
@@ -84,7 +84,7 @@ export function stageEvidence(log: PipelineLog | null): string[] {
     if (visual !== null) rows.push(`시각 ${visual.toFixed(1)}`);
   }
 
-  if (log.stage === "publish") {
+  if (log.stage === "release") {
     const archiveStatus = metadata.archive_status;
     if (typeof archiveStatus === "string" && archiveStatus.trim()) rows.push(`아카이브 ${archiveStatus}`);
 
@@ -92,7 +92,7 @@ export function stageEvidence(log: PipelineLog | null): string[] {
     if (typeof publicUrl === "string" && publicUrl.trim()) rows.push("공개 URL 갱신");
   }
 
-  if (log.stage === "echo") {
+  if (log.stage === "report") {
     const score = numberValue(metadata.final_quality_score);
     if (score !== null) rows.push(`최종 품질 ${score.toFixed(1)}`);
     const gameplay = numberValue(metadata.final_gameplay_score);

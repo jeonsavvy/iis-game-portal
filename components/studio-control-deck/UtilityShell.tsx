@@ -72,7 +72,7 @@ export function UtilityShell({
         <article className="surface form-panel ops-utility-card">
           <div className="section-head compact">
             <div>
-              <h3 className="section-title">상태</h3>
+              <h3 className="section-title">실행 상태</h3>
             </div>
           </div>
 
@@ -81,10 +81,10 @@ export function UtilityShell({
               <strong>현재 파이프라인:</strong> {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}
             </li>
             <li>
-              <strong>대기 단계:</strong> {pipelineSummary?.waiting_for_stage ? STAGE_LABELS[pipelineSummary.waiting_for_stage] : "-"}
+              <strong>최근 상태:</strong> {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}
             </li>
             <li>
-              <strong>최근 상태:</strong> {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}
+              <strong>실패 사유:</strong> {pipelineSummary?.error_reason ?? "-"}
             </li>
           </ul>
         </article>

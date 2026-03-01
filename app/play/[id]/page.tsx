@@ -61,7 +61,7 @@ const resolveAiReviewFallback = cache(async (slug: string, aiReview: string | nu
   const { data: logs } = await adminClient
     .from("pipeline_logs")
     .select("metadata,created_at")
-    .eq("stage", "echo")
+    .eq("stage", "report")
     .order("created_at", { ascending: false })
     .limit(120);
 
