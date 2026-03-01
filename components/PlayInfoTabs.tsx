@@ -14,19 +14,22 @@ type Props = {
 
 type TabKey = "controls" | "overview" | "shots";
 
-const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
+const BASE_TAB_ITEMS: Array<{ key: Exclude<TabKey, "shots">; label: string }> = [
   { key: "controls", label: "조작법" },
   { key: "overview", label: "게임 설명" },
-  { key: "shots", label: "스크린샷" },
 ];
 
 export function PlayInfoTabs({ gameName, screenshotUrl, controlsHint, overview }: Props) {
+  const screenshotTabEnabled = process.env.NEXT_PUBLIC_ENABLE_PLAY_SCREENSHOT_TAB === "1" && Boolean(screenshotUrl);
+  const tabItems: Array<{ key: TabKey; label: string }> = screenshotTabEnabled
+    ? [...BASE_TAB_ITEMS, { key: "shots", label: "스크린샷" }]
+    : BASE_TAB_ITEMS;
   const [activeTab, setActiveTab] = useState<TabKey>("controls");
 
   return (
     <section className="surface play-info-tabs" id="overview">
       <div className="play-tab-nav" role="tablist" aria-label="게임 상세 탭">
-        {TAB_ITEMS.map((tab) => (
+        {tabItems.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -59,7 +62,7 @@ export function PlayInfoTabs({ gameName, screenshotUrl, controlsHint, overview }
           </div>
         ) : null}
 
-        {activeTab === "shots" ? (
+        {screenshotTabEnabled && activeTab === "shots" ? (
           screenshotUrl ? (
             <div className="play-shot-gallery">
               <Image
