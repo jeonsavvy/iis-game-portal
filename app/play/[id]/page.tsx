@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 
+import { PlayEmbedFrame } from "@/components/PlayEmbedFrame";
 import { PlayInfoTabs } from "@/components/PlayInfoTabs";
 import { PREVIEW_GAMES, getPreviewGameById } from "@/lib/demo/preview-data";
 import { parseLegacySandboxAllowlist, resolveGameIframeSandboxPolicy } from "@/lib/games/sandbox-policy";
@@ -12,7 +13,7 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
-type SimilarGame = Pick<GameRow, "id" | "name" | "genre" | "thumbnail_url" | "screenshot_url">;
+type SimilarGame = Pick<GameRow, "id" | "name" | "thumbnail_url" | "screenshot_url">;
 
 type GameLookupResult = {
   game: GameRow | null;
@@ -39,7 +40,6 @@ function getPreviewSimilarGames(gameId: string): SimilarGame[] {
   return PREVIEW_GAMES.filter((game) => game.id !== gameId).slice(0, 4).map((game) => ({
     id: game.id,
     name: game.name,
-    genre: game.genre,
     thumbnail_url: game.thumbnail_url,
     screenshot_url: game.screenshot_url,
   }));
@@ -85,15 +85,23 @@ const resolveAiReviewFallback = cache(async (slug: string, aiReview: string | nu
   return null;
 });
 
-function controlsByGenre(genre: string): string[] {
-  const normalized = genre.toLowerCase();
+function controlsByGame(game: GameRow): string[] {
+  const normalized = `${game.name} ${game.slug}`.toLowerCase();
 
-  if (normalized.includes("puzzle")) {
-    return ["마우스/터치로 오브젝트를 선택하고 배치하세요.", "힌트가 막히면 재시도보다 단서 순서를 먼저 확인하세요.", "타이머가 있는 퍼즐은 초기 10초에 맵 구조를 파악하세요."];
+  if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
+    return [
+      "← / → 조향 / ↑ 가속 / ↓ 브레이크 / Shift 오버테이크 부스트",
+      "코너 진입 전 브레이크로 속도를 정리하면 충돌이 크게 줄어듭니다.",
+      "체크포인트를 연속 통과하며 랩 타임을 줄이세요.",
+    ];
   }
 
-  if (normalized.includes("survival")) {
-    return ["WASD/방향키로 이동하며 위험 지대를 피하세요.", "초반에는 공격보다 생존 루트를 먼저 확보하세요.", "아이템 사용 타이밍이 점수보다 생존 시간에 더 큰 영향을 줍니다."];
+  if (/(flight|pilot|비행|항공)/.test(normalized)) {
+    return [
+      "W/S 피치 · A/D 롤 · Q/E 요 · ↑/↓ 스로틀 · Shift 부스트",
+      "링 통과를 우선하고, 급격한 요/롤 입력은 짧게 끊어 주세요.",
+      "위험 구역에서는 속도보다 기체 안정성이 먼저입니다.",
+    ];
   }
 
   return [
@@ -105,7 +113,7 @@ function controlsByGenre(genre: string): string[] {
 
 function overviewByGame(game: GameRow): string[] {
   const lines: string[] = [];
-  lines.push(`${game.name}은(는) ${game.genre} 장르 기반의 즉시 플레이형 프로젝트입니다.`);
+  lines.push(`${game.name}은(는) 즉시 플레이 중심의 짧은 세션 게임입니다.`);
   lines.push("짧은 세션에서도 피드백이 즉시 오도록 설계되어, 반복 플레이를 통해 기록을 갱신하는 구조를 지향합니다.");
   lines.push("플레이 중 체감 난이도가 급격히 올라가면 조작 입력 리듬을 먼저 안정화한 뒤 점수 루프를 확장하세요.");
   return lines;
@@ -196,8 +204,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
 
   const { data: similarRows } = await supabase
     .from("games_metadata")
-    .select("id,name,genre,thumbnail_url,screenshot_url")
-    .eq("genre", game.genre)
+    .select("id,name,thumbnail_url,screenshot_url")
     .neq("id", game.id)
     .eq("status", "active")
     .order("updated_at", { ascending: false })
@@ -241,7 +248,7 @@ function renderPlayPage(
           <p className="eyebrow">게임 플레이</p>
           <h1 className="hero-title">{typedGame.name}</h1>
           <p className="section-subtitle">
-            {typedGame.genre} · 생성 {createdAt} · 업데이트 {updatedAt}
+            생성 {createdAt} · 업데이트 {updatedAt}
           </p>
         </div>
         <div className="play-redesign-actions">
@@ -274,26 +281,14 @@ function renderPlayPage(
                 </div>
               </div>
             ) : (
-              <iframe
-                src={proxiedArtifactUrl}
-                title={typedGame.name}
-                width="100%"
-                height="100%"
-                style={{ border: 0 }}
-                sandbox={iframeSandboxPolicy}
-                referrerPolicy="no-referrer"
-              />
+              <PlayEmbedFrame src={proxiedArtifactUrl} title={typedGame.name} sandbox={iframeSandboxPolicy} />
             )}
           </div>
         </article>
 
         <aside className="surface play-quick-meta">
-          <h3 className="section-title">핵심 메타</h3>
+          <h3 className="section-title">핵심 정보</h3>
           <dl>
-            <div>
-              <dt>장르</dt>
-              <dd>{typedGame.genre}</dd>
-            </div>
             <div>
               <dt>상태</dt>
               <dd>{typedGame.status}</dd>
@@ -302,26 +297,15 @@ function renderPlayPage(
               <dt>슬러그</dt>
               <dd>{typedGame.slug}</dd>
             </div>
-            {typedGame.url ? (
-              <div>
-                <dt>원본</dt>
-                <dd>
-                  <a className="inline-link" href={typedGame.url} target="_blank" rel="noreferrer">
-                    스토리지 링크
-                  </a>
-                </dd>
-              </div>
-            ) : null}
           </dl>
         </aside>
       </section>
 
       <PlayInfoTabs
         gameName={typedGame.name}
-        genre={typedGame.genre}
         aiReview={resolvedAiReview}
         screenshotUrl={typedGame.screenshot_url}
-        controlsHint={controlsByGenre(typedGame.genre)}
+        controlsHint={controlsByGame(typedGame)}
         overview={overviewByGame(typedGame)}
         similarGames={similarGames}
       />

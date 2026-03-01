@@ -5,16 +5,7 @@ import { PREVIEW_GAMES } from "@/lib/demo/preview-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
-const GENRE_OPTIONS = ["all", "arcade", "puzzle", "survival", "score-attack"] as const;
 const SORT_OPTIONS = ["newest", "oldest", "name"] as const;
-
-const GENRE_LABELS: Record<(typeof GENRE_OPTIONS)[number], string> = {
-  all: "전체 장르",
-  arcade: "아케이드",
-  puzzle: "퍼즐",
-  survival: "서바이벌",
-  "score-attack": "스코어어택",
-};
 
 const SORT_LABELS: Record<(typeof SORT_OPTIONS)[number], string> = {
   newest: "최신순",
@@ -23,7 +14,6 @@ const SORT_LABELS: Record<(typeof SORT_OPTIONS)[number], string> = {
 };
 
 type HomeSearchParams = {
-  genre?: string;
   sort?: string;
   q?: string;
 };
@@ -63,15 +53,9 @@ function sectionRows(rows: GameRow[]) {
   const updated = [...rows].sort((a, b) => parseDate(b.updated_at) - parseDate(a.updated_at));
   const curated = rows.filter(isExperimentalCandidate);
 
-  const genreOrder = ["arcade", "puzzle", "survival", "score-attack"];
-  const genreShowcase = genreOrder
-    .map((genre) => rows.find((row) => row.genre.toLowerCase() === genre))
-    .filter((row): row is GameRow => Boolean(row));
-
   return {
     playable: uniqueById(playable).slice(0, 8),
     latest: uniqueById(latest).slice(0, 8),
-    genreShowcase: uniqueById(genreShowcase).slice(0, 8),
     curated: uniqueById(curated.length > 0 ? curated : latest).slice(0, 8),
     updated: uniqueById(updated).slice(0, 8),
   };
@@ -80,20 +64,14 @@ function sectionRows(rows: GameRow[]) {
 function applyHomeFilters(
   sourceRows: GameRow[],
   {
-    genre,
     sort,
     q,
   }: {
-    genre: (typeof GENRE_OPTIONS)[number];
     sort: (typeof SORT_OPTIONS)[number];
     q: string;
   },
 ): GameRow[] {
   let rows = sourceRows.filter((game) => game.status === "active");
-
-  if (genre !== "all") {
-    rows = rows.filter((game) => game.genre === genre);
-  }
 
   if (q) {
     const keyword = q.toLowerCase();
@@ -115,10 +93,6 @@ function applyHomeFilters(
 export default async function HomePage({ searchParams }: { searchParams?: Promise<HomeSearchParams> }) {
   const params = searchParams ? await searchParams : {};
 
-  const genre =
-    params.genre && GENRE_OPTIONS.includes(params.genre as (typeof GENRE_OPTIONS)[number])
-      ? (params.genre as (typeof GENRE_OPTIONS)[number])
-      : "all";
   const sort =
     params.sort && SORT_OPTIONS.includes(params.sort as (typeof SORT_OPTIONS)[number])
       ? (params.sort as (typeof SORT_OPTIONS)[number])
@@ -130,15 +104,11 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   let loadError: string | null = null;
 
   if (previewMode) {
-    rows = applyHomeFilters(PREVIEW_GAMES, { genre, sort, q });
+    rows = applyHomeFilters(PREVIEW_GAMES, { sort, q });
   } else {
     try {
       const supabase = await createSupabaseServerClient();
       let query = supabase.from("games_metadata").select("*").eq("status", "active");
-
-      if (genre !== "all") {
-        query = query.eq("genre", genre);
-      }
 
       if (q) {
         query = query.ilike("name", `%${q}%`);
@@ -233,17 +203,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             </select>
           </label>
 
-          <label className="field">
-            <span>장르</span>
-            <select className="input" name="genre" defaultValue={genre}>
-              {GENRE_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {GENRE_LABELS[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-
           <label className="field field-search">
             <span>게임 검색</span>
             <input className="input" name="q" defaultValue={q} placeholder="게임 이름으로 검색" />
@@ -289,18 +248,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             <div className="arcade-game-grid">
               {sections.latest.map((game) => (
                 <GameCard key={`latest-${game.id}`} game={game} />
-              ))}
-            </div>
-          </section>
-
-          <section className="arcade-section">
-            <div className="arcade-section-head">
-              <h3>장르별 게임</h3>
-              <span>장르 대표작</span>
-            </div>
-            <div className="arcade-game-grid compact-grid">
-              {sections.genreShowcase.map((game) => (
-                <GameCard key={`genre-${game.id}`} game={game} variant="compact" />
               ))}
             </div>
           </section>

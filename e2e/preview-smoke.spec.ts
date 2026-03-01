@@ -14,8 +14,8 @@ test("플레이 페이지가 프리뷰 스테이지를 노출한다", async ({ p
   await expect(page.getByText("프리뷰 모드: 실게임 iframe 대신 대표 스크린샷을 노출합니다.")).toBeVisible();
 });
 
-test("프리뷰 홈 필터가 장르/플레이가능 조건을 반영한다", async ({ page }) => {
-  await page.goto("/?genre=survival&playable=1");
+test("프리뷰 홈 필터가 검색 조건을 반영한다", async ({ page }) => {
+  await page.goto("/?q=ember");
 
   await expect(page.locator("h1")).toHaveText("Ember Survival Alpha");
   await expect(page.getByRole("heading", { name: "Neon Drift: Outrun Chain" })).toHaveCount(0);

@@ -15,12 +15,12 @@ test("플레이 화면이 우선 플레이영역 + 탭 구조를 제공한다", 
   await page.goto("/play/demo-neon-drift");
 
   await expect(page.locator("h1.hero-title")).toHaveText("Neon Drift: Outrun Chain");
-  await expect(page.getByText("핵심 메타")).toBeVisible();
+  await expect(page.getByText("핵심 정보")).toBeVisible();
   await expect(page.getByRole("tab", { name: "게임 설명" })).toBeVisible();
   await expect(page.getByRole("tab", { name: "유사 게임" })).toBeVisible();
 
   await page.getByRole("tab", { name: "게임 설명" }).click();
-  await expect(page.getByText("장르:")).toBeVisible();
+  await expect(page.getByText("즉시 플레이 중심의 짧은 세션 게임입니다.")).toBeVisible();
   await expect(page.getByText("AI 디자이너 코멘트 / 생성 히스토리")).toBeVisible();
 });
 

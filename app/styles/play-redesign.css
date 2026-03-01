@@ -54,6 +54,21 @@
   height: min(75vh, 860px);
 }
 
+.play-embed-shell {
+  width: 100%;
+  height: 100%;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.play-embed-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  padding: 8px;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+  background: rgba(2, 6, 23, 0.72);
+}
+
 .play-preview-stage {
   width: 100%;
   height: 100%;
@@ -221,4 +236,3 @@
   display: grid;
   gap: 10px;
 }
-

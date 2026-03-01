@@ -9,14 +9,12 @@ import { shouldUseUnoptimizedImage } from "@/lib/images/optimization";
 type SimilarGame = {
   id: string;
   name: string;
-  genre: string;
   thumbnail_url: string | null;
   screenshot_url: string | null;
 };
 
 type Props = {
   gameName: string;
-  genre: string;
   aiReview: string | null;
   screenshotUrl: string | null;
   controlsHint: string[];
@@ -41,7 +39,7 @@ function normalizeReview(aiReview: string | null): string[] {
     .filter(Boolean);
 }
 
-export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, controlsHint, overview, similarGames }: Props) {
+export function PlayInfoTabs({ gameName, aiReview, screenshotUrl, controlsHint, overview, similarGames }: Props) {
   const [activeTab, setActiveTab] = useState<TabKey>("controls");
   const reviewLines = useMemo(() => normalizeReview(aiReview), [aiReview]);
 
@@ -73,7 +71,6 @@ export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, control
 
         {activeTab === "overview" ? (
           <div className="stack gap-sm">
-            <p className="muted-text">장르: {genre}</p>
             <ul className="bullet-list">
               {overview.map((line) => (
                 <li key={line}>{line}</li>
@@ -119,13 +116,12 @@ export function PlayInfoTabs({ gameName, genre, aiReview, screenshotUrl, control
                       <div className="play-similar-fallback" />
                     )}
                     <strong>{game.name}</strong>
-                    <span>{game.genre}</span>
                   </Link>
                 );
               })}
             </div>
           ) : (
-            <p className="muted-text">같은 장르의 추천 게임이 아직 없습니다.</p>
+            <p className="muted-text">추천 게임이 아직 없습니다.</p>
           )
         ) : null}
       </div>

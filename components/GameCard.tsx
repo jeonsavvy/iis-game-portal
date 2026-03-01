@@ -35,7 +35,6 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
           <div className="arcade-game-card-fallback" aria-hidden="true" />
         )}
         <div className="arcade-game-card-badges">
-          <span className="pill">{game.genre}</span>
           <span className={`status-chip ${isPlayable ? "tone-success" : "tone-warn"}`}>{isPlayable ? "PLAYABLE" : "COMING"}</span>
         </div>
       </Link>
