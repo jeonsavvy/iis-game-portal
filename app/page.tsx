@@ -148,7 +148,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <h1>{heroGame?.name ?? "게임을 탐색하고 바로 플레이하세요"}</h1>
           <p className="arcade-hero-description">
             {heroGame
-              ? `${heroGame.genre} 장르 대표작을 바로 실행하거나 상세 화면에서 조작법과 연관 게임을 확인하세요.`
+              ? "대표 게임을 바로 실행하거나 상세 화면에서 조작법과 연관 게임을 확인하세요."
               : "지금 생성된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
           </p>
           {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 실서버 연결 없이 샘플 데이터로 화면을 검수 중입니다.</p> : null}
