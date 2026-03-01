@@ -2,7 +2,7 @@
 
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
 import { AGENT_LABELS, AGENT_LAYOUT, STAGE_GUIDE, STATUS_LABELS } from "@/components/studio-control-deck/config";
-import { compactMessage, qualitySignals, statusTone } from "@/components/studio-control-deck/utils";
+import { compactMessage, qualitySignals, stageEvidence, statusTone } from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
@@ -48,6 +48,7 @@ export function CollabBoard({
   const selectedStageLog = latestStageMap.get(selectedStage) ?? null;
   const selectedAgent = AGENT_LAYOUT.find((item) => item.stage === selectedStage) ?? AGENT_LAYOUT[0];
   const selectedSignals = qualitySignals(selectedStageLog);
+  const selectedEvidence = stageEvidence(selectedStageLog);
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
@@ -141,6 +142,13 @@ export function CollabBoard({
           <div className="ops-workbench-card">
             <p>{STAGE_GUIDE[selectedStage]}</p>
             <p className="muted-text">최근: {compactMessage(selectedStageLog?.message)}</p>
+            {selectedEvidence.length > 0 ? (
+              <ul className="ops-evidence-list">
+                {selectedEvidence.map((row) => (
+                  <li key={row}>{row}</li>
+                ))}
+              </ul>
+            ) : null}
           </div>
 
           <div className="ops-workbench-meta">
@@ -208,12 +216,20 @@ export function CollabBoard({
               const tone = statusTone(log.status);
               const signals = qualitySignals(log);
               const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "scout";
+              const evidence = stageEvidence(log);
               return (
                 <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>
                   <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} />
                   <div>
                     <strong>에이전트: {AGENT_LABELS[log.agent_name] ?? log.agent_name}</strong>
                     <p>{compactMessage(log.message)}</p>
+                    {evidence.length > 0 ? (
+                      <div className="ops-log-evidence">
+                        {evidence.slice(0, 2).map((item) => (
+                          <span key={item}>{item}</span>
+                        ))}
+                      </div>
+                    ) : null}
                     {(signals.fatal > 0 || signals.warning > 0) && (
                       <small>
                         치명 {signals.fatal} · 경고 {signals.warning}
