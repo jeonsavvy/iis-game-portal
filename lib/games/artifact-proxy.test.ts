@@ -154,6 +154,26 @@ describe("proxyArtifactResponse", () => {
     expect(response.headers.has("x-iis-artifact-source")).toBe(false);
   });
 
+  it("injects embed viewport patch for proxied html artifacts", async () => {
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("<!doctype html><html><head></head><body><main><canvas id='game'></canvas></main></body></html>", {
+        status: 200,
+        headers: { "content-type": "text/html; charset=utf-8" },
+      }),
+    ) as typeof fetch;
+
+    const response = await proxyArtifactResponse({
+      game: {} as never,
+      upstreamUrl: "https://cdn.example.com/games/neon/index.html",
+      contentTypeHint: "text/html; charset=utf-8",
+    });
+
+    const html = await response.text();
+    expect(response.status).toBe(200);
+    expect(html).toContain("iis-embed-viewport-fix");
+    expect(html).toContain("iis-embed-viewport-script");
+  });
+
   it("follows safe redirects for artifact responses", async () => {
     global.fetch = vi
       .fn()

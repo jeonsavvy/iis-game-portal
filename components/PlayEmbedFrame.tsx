@@ -78,6 +78,7 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
         tabIndex={0}
         loading="eager"
         allow="fullscreen; gamepad"
+        scrolling="no"
         onLoad={() => setLoaded(true)}
       />
     </div>

@@ -107,6 +107,32 @@ function resolveProxyContentType(upstreamContentType: string, hint: string): str
   return upstreamContentType;
 }
 
+const EMBED_VIEWPORT_FIX_STYLE =
+  "<style id=\"iis-embed-viewport-fix\">html,body{margin:0!important;height:100%!important;overflow:hidden!important;background:#020617!important;}body{display:block!important;}main,[data-overflow-policy]{width:100%!important;height:100%!important;max-width:none!important;max-height:none!important;min-height:0!important;margin:0!important;border:0!important;border-radius:0!important;}canvas#game,canvas{width:100%!important;height:100%!important;aspect-ratio:auto!important;display:block!important;}</style>";
+
+const EMBED_VIEWPORT_FIX_SCRIPT =
+  "<script id=\"iis-embed-viewport-script\">(()=>{const apply=()=>{const stage=document.querySelector('.stage');if(stage instanceof HTMLElement){stage.style.minHeight='0';stage.style.height='100%';}const game=document.getElementById('game');if(game instanceof HTMLCanvasElement){game.style.width='100%';game.style.height='100%';game.style.aspectRatio='auto';}};if(document.readyState==='loading'){document.addEventListener('DOMContentLoaded',apply,{once:true});}else{apply();}window.addEventListener('resize',apply);})();</script>";
+
+function patchHtmlForEmbeddedViewport(html: string): string {
+  if (!html || html.includes("iis-embed-viewport-fix")) {
+    return html;
+  }
+
+  let nextHtml = html;
+  if (/<\/head>/i.test(nextHtml)) {
+    nextHtml = nextHtml.replace(/<\/head>/i, `${EMBED_VIEWPORT_FIX_STYLE}</head>`);
+  } else {
+    nextHtml = `${EMBED_VIEWPORT_FIX_STYLE}${nextHtml}`;
+  }
+
+  if (/<\/body>/i.test(nextHtml)) {
+    nextHtml = nextHtml.replace(/<\/body>/i, `${EMBED_VIEWPORT_FIX_SCRIPT}</body>`);
+  } else {
+    nextHtml = `${nextHtml}${EMBED_VIEWPORT_FIX_SCRIPT}`;
+  }
+  return nextHtml;
+}
+
 export async function resolveArtifactTarget(gameId: string, requestedAssetPath: string): Promise<ArtifactTarget | NextResponse> {
   const supabase = await createSupabaseServerClient();
   const { data: game, error } = await supabase.from("games_metadata").select("*").eq("id", gameId).eq("status", "active").single();
@@ -216,13 +242,22 @@ export async function proxyArtifactResponse(target: ArtifactTarget): Promise<Nex
     return artifactProxyError(502, "artifact_fetch_failed", "artifact_fetch_failed");
   }
 
-  const body = await upstream.arrayBuffer();
   const upstreamContentType = upstream.headers.get("content-type")?.trim() || "";
+  const resolvedContentType = resolveProxyContentType(upstreamContentType, target.contentTypeHint);
+  let body: BodyInit;
+  const rawBody = await upstream.arrayBuffer();
+  if (resolvedContentType.toLowerCase().startsWith("text/html")) {
+    const rawHtml = new TextDecoder().decode(rawBody);
+    const patchedHtml = patchHtmlForEmbeddedViewport(rawHtml);
+    body = patchedHtml;
+  } else {
+    body = rawBody;
+  }
 
   return new NextResponse(body, {
     status: upstream.status,
     headers: {
-      "content-type": resolveProxyContentType(upstreamContentType, target.contentTypeHint),
+      "content-type": resolvedContentType,
       "cache-control": "no-store",
       "x-content-type-options": "nosniff",
       // sandbox iframe (without allow-same-origin) gets an opaque origin.

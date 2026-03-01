@@ -96,5 +96,8 @@
   .play-redesign-header {
     flex-direction: column;
   }
-}
 
+  .play-frame-wrap {
+    height: min(72vh, 640px);
+  }
+}

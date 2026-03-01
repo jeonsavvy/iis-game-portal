@@ -42,14 +42,23 @@
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.14);
   background: #020617;
-  height: min(75vh, 860px);
+  height: clamp(560px, 82vh, 980px);
 }
 
 .play-embed-shell {
   width: 100%;
   height: 100%;
-  display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
+  display: flex;
+  flex-direction: column;
+}
+
+.play-embed-shell iframe {
+  width: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: block;
+  border: 0;
+  background: #020617;
 }
 
 .play-embed-toolbar {
