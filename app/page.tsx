@@ -99,11 +99,11 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       <section className="surface arcade-hero-showcase" style={{ backgroundImage: heroBackground }}>
         <div className="arcade-hero-content">
           <p className="arcade-kicker">IIS ARCADE</p>
-          <h1>{heroGame?.name ?? "자동 제작 게임을 바로 플레이하세요"}</h1>
+          <h1>{heroGame?.name ?? "지금 플레이할 게임을 선택하세요"}</h1>
           <p className="arcade-hero-description">
             {heroGame
               ? "지금 생성된 최신 게임을 바로 실행할 수 있습니다."
-              : "아직 등록된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
+              : "아직 공개된 게임이 없습니다."}
           </p>
           {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 샘플 데이터로 화면을 검수 중입니다.</p> : null}
           <div className="arcade-hero-actions">
@@ -123,10 +123,6 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <div className="arcade-hero-stat">
             <span>등록 게임</span>
             <strong>{rows.length}</strong>
-          </div>
-          <div className="arcade-hero-stat muted">
-            <span>운영 모드</span>
-            <strong>완전 자동</strong>
           </div>
         </aside>
       </section>
@@ -169,7 +165,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       {rows.length === 0 ? (
         <section className="surface arcade-empty-state">
           <h3>표시할 게임이 없습니다</h3>
-          <p>운영실에서 제작을 실행하면 이 화면에 자동으로 반영됩니다.</p>
+          <p>조금 뒤에 다시 확인해 주세요.</p>
         </section>
       ) : (
         <section className="arcade-section">
