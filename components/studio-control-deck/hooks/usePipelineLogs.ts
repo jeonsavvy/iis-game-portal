@@ -129,8 +129,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
       pipelines.find((item) => item.status === "skipped") ??
       pipelines[0];
 
-    const selectedIsTerminal = selected ? selected.status === "success" || selected.status === "error" : false;
-    if (!selected || selectedIsTerminal) {
+    if (!selected) {
       if (preferred && preferred.pipeline_id !== selectedPipelineId) {
         setSelectedPipelineId(preferred.pipeline_id);
       }

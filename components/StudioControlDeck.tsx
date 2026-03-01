@@ -48,23 +48,18 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     const pipelineChanged = previousPipelineIdRef.current !== selectedPipelineId;
     if (pipelineChanged) {
       previousPipelineIdRef.current = selectedPipelineId;
-    }
-
-    if (pipelineChanged && !latestStageMap.has(selectedStage)) {
       const latestLog = selectedLogs[0];
       if (latestLog && latestLog.stage !== "done") {
         setSelectedStage(latestLog.stage);
         return;
       }
-    }
 
-    if (!latestStageMap.has(selectedStage)) {
       const firstExisting = AGENT_LAYOUT.find((agent) => latestStageMap.has(agent.stage));
       if (firstExisting) {
         setSelectedStage(firstExisting.stage);
       }
     }
-  }, [selectedPipelineId, selectedLogs, selectedStage, latestStageMap]);
+  }, [selectedPipelineId, selectedLogs, latestStageMap]);
 
   return (
     <section className="ops-console-deck">
