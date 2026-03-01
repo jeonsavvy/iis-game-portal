@@ -1,7 +1,7 @@
 "use client";
 
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
-import { AGENT_LABELS, AGENT_LAYOUT, STAGE_GUIDE, STATUS_LABELS } from "@/components/studio-control-deck/config";
+import { AGENT_LABELS, AGENT_LAYOUT, STATUS_LABELS } from "@/components/studio-control-deck/config";
 import { compactMessage, qualitySignals, stageEvidence, statusTone } from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
@@ -105,8 +105,7 @@ export function CollabBoard({
                     <div className="ops-node-top">
                       <AgentGlyph icon={agent.icon} tone={tone} active={active} />
                       <div>
-                        <p>{agent.role}</p>
-                        <h4>{agent.title}</h4>
+                        <h4>{agent.role}</h4>
                       </div>
                     </div>
                     <p className="ops-node-message">{compactMessage(stageLog?.message ?? "유휴")}</p>
@@ -129,7 +128,7 @@ export function CollabBoard({
         <section className="ops-workbench">
           <div className="section-head compact">
             <div>
-              <h3 className="section-title">{selectedAgent.role}</h3>
+              <h3 className="section-title">에이전트: {selectedAgent.role}</h3>
             </div>
             <AgentGlyph
               icon={selectedAgent.icon}
@@ -139,7 +138,6 @@ export function CollabBoard({
           </div>
 
           <div className="ops-workbench-card">
-            <p>{STAGE_GUIDE[selectedStage]}</p>
             <p className="muted-text">최근: {compactMessage(selectedStageLog?.message)}</p>
             {selectedEvidence.length > 0 ? (
               <ul className="ops-evidence-list">

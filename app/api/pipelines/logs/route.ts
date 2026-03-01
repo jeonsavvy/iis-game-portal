@@ -2,11 +2,32 @@ import { NextResponse } from "next/server";
 
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
 import { jsonError } from "@/lib/api/error-response";
+import type { Database } from "@/types/database";
+import type { PipelineLog } from "@/types/pipeline";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" } as const;
+
+function createSyntheticLog(row: Database["public"]["Tables"]["admin_config"]["Row"]): PipelineLog {
+  return {
+    pipeline_id: row.id,
+    stage: "analyze",
+    status: row.status,
+    agent_name: "analyzer",
+    message: row.status === "queued" ? `큐 등록됨: ${row.keyword}` : `파이프라인 상태: ${row.status}`,
+    reason: row.error_reason,
+    attempt: 1,
+    metadata: {
+      synthetic: true,
+      source: row.trigger_source,
+      keyword: row.keyword,
+      payload: row.payload,
+    },
+    created_at: row.updated_at || row.created_at,
+  };
+}
 
 export async function GET(request: Request) {
   const url = new URL(request.url);
@@ -32,8 +53,36 @@ export async function GET(request: Request) {
         });
       }
 
+      let adminQuery = auth.supabase
+        .from("admin_config")
+        .select("id,keyword,trigger_source,payload,status,error_reason,created_at,updated_at")
+        .order("updated_at", { ascending: false })
+        .limit(limit);
+      if (pipelineId) {
+        adminQuery = adminQuery.eq("id", pipelineId);
+      }
+
+      const { data: adminRows, error: adminError } = await adminQuery;
+      if (adminError) {
+        return jsonError({
+          status: 500,
+          error: "Failed to fetch pipeline queue",
+          detail: adminError.message,
+          code: "pipeline_queue_query_failed",
+          headers: NO_STORE_HEADERS,
+        });
+      }
+
+      const typedLogs = (data ?? []) as PipelineLog[];
+      const typedAdminRows = (adminRows ?? []) as Database["public"]["Tables"]["admin_config"]["Row"][];
+      const existingPipelineIds = new Set(typedLogs.map((row) => row.pipeline_id));
+      const syntheticLogs = typedAdminRows.filter((row) => !existingPipelineIds.has(row.id)).map(createSyntheticLog);
+      const mergedLogs = [...typedLogs, ...syntheticLogs]
+        .sort((a, b) => b.created_at.localeCompare(a.created_at))
+        .slice(0, limit);
+
       return NextResponse.json(
-        { logs: data ?? [] },
+        { logs: mergedLogs },
         { headers: NO_STORE_HEADERS },
       );
     },

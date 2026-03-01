@@ -5,19 +5,18 @@ export type AgentIcon = "analyzer" | "planner" | "designer" | "developer" | "qaR
 export const AGENT_LAYOUT: Array<{
   stage: Exclude<PipelineStage, "done">;
   role: string;
-  title: string;
   gridColumn: number;
   gridRow: number;
   icon: AgentIcon;
 }> = [
-  { stage: "analyze", role: "에이전트: 분석", title: "요청 해석", gridColumn: 1, gridRow: 1, icon: "analyzer" },
-  { stage: "plan", role: "에이전트: 기획", title: "기획 확정", gridColumn: 2, gridRow: 1, icon: "planner" },
-  { stage: "design", role: "에이전트: 디자인", title: "화면 설계", gridColumn: 3, gridRow: 1, icon: "designer" },
-  { stage: "build", role: "에이전트: 개발", title: "게임 구현", gridColumn: 1, gridRow: 2, icon: "developer" },
-  { stage: "qa_runtime", role: "에이전트: QA 런타임", title: "실행 안정성", gridColumn: 2, gridRow: 2, icon: "qaRuntime" },
-  { stage: "qa_quality", role: "에이전트: QA 품질", title: "품질 평가", gridColumn: 3, gridRow: 2, icon: "qaQuality" },
-  { stage: "release", role: "에이전트: 배포", title: "출시 반영", gridColumn: 1, gridRow: 3, icon: "releaser" },
-  { stage: "report", role: "에이전트: 기록", title: "결과 보고", gridColumn: 2, gridRow: 3, icon: "reporter" },
+  { stage: "analyze", role: "분석", gridColumn: 1, gridRow: 1, icon: "analyzer" },
+  { stage: "plan", role: "기획", gridColumn: 2, gridRow: 1, icon: "planner" },
+  { stage: "design", role: "디자인", gridColumn: 3, gridRow: 1, icon: "designer" },
+  { stage: "build", role: "개발", gridColumn: 1, gridRow: 2, icon: "developer" },
+  { stage: "qa_runtime", role: "QA 런타임", gridColumn: 2, gridRow: 2, icon: "qaRuntime" },
+  { stage: "qa_quality", role: "QA 품질", gridColumn: 3, gridRow: 2, icon: "qaQuality" },
+  { stage: "release", role: "배포", gridColumn: 1, gridRow: 3, icon: "releaser" },
+  { stage: "report", role: "기록", gridColumn: 2, gridRow: 3, icon: "reporter" },
 ];
 
 export const STATUS_LABELS: Record<PipelineStatus, string> = {
