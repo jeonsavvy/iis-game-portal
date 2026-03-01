@@ -15,6 +15,7 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
   const [loaded, setLoaded] = useState(false);
   const [compatMode, setCompatMode] = useState(false);
   const [reloadSeed, setReloadSeed] = useState(0);
+  const debugMode = process.env.NEXT_PUBLIC_GAME_EMBED_DEBUG === "1";
 
   const focusFrame = () => {
     frameRef.current?.focus();
@@ -35,30 +36,34 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
 
   return (
     <div className="play-embed-shell">
-      <div className="play-embed-toolbar">
-        <button className="button button-ghost" type="button" onClick={focusFrame}>
-          입력 활성화
-        </button>
-        {usesStrictSandbox ? (
-          <button
-            className="button button-ghost"
-            type="button"
-            onClick={() => {
-              setCompatMode((prev) => !prev);
-              setLoaded(false);
-              setReloadSeed((prev) => prev + 1);
-            }}
-          >
-            {compatMode ? "보안 모드로 복귀" : "호환 모드 재실행"}
-          </button>
-        ) : null}
-      </div>
-      {usesStrictSandbox ? (
-        <p className="play-embed-notice">
-          {compatMode
-            ? "호환 모드: 일부 구형 게임 호환을 위해 same-origin sandbox를 임시 허용했습니다."
-            : "보안 모드: 기본 격리 실행입니다. 입력 반응이 없으면 ‘호환 모드 재실행’을 눌러주세요."}
-        </p>
+      {debugMode ? (
+        <>
+          <div className="play-embed-toolbar">
+            <button className="button button-ghost" type="button" onClick={focusFrame}>
+              입력 활성화
+            </button>
+            {usesStrictSandbox ? (
+              <button
+                className="button button-ghost"
+                type="button"
+                onClick={() => {
+                  setCompatMode((prev) => !prev);
+                  setLoaded(false);
+                  setReloadSeed((prev) => prev + 1);
+                }}
+              >
+                {compatMode ? "보안 모드로 복귀" : "호환 모드 재실행"}
+              </button>
+            ) : null}
+          </div>
+          {usesStrictSandbox ? (
+            <p className="play-embed-notice">
+              {compatMode
+                ? "호환 모드: 일부 구형 게임 호환을 위해 same-origin sandbox를 임시 허용했습니다."
+                : "보안 모드: 기본 격리 실행입니다. 입력 반응이 없으면 ‘호환 모드 재실행’을 눌러주세요."}
+            </p>
+          ) : null}
+        </>
       ) : null}
       <iframe
         key={`${src}-${reloadSeed}`}

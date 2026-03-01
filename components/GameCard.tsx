@@ -8,13 +8,6 @@ type Game = Database["public"]["Tables"]["games_metadata"]["Row"];
 
 type GameCardVariant = "default" | "featured" | "compact";
 
-function formatDateLabel(createdAt: string): string {
-  return new Date(createdAt).toLocaleDateString("ko-KR", {
-    month: "short",
-    day: "numeric",
-  });
-}
-
 export function GameCard({ game, variant = "default" }: { game: Game; variant?: GameCardVariant }) {
   const isPlayable = game.status === "active";
   const imageUrl = game.thumbnail_url ?? game.screenshot_url;
@@ -41,10 +34,9 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
 
       <div className="arcade-game-card-body">
         <h4>{game.name}</h4>
-        <p>{game.slug}</p>
+        <p>{isPlayable ? "브라우저에서 즉시 실행" : "준비 중"}</p>
 
         <div className="arcade-game-card-foot">
-          <span>{formatDateLabel(game.created_at)}</span>
           <Link className="button button-primary" href={`/play/${game.id}`}>
             {isPlayable ? "지금 플레이" : "상세 보기"}
           </Link>

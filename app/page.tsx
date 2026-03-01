@@ -148,7 +148,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <h1>{heroGame?.name ?? "게임을 탐색하고 바로 플레이하세요"}</h1>
           <p className="arcade-hero-description">
             {heroGame
-              ? "대표 게임을 바로 실행하거나 상세 화면에서 조작법과 연관 게임을 확인하세요."
+              ? "대표 게임을 바로 실행하고, 플레이 화면에서 조작법과 목표를 바로 확인하세요."
               : "지금 생성된 게임이 없습니다. 운영실에서 파이프라인을 실행하면 자동으로 등록됩니다."}
           </p>
           {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 실서버 연결 없이 샘플 데이터로 화면을 검수 중입니다.</p> : null}
@@ -176,8 +176,8 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
             <strong>{rows.filter((row) => row.status === "active").length}</strong>
           </div>
           <div className="arcade-hero-stat">
-            <span>최근 업데이트</span>
-            <strong>{rows.length > 0 ? new Date(rows[0].updated_at).toLocaleDateString("ko-KR") : "-"}</strong>
+            <span>검색 결과</span>
+            <strong>{rows.length}</strong>
           </div>
           <div className="arcade-hero-stat muted">
             <span>선정 기준</span>

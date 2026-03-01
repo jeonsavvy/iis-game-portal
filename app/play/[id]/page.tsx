@@ -13,7 +13,6 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
-type SimilarGame = Pick<GameRow, "id" | "name" | "thumbnail_url" | "screenshot_url">;
 
 type GameLookupResult = {
   game: GameRow | null;
@@ -35,15 +34,6 @@ const getGameById = cache(async (id: string): Promise<GameLookupResult> => {
     };
   }
 });
-
-function getPreviewSimilarGames(gameId: string): SimilarGame[] {
-  return PREVIEW_GAMES.filter((game) => game.id !== gameId).slice(0, 4).map((game) => ({
-    id: game.id,
-    name: game.name,
-    thumbnail_url: game.thumbnail_url,
-    screenshot_url: game.screenshot_url,
-  }));
-}
 
 function pickReviewFromMetadata(metadata: unknown, slug: string): string | null {
   if (!metadata || typeof metadata !== "object") return null;
@@ -90,32 +80,67 @@ function controlsByGame(game: GameRow): string[] {
 
   if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
     return [
-      "← / → 조향 / ↑ 가속 / ↓ 브레이크 / Shift 오버테이크 부스트",
-      "코너 진입 전 브레이크로 속도를 정리하면 충돌이 크게 줄어듭니다.",
-      "체크포인트를 연속 통과하며 랩 타임을 줄이세요.",
+      "조향: ← / → 또는 A / D",
+      "가속·감속: ↑ / ↓ 또는 W / S · 부스트: Shift",
+      "운영 팁: 코너 직전 감속 → 에이펙스에서 재가속하면 안정적으로 랩을 이어갈 수 있습니다.",
+      "시작 문제: 화면을 한 번 클릭한 뒤 조작하면 키 입력이 더 안정적으로 반응합니다.",
     ];
   }
 
   if (/(flight|pilot|비행|항공)/.test(normalized)) {
     return [
-      "W/S 피치 · A/D 롤 · Q/E 요 · ↑/↓ 스로틀 · Shift 부스트",
-      "링 통과를 우선하고, 급격한 요/롤 입력은 짧게 끊어 주세요.",
-      "위험 구역에서는 속도보다 기체 안정성이 먼저입니다.",
+      "자세 제어: W/S 피치 · A/D 롤 · Q/E 요",
+      "속도 제어: ↑/↓ 스로틀 · Shift 부스트",
+      "운영 팁: 급격한 롤·요 입력은 짧게 끊어 기체 흔들림을 줄이세요.",
+      "링 통과 우선: 위험 구역에서는 속도보다 안정성을 먼저 확보하세요.",
+    ];
+  }
+
+  if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
+    return [
+      "이동: W / A / S / D 또는 방향키",
+      "조준·사격: 마우스 이동 + 클릭(지원 모드 기준) 또는 Space",
+      "회피: Shift 대시(지원 모드 기준)",
+      "운영 팁: 정면 교전보다 좌우 이동으로 탄선을 비우며 교전하세요.",
     ];
   }
 
   return [
-    "← / → 또는 A / D: 좌우 이동",
-    "↑ / W 또는 Space: 점프/부스트",
-    "게임 화면 클릭 후 키 입력이 반응합니다. 포커스를 먼저 맞춰주세요.",
+    "기본 이동: ← / → 또는 A / D",
+    "액션: ↑ / W 또는 Space",
+    "운영 팁: 위험 요소는 정면 대응보다 위치 선점으로 먼저 피하세요.",
+    "시작 문제: 화면을 한 번 클릭한 뒤 조작하면 입력 반응이 안정적입니다.",
   ];
 }
 
 function overviewByGame(game: GameRow): string[] {
+  const normalized = `${game.name} ${game.slug}`.toLowerCase();
   const lines: string[] = [];
-  lines.push(`${game.name}은(는) 즉시 플레이 중심의 짧은 세션 게임입니다.`);
-  lines.push("짧은 세션에서도 피드백이 즉시 오도록 설계되어, 반복 플레이를 통해 기록을 갱신하는 구조를 지향합니다.");
-  lines.push("플레이 중 체감 난이도가 급격히 올라가면 조작 입력 리듬을 먼저 안정화한 뒤 점수 루프를 확장하세요.");
+  lines.push(`${game.name}은(는) 즉시 시작 가능한 아케이드 세션 게임입니다.`);
+
+  if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
+    lines.push("핵심 목표는 충돌을 줄이며 체크포인트를 연속 통과해 랩 흐름을 유지하는 것입니다.");
+    lines.push("브레이크-턴인-재가속 리듬을 만들면 점수와 생존을 동시에 끌어올릴 수 있습니다.");
+    lines.push("부스트는 직선 구간에서 사용하고, 코너 진입 전에는 속도를 정리해 안정적으로 이어가세요.");
+    return lines;
+  }
+
+  if (/(flight|pilot|비행|항공)/.test(normalized)) {
+    lines.push("핵심 목표는 링 통과를 이어가며 기체 안정성을 유지하는 것입니다.");
+    lines.push("피치·롤·요를 동시에 크게 쓰기보다 한 축씩 분리해 조작하면 실수를 줄일 수 있습니다.");
+    lines.push("고속 구간에서는 짧은 입력으로 자세를 미세 보정해 흔들림을 최소화하세요.");
+    return lines;
+  }
+
+  if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
+    lines.push("핵심 목표는 적의 압박을 회피하며 교전 효율을 높여 생존 시간을 늘리는 것입니다.");
+    lines.push("엄폐 없이 정면에서 오래 싸우기보다, 이동-사격 리듬으로 탄선 관리에 집중하세요.");
+    lines.push("난이도가 오르면 한 번에 많은 처치보다 안정적인 위치 유지가 더 중요합니다.");
+    return lines;
+  }
+
+  lines.push("짧은 세션에서도 피드백이 즉시 오도록 구성되어 반복 플레이에 최적화되어 있습니다.");
+  lines.push("초반에는 무리한 고득점보다 생존 루프를 먼저 익히고, 이후 점수 루프를 확장하세요.");
   return lines;
 }
 
@@ -180,7 +205,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
     const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
-    return renderPlayPage(previewGame, getPreviewSimilarGames(previewGame.id), previewGame.ai_review, true);
+    return renderPlayPage(previewGame, true);
   }
 
   const { game, errorMessage } = await getGameById(id);
@@ -199,28 +224,10 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
     notFound();
   }
 
-  const supabase = await createSupabaseServerClient();
-  const resolvedAiReview = await resolveAiReviewFallback(game.slug, game.ai_review);
-
-  const { data: similarRows } = await supabase
-    .from("games_metadata")
-    .select("id,name,thumbnail_url,screenshot_url")
-    .neq("id", game.id)
-    .eq("status", "active")
-    .order("updated_at", { ascending: false })
-    .limit(6);
-
-  const similarGames = (similarRows ?? []) as SimilarGame[];
-
-  return renderPlayPage(game, similarGames, resolvedAiReview, false);
+  return renderPlayPage(game, false);
 }
 
-function renderPlayPage(
-  typedGame: GameRow,
-  similarGames: SimilarGame[],
-  resolvedAiReview: string | null,
-  previewMode: boolean,
-) {
+function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
   const legacyGameSandboxMode = process.env.LEGACY_GAME_SANDBOX === "1";
   const legacySandboxAllowlist = parseLegacySandboxAllowlist(process.env.LEGACY_GAME_SANDBOX_ALLOWLIST);
   const iframeSandboxPolicy = resolveGameIframeSandboxPolicy({
@@ -230,8 +237,7 @@ function renderPlayPage(
     legacyAllowlist: legacySandboxAllowlist,
   });
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
-  const createdAt = new Date(typedGame.created_at).toLocaleString("ko-KR");
-  const updatedAt = new Date(typedGame.updated_at).toLocaleString("ko-KR");
+  const debugMode = process.env.NEXT_PUBLIC_GAME_EMBED_DEBUG === "1";
 
   return (
     <section className="play-redesign-page">
@@ -247,28 +253,22 @@ function renderPlayPage(
         <div>
           <p className="eyebrow">게임 플레이</p>
           <h1 className="hero-title">{typedGame.name}</h1>
-          <p className="section-subtitle">
-            생성 {createdAt} · 업데이트 {updatedAt}
-          </p>
+          <p className="section-subtitle">게임을 시작하고 조작법에 맞춰 목표를 달성해보세요.</p>
         </div>
         <div className="play-redesign-actions">
           <Link className="button button-ghost" href="/">
             아케이드 홈
           </Link>
-          <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noopener noreferrer">
-            새 탭에서 실행
-          </a>
+          {debugMode ? (
+            <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noopener noreferrer">
+              디버그: 새 탭 실행
+            </a>
+          ) : null}
         </div>
       </header>
 
       <section className="play-first-screen">
         <article className="surface play-primary-stage">
-          <div className="play-stage-top">
-            <span className={`status-chip ${typedGame.status === "active" ? "tone-success" : "tone-warn"}`}>
-              {typedGame.status === "active" ? "PLAY READY" : typedGame.status.toUpperCase()}
-            </span>
-            <span className="muted-text">{typedGame.slug}</span>
-          </div>
           <div className="play-frame-wrap">
             {previewMode ? (
               <div className="play-preview-stage">
@@ -285,29 +285,13 @@ function renderPlayPage(
             )}
           </div>
         </article>
-
-        <aside className="surface play-quick-meta">
-          <h3 className="section-title">핵심 정보</h3>
-          <dl>
-            <div>
-              <dt>상태</dt>
-              <dd>{typedGame.status}</dd>
-            </div>
-            <div>
-              <dt>슬러그</dt>
-              <dd>{typedGame.slug}</dd>
-            </div>
-          </dl>
-        </aside>
       </section>
 
       <PlayInfoTabs
         gameName={typedGame.name}
-        aiReview={resolvedAiReview}
         screenshotUrl={typedGame.screenshot_url}
         controlsHint={controlsByGame(typedGame)}
         overview={overviewByGame(typedGame)}
-        similarGames={similarGames}
       />
     </section>
   );

@@ -283,13 +283,7 @@
 
 .arcade-game-card-foot {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 10px;
 }
-
-.arcade-game-card-foot > span {
-  color: #cbd5e1;
-  font-size: 12px;
-}
-
