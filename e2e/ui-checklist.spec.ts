@@ -20,7 +20,7 @@ test("플레이 화면이 우선 플레이영역 + 탭 구조를 제공한다", 
   await expect(page.getByRole("tab", { name: "스크린샷" })).toHaveCount(0);
 
   await page.getByRole("tab", { name: "게임 설명" }).click();
-  await expect(page.getByText("즉시 시작 가능한 아케이드 세션 게임입니다.")).toBeVisible();
+  await expect(page.getByText("플레이 준비가 완료되었습니다.")).toBeVisible();
   await expect(page.getByText("AI 디자이너 코멘트 / 생성 히스토리")).toHaveCount(0);
 });
 
