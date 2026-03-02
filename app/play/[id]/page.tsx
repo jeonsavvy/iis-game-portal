@@ -116,7 +116,7 @@ function controlsByGame(game: GameRow): string[] {
 function overviewByGame(game: GameRow): string[] {
   const normalized = `${game.name} ${game.slug}`.toLowerCase();
   const lines: string[] = [];
-  lines.push(`${game.name}은(는) 즉시 시작 가능한 아케이드 세션 게임입니다.`);
+  lines.push(`${game.name} 플레이 준비가 완료되었습니다.`);
 
   if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
     lines.push("핵심 목표는 충돌을 줄이며 체크포인트를 연속 통과해 랩 흐름을 유지하는 것입니다.");
@@ -139,8 +139,8 @@ function overviewByGame(game: GameRow): string[] {
     return lines;
   }
 
-  lines.push("짧은 세션에서도 피드백이 즉시 오도록 구성되어 반복 플레이에 최적화되어 있습니다.");
-  lines.push("초반에는 무리한 고득점보다 생존 루프를 먼저 익히고, 이후 점수 루프를 확장하세요.");
+  lines.push("요청한 콘셉트에 맞는 목표와 조작을 먼저 익힌 뒤, 점진적으로 난도를 올려 플레이하세요.");
+  lines.push("처음에는 안정적인 패턴 파악에 집중하고, 익숙해지면 공격적인 플레이로 점수를 확장하세요.");
   return lines;
 }
 
@@ -256,9 +256,7 @@ function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
           <p className="section-subtitle">게임을 시작하고 조작법에 맞춰 목표를 달성해보세요.</p>
         </div>
         <div className="play-redesign-actions">
-          <Link className="button button-ghost" href="/">
-            아케이드 홈
-          </Link>
+          <Link className="button button-ghost" href="/">홈으로</Link>
           {debugMode ? (
             <a className="button button-primary" href={proxiedArtifactUrl} target="_blank" rel="noopener noreferrer">
               디버그: 새 탭 실행
