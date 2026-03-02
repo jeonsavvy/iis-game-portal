@@ -283,8 +283,6 @@ function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
       </section>
 
       <PlayInfoTabs
-        gameName={typedGame.name}
-        screenshotUrl={typedGame.screenshot_url}
         controlsHint={controlsByGame(typedGame)}
         overview={overviewByGame(typedGame)}
       />
