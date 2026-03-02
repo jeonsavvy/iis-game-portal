@@ -27,6 +27,10 @@ export type PipelineLogMetadata = {
   contract_status?: "pass" | "warn" | "fail" | string;
   contract_summary?: string;
   contribution_score?: number;
+  playability_score?: number;
+  playability_fail_reasons?: string[];
+  substrate_id?: string;
+  camera_model?: string;
   stage_contribution_summary?: Record<string, unknown>;
   fatal_errors?: string[];
   non_fatal_warnings?: string[];

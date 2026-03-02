@@ -22,6 +22,16 @@ export function statusTone(status: PipelineStatus | null): "success" | "error" |
 export function compactMessage(message?: string | null): string {
   if (!message) return "대기중";
   const normalized = message.replace(/\s+/g, " ").trim();
+  const lowered = normalized.toLowerCase();
+  if (lowered.includes("candidate") && lowered.includes("evaluated")) return "후보 검토";
+  if (lowered.includes("generation started")) return "생성 시작";
+  if (lowered.includes("artifact selected")) return "후보 확정";
+  if (lowered.includes("final polish pass")) return "최종 다듬기";
+  if (lowered.includes("runtime qa smoke check started")) return "실행 점검 시작";
+  if (lowered.includes("runtime qa passed")) return "실행 점검 완료";
+  if (lowered.includes("quality qa")) return "품질 점검";
+  if (lowered.includes("published") || lowered.includes("archive sync")) return "배포 반영";
+  if (lowered.includes("pipeline finished")) return "파이프라인 완료";
   if (normalized.length <= 86) return normalized;
   return `${normalized.slice(0, 86)}…`;
 }
@@ -53,52 +63,19 @@ export function stageEvidence(log: PipelineLog | null): string[] {
   if (!log || !log.metadata || typeof log.metadata !== "object") return [];
   const metadata = log.metadata as Record<string, unknown>;
   const rows: string[] = [];
-  const deliverables = Array.isArray(metadata.deliverables)
-    ? metadata.deliverables.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
-    : [];
-
-  if (typeof metadata.contract_status === "string" && metadata.contract_status.trim()) {
-    rows.push(`계약 ${metadata.contract_status}`);
-  }
-  const contributionScore = numberValue(metadata.contribution_score);
-  if (contributionScore !== null) {
-    rows.push(`기여 ${contributionScore.toFixed(1)}`);
-  }
-  if (typeof metadata.contract_summary === "string" && metadata.contract_summary.trim()) {
-    rows.push(compactMessage(metadata.contract_summary));
-  }
-  if (deliverables.length > 0) {
-    rows.push(`산출물 ${deliverables.slice(0, 2).join(" · ")}`);
-  }
 
   if (log.stage === "build") {
-    const engine = metadata.genre_engine_selected;
-    if (typeof engine === "string" && engine.trim()) rows.push(`엔진 ${engine}`);
-
-    const assetPack = metadata.asset_pack;
-    if (typeof assetPack === "string" && assetPack.trim()) rows.push(`에셋팩 ${assetPack}`);
-
-    const variant = metadata.asset_pipeline_selected_variant;
-    if (typeof variant === "string" && variant.trim()) rows.push(`변형 ${variant}`);
-
-    const finalScore = numberValue(metadata.final_composite_score);
-    if (finalScore !== null) rows.push(`완성도 ${finalScore.toFixed(1)}`);
-
-    const memoryHintApplied = metadata.memory_hint_applied;
-    if (memoryHintApplied === true) rows.push("누적 메모리 반영");
+    const substrate = typeof metadata.substrate_id === "string" ? metadata.substrate_id.trim() : "";
+    if (substrate) rows.push(`서브스트레이트 ${substrate}`);
+    const finalScore = numberValue(metadata.playability_score) ?? numberValue(metadata.final_composite_score);
+    if (finalScore !== null) rows.push(`점수 ${finalScore.toFixed(1)}`);
   }
 
   if (log.stage === "qa_runtime" || log.stage === "qa_quality") {
     if (typeof log.reason === "string" && log.reason.trim()) rows.push(`사유 ${log.reason}`);
 
-    const quality = numberValue(metadata.quality_score);
+    const quality = numberValue(metadata.playability_score) ?? numberValue(metadata.quality_score);
     if (quality !== null) rows.push(`품질 ${quality.toFixed(1)}`);
-
-    const gameplay = numberValue(metadata.gameplay_score);
-    if (gameplay !== null) rows.push(`게임성 ${gameplay.toFixed(1)}`);
-
-    const visual = numberValue(metadata.visual_score);
-    if (visual !== null) rows.push(`시각 ${visual.toFixed(1)}`);
   }
 
   if (log.stage === "release") {
@@ -120,5 +97,5 @@ export function stageEvidence(log: PipelineLog | null): string[] {
     rows.push(`사유 ${log.reason}`);
   }
 
-  return rows.slice(0, 4);
+  return rows.slice(0, 2);
 }

@@ -20,7 +20,7 @@ test("플레이 화면이 우선 플레이영역 + 탭 구조를 제공한다", 
   await expect(page.getByRole("tab", { name: "스크린샷" })).toHaveCount(0);
 
   await page.getByRole("tab", { name: "게임 설명" }).click();
-  await expect(page.getByText("플레이 준비가 완료되었습니다.")).toBeVisible();
+  await expect(page.getByText("목표를 빠르게 파악하고 즉시 플레이하세요.")).toBeVisible();
   await expect(page.getByText("AI 디자이너 코멘트 / 생성 히스토리")).toHaveCount(0);
 });
 
@@ -28,9 +28,9 @@ test("운영실이 에이전트/상세/로그 구조를 노출한다", async ({ 
   await page.goto("/admin");
 
   await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "자동 제작 관제" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "사무실 보드" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "실시간 이벤트" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "자동 제작" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "보드" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "로그" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "실행", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "게임 완전 삭제 (DB · 스토리지 · 아카이브)" })).toBeVisible();
   await expect(page.getByText("프리뷰 모드: 이 화면은 위험 액션 UX 점검용이며 실제 삭제 요청은 차단됩니다.")).toBeVisible();

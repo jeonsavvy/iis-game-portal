@@ -59,18 +59,18 @@ export const AGENT_LABELS: Record<string, string> = {
 };
 
 export const STAGE_GUIDE: Record<Exclude<PipelineStage, "done">, string> = {
-  analyze: "요청을 분석해 제작 방향을 고정합니다.",
-  plan: "코어 루프와 목표를 설계합니다.",
-  design: "화면/연출 규칙을 설계합니다.",
-  build: "실행 가능한 게임을 생성합니다.",
-  qa_runtime: "런타임 오류를 점검합니다.",
-  qa_quality: "품질 점검 후 개선과제를 큐에 적재합니다.",
-  release: "게임을 배포 경로에 반영합니다.",
-  report: "결과를 기록하고 다음 개선 입력으로 남깁니다.",
+  analyze: "요청 분석",
+  plan: "플레이 설계",
+  design: "화면 설계",
+  build: "게임 구현",
+  qa_runtime: "실행 점검",
+  qa_quality: "품질 점검",
+  release: "배포 반영",
+  report: "결과 기록",
 };
 
 export const MOBILE_TABS = [
-  { key: "board", label: "사무실 보드" },
-  { key: "activity", label: "실시간 이벤트" },
-  { key: "control", label: "실행" },
+  { key: "board", label: "보드" },
+  { key: "activity", label: "로그" },
+  { key: "control", label: "제어" },
 ] as const;

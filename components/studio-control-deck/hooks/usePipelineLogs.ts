@@ -45,16 +45,21 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
   }, []);
 
   const upsertLogs = useCallback((incoming: PipelineLog[]) => {
+    const maxRows = 1200;
     setLogs((prev) => {
       const map = new Map<string, PipelineLog>();
       [...prev, ...incoming].forEach((log) => {
         map.set(buildLogKey(log), log);
       });
-      return Array.from(map.values())
-        .sort((a, b) => b.created_at.localeCompare(a.created_at))
-        .slice(0, 500);
+      const sorted = Array.from(map.values()).sort((a, b) => b.created_at.localeCompare(a.created_at));
+      if (!selectedPipelineId) {
+        return sorted.slice(0, maxRows);
+      }
+      const pinned = sorted.filter((log) => log.pipeline_id === selectedPipelineId);
+      const others = sorted.filter((log) => log.pipeline_id !== selectedPipelineId).slice(0, Math.max(0, maxRows - pinned.length));
+      return [...pinned, ...others].sort((a, b) => b.created_at.localeCompare(a.created_at));
     });
-  }, []);
+  }, [selectedPipelineId]);
 
   const refreshRecentLogs = useCallback(async () => {
     if (previewMode) {
@@ -136,8 +141,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
       pipelines[0];
 
     if (!selected) {
-      if (preferred && preferred.pipeline_id !== selectedPipelineId) {
-        setSelectionLocked(false);
+      if (!selectionLocked && preferred && preferred.pipeline_id !== selectedPipelineId) {
         setSelectedPipelineIdState(preferred.pipeline_id);
       }
       return;

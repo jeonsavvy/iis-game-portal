@@ -27,6 +27,7 @@ function isInteractiveLog(log: PipelineLog): log is PipelineLog & { stage: Exclu
 export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
   const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("analyze");
+  const [stageSelectionLocked, setStageSelectionLocked] = useState(false);
   const previousPipelineIdRef = useRef<string | null>(null);
 
   const {
@@ -56,6 +57,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     const pipelineChanged = previousPipelineIdRef.current !== selectedPipelineId;
     if (pipelineChanged) {
       previousPipelineIdRef.current = selectedPipelineId;
+      setStageSelectionLocked(false);
       const latestLog = selectedLogs[0];
       if (latestLog && isInteractiveStage(latestLog.stage)) {
         setSelectedStage(latestLog.stage);
@@ -74,6 +76,24 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
       }
     }
   }, [selectedPipelineId, selectedLogs, latestStageMap]);
+
+  useEffect(() => {
+    if (!stageSelectionLocked) {
+      return;
+    }
+    const selectedExists = selectedLogs.some((log) => log.stage === selectedStage);
+    if (!selectedExists) {
+      const fallback = selectedLogs.find(isInteractiveLog);
+      if (fallback) {
+        setSelectedStage(fallback.stage);
+      }
+    }
+  }, [selectedLogs, selectedStage, stageSelectionLocked]);
+
+  const handleSelectStage = (stage: Exclude<PipelineStage, "done">) => {
+    setStageSelectionLocked(true);
+    setSelectedStage(stage);
+  };
 
   return (
     <section className="ops-console-deck">
@@ -98,7 +118,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         latestStageMap={latestStageMap}
         pipelineSummary={pipelineSummary}
         selectedStage={selectedStage}
-        setSelectedStage={setSelectedStage}
+        setSelectedStage={handleSelectStage}
         selectedLogs={selectedLogs}
         selectedPipelineId={selectedPipelineId}
         controlAvailability={controlAvailability}

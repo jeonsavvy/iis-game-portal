@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 type PlayEmbedFrameProps = {
   src: string;
@@ -17,9 +17,17 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
   const [reloadSeed, setReloadSeed] = useState(0);
   const debugMode = process.env.NEXT_PUBLIC_GAME_EMBED_DEBUG === "1";
 
-  const focusFrame = () => {
+  const focusFrame = useCallback(() => {
     frameRef.current?.focus();
-  };
+  }, []);
+
+  const requestRecoverHandshake = useCallback(() => {
+    const targetWindow = frameRef.current?.contentWindow;
+    if (!targetWindow) {
+      return;
+    }
+    targetWindow.postMessage({ type: "iis:recover:start", source: "portal" }, "*");
+  }, []);
 
   useEffect(() => {
     if (!loaded) {
@@ -27,9 +35,16 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
     }
     const timer = window.setTimeout(() => {
       focusFrame();
+      requestRecoverHandshake();
     }, 80);
-    return () => window.clearTimeout(timer);
-  }, [loaded]);
+    const followupTimer = window.setTimeout(() => {
+      requestRecoverHandshake();
+    }, 420);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(followupTimer);
+    };
+  }, [loaded, focusFrame, requestRecoverHandshake]);
 
   const usesStrictSandbox = !sandbox.includes("allow-same-origin");
   const effectiveSandbox = compatMode ? LEGACY_COMPAT_SANDBOX : sandbox;
@@ -52,17 +67,10 @@ export function PlayEmbedFrame({ src, title, sandbox }: PlayEmbedFrameProps) {
                   setReloadSeed((prev) => prev + 1);
                 }}
               >
-                {compatMode ? "보안 모드로 복귀" : "호환 모드 재실행"}
+                {compatMode ? "보안 모드" : "호환 모드"}
               </button>
             ) : null}
           </div>
-          {usesStrictSandbox ? (
-            <p className="play-embed-notice">
-              {compatMode
-                ? "호환 모드: 일부 구형 게임 호환을 위해 same-origin sandbox를 임시 허용했습니다."
-                : "보안 모드: 기본 격리 실행입니다. 입력 반응이 없으면 ‘호환 모드 재실행’을 눌러주세요."}
-            </p>
-          ) : null}
         </>
       ) : null}
       <iframe

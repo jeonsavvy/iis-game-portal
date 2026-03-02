@@ -39,7 +39,7 @@ export function TokenCostKPI({ summary, rows }: Props) {
       <div className="section-head compact">
         <div>
           <p className="eyebrow">Observability</p>
-          <h3 className="section-title">AI Token Usage (최근 180 로그)</h3>
+          <h3 className="section-title">AI Token Usage (최근 180건)</h3>
         </div>
         <span className="muted-text">확정 집계 우선, 없으면 로그 샘플 추정</span>
       </div>

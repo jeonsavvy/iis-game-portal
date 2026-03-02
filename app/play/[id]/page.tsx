@@ -81,9 +81,9 @@ function controlsByGame(game: GameRow): string[] {
   if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
     return [
       "조향: ← / → 또는 A / D",
-      "가속·감속: ↑ / ↓ 또는 W / S · 부스트: Shift",
-      "운영 팁: 코너 직전 감속 → 에이펙스에서 재가속하면 안정적으로 랩을 이어갈 수 있습니다.",
-      "시작 문제: 화면을 한 번 클릭한 뒤 조작하면 키 입력이 더 안정적으로 반응합니다.",
+      "가속/감속: ↑ / ↓ 또는 W / S · 부스트: Shift",
+      "핵심: 코너 진입 전 감속하고 탈출 구간에서 재가속",
+      "재시작: R",
     ];
   }
 
@@ -91,56 +91,53 @@ function controlsByGame(game: GameRow): string[] {
     return [
       "자세 제어: W/S 피치 · A/D 롤 · Q/E 요",
       "속도 제어: ↑/↓ 스로틀 · Shift 부스트",
-      "운영 팁: 급격한 롤·요 입력은 짧게 끊어 기체 흔들림을 줄이세요.",
-      "링 통과 우선: 위험 구역에서는 속도보다 안정성을 먼저 확보하세요.",
+      "핵심: 큰 조작보다 짧은 미세 보정",
+      "재시작: R",
     ];
   }
 
   if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
     return [
       "이동: W / A / S / D 또는 방향키",
-      "조준·사격: 마우스 이동 + 클릭(지원 모드 기준) 또는 Space",
-      "회피: Shift 대시(지원 모드 기준)",
-      "운영 팁: 정면 교전보다 좌우 이동으로 탄선을 비우며 교전하세요.",
+      "공격: Space 또는 클릭(게임 모드에 따라 다름)",
+      "회피: Shift",
+      "재시작: R",
     ];
   }
 
   return [
     "기본 이동: ← / → 또는 A / D",
     "액션: ↑ / W 또는 Space",
-    "운영 팁: 위험 요소는 정면 대응보다 위치 선점으로 먼저 피하세요.",
-    "시작 문제: 화면을 한 번 클릭한 뒤 조작하면 입력 반응이 안정적입니다.",
+    "핵심: 위험 구간은 먼저 위치를 확보",
+    "재시작: R",
   ];
 }
 
 function overviewByGame(game: GameRow): string[] {
   const normalized = `${game.name} ${game.slug}`.toLowerCase();
   const lines: string[] = [];
-  lines.push(`${game.name} 플레이 준비가 완료되었습니다.`);
+  lines.push(`${game.name}의 목표를 빠르게 파악하고 즉시 플레이하세요.`);
 
   if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
-    lines.push("핵심 목표는 충돌을 줄이며 체크포인트를 연속 통과해 랩 흐름을 유지하는 것입니다.");
-    lines.push("브레이크-턴인-재가속 리듬을 만들면 점수와 생존을 동시에 끌어올릴 수 있습니다.");
-    lines.push("부스트는 직선 구간에서 사용하고, 코너 진입 전에는 속도를 정리해 안정적으로 이어가세요.");
+    lines.push("체크포인트를 연속 통과해 랩 흐름을 유지하면 점수가 급격히 상승합니다.");
+    lines.push("브레이크-턴인-재가속 리듬을 만들수록 안정성과 속도가 함께 올라갑니다.");
     return lines;
   }
 
   if (/(flight|pilot|비행|항공)/.test(normalized)) {
-    lines.push("핵심 목표는 링 통과를 이어가며 기체 안정성을 유지하는 것입니다.");
-    lines.push("피치·롤·요를 동시에 크게 쓰기보다 한 축씩 분리해 조작하면 실수를 줄일 수 있습니다.");
-    lines.push("고속 구간에서는 짧은 입력으로 자세를 미세 보정해 흔들림을 최소화하세요.");
+    lines.push("링 통과를 이어가며 속도와 기체 안정성을 동시에 유지하는 것이 핵심입니다.");
+    lines.push("피치·롤·요를 분리해 조작하면 실수를 줄이고 누적 점수를 지키기 쉽습니다.");
     return lines;
   }
 
   if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
-    lines.push("핵심 목표는 적의 압박을 회피하며 교전 효율을 높여 생존 시간을 늘리는 것입니다.");
-    lines.push("엄폐 없이 정면에서 오래 싸우기보다, 이동-사격 리듬으로 탄선 관리에 집중하세요.");
-    lines.push("난이도가 오르면 한 번에 많은 처치보다 안정적인 위치 유지가 더 중요합니다.");
+    lines.push("이동과 공격 리듬을 유지해 생존 시간과 처치 효율을 동시에 올리세요.");
+    lines.push("정면에서 버티기보다 측면 이동으로 전장을 관리하면 안정성이 올라갑니다.");
     return lines;
   }
 
-  lines.push("요청한 콘셉트에 맞는 목표와 조작을 먼저 익힌 뒤, 점진적으로 난도를 올려 플레이하세요.");
-  lines.push("처음에는 안정적인 패턴 파악에 집중하고, 익숙해지면 공격적인 플레이로 점수를 확장하세요.");
+  lines.push("핵심 조작을 먼저 익힌 뒤 난도를 올리면 완주율과 점수가 함께 올라갑니다.");
+  lines.push("초반에는 생존 중심, 익숙해지면 공격적인 루프로 전환하세요.");
   return lines;
 }
 
@@ -253,7 +250,7 @@ function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
         <div>
           <p className="eyebrow">게임 플레이</p>
           <h1 className="hero-title">{typedGame.name}</h1>
-          <p className="section-subtitle">게임을 시작하고 조작법에 맞춰 목표를 달성해보세요.</p>
+          <p className="section-subtitle">바로 플레이하고 목표를 달성하세요.</p>
         </div>
         <div className="play-redesign-actions">
           <Link className="button button-ghost" href="/">홈으로</Link>

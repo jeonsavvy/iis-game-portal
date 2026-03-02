@@ -55,7 +55,7 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <h3 className="section-title">자동 제작 관제</h3>
+          <h3 className="section-title">자동 제작</h3>
         </div>
         <div className="ops-status-strip">
           <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
@@ -68,7 +68,7 @@ export function CommandHead({
 
       <div className="ops-command-grid">
         <label className="field">
-          <span>관측 파이프라인</span>
+          <span>파이프라인</span>
           <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
             {pipelines.length === 0 ? <option value="">(파이프라인 없음)</option> : null}
             {pipelines.map((item) => (
