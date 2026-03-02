@@ -34,6 +34,21 @@ export type PipelineLogMetadata = {
   stage_contribution_summary?: Record<string, unknown>;
   fatal_errors?: string[];
   non_fatal_warnings?: string[];
+  capability_profile?: Record<string, unknown>;
+  module_plan?: Record<string, unknown>;
+  selfcheck_result?: {
+    passed?: boolean;
+    score?: number;
+    failed_reasons?: string[];
+    checks?: Record<string, boolean>;
+    [key: string]: unknown;
+  };
+  rqc_passed?: boolean;
+  rebuild_source?: string;
+  module_signature?: string;
+  gen_core_mode?: "legacy" | "modular" | string;
+  rqc_version?: string;
+  event_type?: "contract_compile" | "module_assemble" | "selfcheck" | "publish" | string;
   [key: string]: unknown;
 };
 

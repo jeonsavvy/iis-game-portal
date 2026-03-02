@@ -19,6 +19,11 @@ type GameLookupResult = {
   errorMessage: string | null;
 };
 
+type ArtifactHealthSignal = {
+  level: "ok" | "warn";
+  message: string;
+};
+
 const getGameById = cache(async (id: string): Promise<GameLookupResult> => {
   try {
     const supabase = await createSupabaseServerClient();
@@ -71,6 +76,87 @@ const resolveAiReviewFallback = cache(async (slug: string, aiReview: string | nu
   for (const log of typedLogs) {
     const review = pickReviewFromMetadata(log.metadata, slug);
     if (review) return review;
+  }
+  return null;
+});
+
+function matchesLogTarget(metadata: unknown, slug: string, gameId: string): boolean {
+  if (!metadata || typeof metadata !== "object") return false;
+  const row = metadata as Record<string, unknown>;
+  const gameSlug = typeof row.game_slug === "string" ? row.game_slug : null;
+  if (gameSlug && gameSlug === slug) return true;
+  const artifactPath = typeof row.artifact === "string" ? row.artifact : null;
+  if (artifactPath && artifactPath.includes(`/games/${slug}/`)) return true;
+  const pipelineId = typeof row.pipeline_id === "string" ? row.pipeline_id : null;
+  if (pipelineId && pipelineId === gameId) return true;
+  return false;
+}
+
+function resolveArtifactSignalFromMetadata(metadata: unknown): ArtifactHealthSignal | null {
+  if (!metadata || typeof metadata !== "object") return null;
+  const row = metadata as Record<string, unknown>;
+  const selfcheckResult = row.selfcheck_result;
+  if (selfcheckResult && typeof selfcheckResult === "object") {
+    const selfcheck = selfcheckResult as Record<string, unknown>;
+    if (selfcheck.passed === false) {
+      return {
+        level: "warn",
+        message: "생성 코어 자체검증 실패 아티팩트입니다. 재생성을 권장합니다.",
+      };
+    }
+  }
+
+  if (row.rqc_passed === false) {
+    return {
+      level: "warn",
+      message: "RQC-1 계약 미충족 아티팩트입니다. 품질 보장을 위해 재생성하세요.",
+    };
+  }
+
+  const playabilityPassed = row.playability_passed;
+  if (playabilityPassed === false) {
+    return {
+      level: "warn",
+      message: "플레이 가능성 검증 경고가 감지되었습니다. 운영실에서 재시도를 권장합니다.",
+    };
+  }
+
+  if (row.final_smoke_ok === false) {
+    return {
+      level: "warn",
+      message: "런타임 스모크 실패 기록이 있어 실행 안정성이 보장되지 않습니다.",
+    };
+  }
+
+  return null;
+}
+
+const resolveArtifactHealthSignal = cache(async (game: GameRow): Promise<ArtifactHealthSignal | null> => {
+  let adminClient;
+  try {
+    adminClient = createSupabaseAdminClient();
+  } catch {
+    return null;
+  }
+  const { data: logs } = await adminClient
+    .from("pipeline_logs")
+    .select("stage,status,metadata,created_at")
+    .in("stage", ["build", "report"])
+    .order("created_at", { ascending: false })
+    .limit(160);
+  const rows = Array.isArray(logs) ? logs : [];
+  for (const row of rows) {
+    if (!row || typeof row !== "object") continue;
+    const entry = row as Record<string, unknown>;
+    if (!matchesLogTarget(entry.metadata, game.slug, game.id)) continue;
+    const signal = resolveArtifactSignalFromMetadata(entry.metadata);
+    if (signal) return signal;
+    if (entry.status === "error") {
+      return {
+        level: "warn",
+        message: "최근 생성 로그에서 오류가 감지되었습니다. 운영실에서 상태를 확인하세요.",
+      };
+    }
   }
   return null;
 });
@@ -224,7 +310,7 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
   return renderPlayPage(game, false);
 }
 
-function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
+async function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
   const legacyGameSandboxMode = process.env.LEGACY_GAME_SANDBOX === "1";
   const legacySandboxAllowlist = parseLegacySandboxAllowlist(process.env.LEGACY_GAME_SANDBOX_ALLOWLIST);
   const iframeSandboxPolicy = resolveGameIframeSandboxPolicy({
@@ -235,6 +321,7 @@ function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
   });
   const proxiedArtifactUrl = `/api/games/${typedGame.id}/artifact/index.html`;
   const debugMode = process.env.NEXT_PUBLIC_GAME_EMBED_DEBUG === "1";
+  const artifactSignal = previewMode ? null : await resolveArtifactHealthSignal(typedGame);
 
   return (
     <section className="play-redesign-page">
@@ -264,6 +351,11 @@ function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
 
       <section className="play-first-screen">
         <article className="surface play-primary-stage">
+          {artifactSignal?.level === "warn" ? (
+            <p className="play-artifact-warning" role="status">
+              ⚠ {artifactSignal.message}
+            </p>
+          ) : null}
           <div className="play-frame-wrap">
             {previewMode ? (
               <div className="play-preview-stage">

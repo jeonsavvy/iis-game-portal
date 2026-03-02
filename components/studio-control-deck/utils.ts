@@ -36,6 +36,24 @@ export function compactMessage(message?: string | null): string {
   return `${normalized.slice(0, 86)}…`;
 }
 
+export function eventTypeLabel(log: PipelineLog | null): string | null {
+  if (!log || !log.metadata || typeof log.metadata !== "object") return null;
+  const eventType = (log.metadata as Record<string, unknown>).event_type;
+  if (typeof eventType !== "string") return null;
+  switch (eventType) {
+    case "contract_compile":
+      return "계약 컴파일";
+    case "module_assemble":
+      return "모듈 조립";
+    case "selfcheck":
+      return "자체 검증";
+    case "publish":
+      return "출시 반영";
+    default:
+      return null;
+  }
+}
+
 export function qualitySignals(log: PipelineLog | null): { fatal: number; warning: number } {
   if (!log || !log.metadata || typeof log.metadata !== "object") {
     return { fatal: 0, warning: 0 };
@@ -63,10 +81,21 @@ export function stageEvidence(log: PipelineLog | null): string[] {
   if (!log || !log.metadata || typeof log.metadata !== "object") return [];
   const metadata = log.metadata as Record<string, unknown>;
   const rows: string[] = [];
+  const eventLabel = eventTypeLabel(log);
+  if (eventLabel) rows.push(eventLabel);
 
   if (log.stage === "build") {
     const substrate = typeof metadata.substrate_id === "string" ? metadata.substrate_id.trim() : "";
     if (substrate) rows.push(`서브스트레이트 ${substrate}`);
+    if (typeof metadata.module_signature === "string" && metadata.module_signature.trim()) {
+      rows.push(`모듈 ${metadata.module_signature.trim().slice(0, 8)}`);
+    }
+    if (metadata.selfcheck_result && typeof metadata.selfcheck_result === "object") {
+      const selfcheck = metadata.selfcheck_result as Record<string, unknown>;
+      if (typeof selfcheck.score === "number") {
+        rows.push(`자체검증 ${selfcheck.score.toFixed(0)}`);
+      }
+    }
     const finalScore = numberValue(metadata.playability_score) ?? numberValue(metadata.final_composite_score);
     if (finalScore !== null) rows.push(`점수 ${finalScore.toFixed(1)}`);
   }
