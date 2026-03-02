@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 
 type Props = {
   controlsHint: string[];
@@ -15,12 +15,17 @@ const TAB_ITEMS: Array<{ key: TabKey; label: string }> = [
 ];
 
 export function PlayInfoTabs({ controlsHint, overview }: Props) {
-  const [activeTab, setActiveTab] = useState<TabKey>("controls");
+  const hasControls = controlsHint.length > 0;
+  const tabs = useMemo(
+    () => (hasControls ? TAB_ITEMS : TAB_ITEMS.filter((tab) => tab.key !== "controls")),
+    [hasControls],
+  );
+  const [activeTab, setActiveTab] = useState<TabKey>(hasControls ? "controls" : "overview");
 
   return (
     <section className="surface play-info-tabs" id="overview">
       <div className="play-tab-nav" role="tablist" aria-label="게임 상세 탭">
-        {TAB_ITEMS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab.key}
             type="button"
@@ -35,7 +40,7 @@ export function PlayInfoTabs({ controlsHint, overview }: Props) {
       </div>
 
       <div className="play-tab-panel" role="tabpanel">
-        {activeTab === "controls" ? (
+        {activeTab === "controls" && hasControls ? (
           <ul className="bullet-list">
             {controlsHint.map((line) => (
               <li key={line}>{line}</li>

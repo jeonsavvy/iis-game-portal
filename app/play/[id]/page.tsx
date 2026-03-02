@@ -375,7 +375,7 @@ async function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
       </section>
 
       <PlayInfoTabs
-        controlsHint={controlsByGame(typedGame)}
+        controlsHint={previewMode ? controlsByGame(typedGame) : []}
         overview={overviewByGame(typedGame)}
       />
     </section>
