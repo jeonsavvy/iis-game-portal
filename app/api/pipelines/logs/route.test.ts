@@ -146,9 +146,9 @@ describe("GET /api/pipelines/logs", () => {
     await expect(response.json()).resolves.toMatchObject({
       logs: [{ pipeline_id: "pid-2" }],
     });
-    expect(logsLimit).toHaveBeenCalledWith(300);
+    expect(logsLimit).toHaveBeenCalledWith(120);
     expect(logsEq).toHaveBeenCalledWith("pipeline_id", "pid-2");
-    expect(adminLimit).toHaveBeenCalledWith(300);
+    expect(adminLimit).toHaveBeenCalledWith(120);
     expect(adminEq).toHaveBeenCalledWith("id", "pid-2");
     expect(response.headers.get("Cache-Control")).toBe("no-store, max-age=0");
   });
@@ -221,8 +221,8 @@ describe("GET /api/pipelines/logs", () => {
     const response = await GET(new Request("https://portal.example.com/api/pipelines/logs?limit=abc"));
 
     expect(response.status).toBe(200);
-    expect(logsLimit).toHaveBeenCalledWith(180);
-    expect(adminLimit).toHaveBeenCalledWith(180);
+    expect(logsLimit).toHaveBeenCalledWith(80);
+    expect(adminLimit).toHaveBeenCalledWith(80);
   });
 
   it("returns normalized 502 when unexpected exception occurs", async () => {

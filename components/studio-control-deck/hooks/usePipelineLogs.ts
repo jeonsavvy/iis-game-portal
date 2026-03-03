@@ -45,7 +45,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
   }, []);
 
   const upsertLogs = useCallback((incoming: PipelineLog[]) => {
-    const maxRows = 1200;
+    const maxRows = 480;
     setLogs((prev) => {
       const map = new Map<string, PipelineLog>();
       [...prev, ...incoming].forEach((log) => {
@@ -65,7 +65,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
     if (previewMode) {
       return;
     }
-    const recent = await fetchRecentPipelineLogs(undefined, 220);
+    const recent = await fetchRecentPipelineLogs(undefined, 80);
     upsertLogs(recent);
   }, [previewMode, upsertLogs]);
 
@@ -84,7 +84,7 @@ export function usePipelineLogs({ initialLogs, previewMode }: UsePipelineLogsArg
 
     const poll = async () => {
       try {
-        const recent = await fetchRecentPipelineLogs(undefined, 220);
+        const recent = await fetchRecentPipelineLogs(undefined, 80);
         if (!closed) {
           upsertLogs(recent);
         }

@@ -14,6 +14,7 @@ import {
 } from "@/lib/admin/token-usage";
 import { canReadPipelineLogs } from "@/lib/auth/rbac";
 import { PREVIEW_GAMES, PREVIEW_PIPELINE_LOGS, PREVIEW_TOKEN_ROWS, PREVIEW_TOKEN_SUMMARY } from "@/lib/demo/preview-data";
+import { sanitizePipelineLog } from "@/lib/pipeline/log-sanitizer";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 import type { PipelineLog } from "@/types/pipeline";
@@ -131,9 +132,14 @@ export default async function AdminPage() {
 
   const validatedRole = role as AppRole;
 
-  const { data: logs } = await supabase.from("pipeline_logs").select("*").order("created_at", { ascending: false }).limit(180);
+  const { data: logs } = await supabase
+    .from("pipeline_logs")
+    .select("id,pipeline_id,stage,status,agent_name,message,reason,attempt,metadata,created_at")
+    .order("created_at", { ascending: false })
+    .limit(80);
 
   const typedLogs = (logs ?? []) as PipelineLog[];
+  const consoleLogs = typedLogs.map(sanitizePipelineLog);
   const { data: recentGames } = await supabase
     .from("games_metadata")
     .select("id,name,slug,genre,status,created_at")
@@ -159,7 +165,7 @@ export default async function AdminPage() {
   return renderAdminSurface({
     roleLabel: validatedRole,
     identityLabel: user.email ?? user.id,
-    logs: typedLogs,
+    logs: consoleLogs,
     games: recentGamesRows,
     tokenSummary: tokenReport.summary,
     tokenRows: tokenReport.rows,

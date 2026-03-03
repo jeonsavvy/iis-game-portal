@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
 import { jsonError } from "@/lib/api/error-response";
+import { sanitizePipelineLog } from "@/lib/pipeline/log-sanitizer";
 import type { Database } from "@/types/database";
 import type { PipelineLog } from "@/types/pipeline";
 
@@ -11,6 +12,8 @@ export const revalidate = 0;
 const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" } as const;
 
 function createSyntheticLog(row: Database["public"]["Tables"]["admin_config"]["Row"]): PipelineLog {
+  const payload = row.payload && typeof row.payload === "object" ? (row.payload as Record<string, unknown>) : {};
+  const pipelineVersion = typeof payload.pipeline_version === "string" ? payload.pipeline_version.trim() : "";
   return {
     pipeline_id: row.id,
     stage: "analyze",
@@ -23,7 +26,7 @@ function createSyntheticLog(row: Database["public"]["Tables"]["admin_config"]["R
       synthetic: true,
       source: row.trigger_source,
       keyword: row.keyword,
-      payload: row.payload,
+      ...(pipelineVersion ? { pipeline_version: pipelineVersion } : {}),
     },
     created_at: row.updated_at || row.created_at,
   };
@@ -32,12 +35,16 @@ function createSyntheticLog(row: Database["public"]["Tables"]["admin_config"]["R
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const pipelineId = url.searchParams.get("pipelineId")?.trim() || null;
-  const limitParam = Number(url.searchParams.get("limit") ?? "180");
-  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.trunc(limitParam), 1), 300) : 180;
+  const limitParam = Number(url.searchParams.get("limit") ?? "80");
+  const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.trunc(limitParam), 1), 120) : 80;
 
   return runAdminReadRoute(
     async (auth) => {
-      let query = auth.supabase.from("pipeline_logs").select("*").order("created_at", { ascending: false }).limit(limit);
+      let query = auth.supabase
+        .from("pipeline_logs")
+        .select("id,pipeline_id,stage,status,agent_name,message,reason,attempt,metadata,created_at")
+        .order("created_at", { ascending: false })
+        .limit(limit);
       if (pipelineId) {
         query = query.eq("pipeline_id", pipelineId);
       }
@@ -55,7 +62,7 @@ export async function GET(request: Request) {
 
       let adminQuery = auth.supabase
         .from("admin_config")
-        .select("id,keyword,trigger_source,payload,status,error_reason,created_at,updated_at")
+        .select("id,keyword,trigger_source,status,error_reason,created_at,updated_at")
         .order("updated_at", { ascending: false })
         .limit(limit);
       if (pipelineId) {
@@ -73,10 +80,10 @@ export async function GET(request: Request) {
         });
       }
 
-      const typedLogs = (data ?? []) as PipelineLog[];
+      const typedLogs = ((data ?? []) as PipelineLog[]).map(sanitizePipelineLog);
       const typedAdminRows = (adminRows ?? []) as Database["public"]["Tables"]["admin_config"]["Row"][];
       const existingPipelineIds = new Set(typedLogs.map((row) => row.pipeline_id));
-      const syntheticLogs = typedAdminRows.filter((row) => !existingPipelineIds.has(row.id)).map(createSyntheticLog);
+      const syntheticLogs = typedAdminRows.filter((row) => !existingPipelineIds.has(row.id)).map((row) => sanitizePipelineLog(createSyntheticLog(row)));
       const mergedLogs = [...typedLogs, ...syntheticLogs]
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .slice(0, limit);
