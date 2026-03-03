@@ -225,7 +225,7 @@ function controlsByGame(game: GameRow): string[] {
 function overviewByGame(game: GameRow): string[] {
   const flavor = resolvePlayFlavor(game);
   const lines: string[] = [];
-  lines.push(`${game.name}의 목표를 확인하고 바로 플레이하세요.`);
+  lines.push("목표를 빠르게 파악하고 즉시 플레이하세요.");
 
   if (flavor === "racing") {
     lines.push("체크포인트를 연속 통과하며 충돌 없이 완주 시간을 단축하세요.");
