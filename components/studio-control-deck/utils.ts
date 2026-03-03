@@ -36,6 +36,27 @@ export function compactMessage(message?: string | null): string {
   return `${normalized.slice(0, 86)}…`;
 }
 
+export function compactReason(reason?: string | null, maxLength = 92): string | null {
+  if (!reason) return null;
+  const normalized = reason.replace(/\s+/g, " ").trim();
+  if (!normalized) return null;
+  const stripped = normalized.replace(/For further information visit https?:\/\/\S+/gi, "").trim();
+  const concise = stripped || normalized;
+  const typedMatch = concise.match(
+    /validation error for ([A-Za-z0-9_]+)\s+([A-Za-z0-9_]+)\s+String should have at most (\d+) characters/i,
+  );
+  if (typedMatch) {
+    const [, schema, field, max] = typedMatch;
+    return `${schema}.${field} max_length(${max})`;
+  }
+  const schemaOnlyMatch = concise.match(/validation error for ([A-Za-z0-9_]+)/i);
+  if (schemaOnlyMatch) {
+    return `${schemaOnlyMatch[1]} validation_error`;
+  }
+  if (concise.length <= maxLength) return concise;
+  return `${concise.slice(0, maxLength)}…`;
+}
+
 export function eventTypeLabel(log: PipelineLog | null): string | null {
   if (!log || !log.metadata || typeof log.metadata !== "object") return null;
   const eventType = (log.metadata as Record<string, unknown>).event_type;

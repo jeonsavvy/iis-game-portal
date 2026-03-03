@@ -4,7 +4,7 @@ import Image from "next/image";
 
 import { TriggerForm } from "@/components/TriggerForm";
 import { STAGE_LABELS, STATUS_LABELS } from "@/components/studio-control-deck/config";
-import { compactMessage } from "@/components/studio-control-deck/utils";
+import { compactMessage, compactReason } from "@/components/studio-control-deck/utils";
 import type { PipelineLog, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
@@ -87,6 +87,7 @@ export function UtilityShell({
     : [];
   const usageLog = selectedLogs.find((log) => typeof log.metadata?.usage?.total_tokens === "number") ?? qualityLog;
   const usage = usageLog?.metadata?.usage;
+  const summarizedReason = compactReason(pipelineSummary?.error_reason, 120);
 
   return (
     <section className={`surface ops-utility-shell ops-pane ${mobileTab === "control" ? "is-active" : ""}`}>
@@ -146,7 +147,10 @@ export function UtilityShell({
               <strong>최근 상태:</strong> {pipelineSummary?.status ? STATUS_LABELS[pipelineSummary.status] : "-"}
             </li>
             <li>
-              <strong>실패 사유:</strong> {pipelineSummary?.error_reason ?? "-"}
+              <strong>실패 사유:</strong>{" "}
+              <span className="ops-error-reason" title={pipelineSummary?.error_reason ?? undefined}>
+                {summarizedReason ?? "-"}
+              </span>
             </li>
           </ul>
         </article>

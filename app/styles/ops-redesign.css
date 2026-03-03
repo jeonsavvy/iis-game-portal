@@ -296,6 +296,21 @@
   gap: 8px;
 }
 
+.terminal-tag.terminal-tag-wrap {
+  white-space: normal;
+  max-width: min(100%, 360px);
+  overflow-wrap: anywhere;
+  line-height: 1.25;
+}
+
+.ops-error-reason {
+  display: inline-block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  vertical-align: top;
+}
+
 .ops-workbench-actions {
   display: grid;
   gap: 8px;

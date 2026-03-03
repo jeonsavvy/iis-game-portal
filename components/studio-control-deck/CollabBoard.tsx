@@ -2,7 +2,7 @@
 
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
 import { AGENT_LABELS, AGENT_LAYOUT, STATUS_LABELS } from "@/components/studio-control-deck/config";
-import { compactMessage, qualitySignals, stageEvidence, statusTone } from "@/components/studio-control-deck/utils";
+import { compactMessage, compactReason, qualitySignals, stageEvidence, statusTone } from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
@@ -49,6 +49,7 @@ export function CollabBoard({
   const selectedAgent = AGENT_LAYOUT.find((item) => item.stage === selectedStage) ?? AGENT_LAYOUT[0];
   const selectedSignals = qualitySignals(selectedStageLog);
   const selectedEvidence = stageEvidence(selectedStageLog);
+  const summarizedReason = compactReason(pipelineSummary?.error_reason);
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
@@ -157,7 +158,11 @@ export function CollabBoard({
             <span className="terminal-tag subtle">
               updated {selectedStageLog ? new Date(selectedStageLog.created_at).toLocaleTimeString() : "-"}
             </span>
-            {pipelineSummary?.error_reason ? <span className="terminal-tag subtle">reason {pipelineSummary.error_reason}</span> : null}
+            {summarizedReason ? (
+              <span className="terminal-tag subtle terminal-tag-wrap" title={pipelineSummary?.error_reason ?? undefined}>
+                reason {summarizedReason}
+              </span>
+            ) : null}
           </div>
 
           <div className="ops-workbench-actions">
