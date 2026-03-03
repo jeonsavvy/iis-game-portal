@@ -161,28 +161,45 @@ const resolveArtifactHealthSignal = cache(async (game: GameRow): Promise<Artifac
   return null;
 });
 
-function controlsByGame(game: GameRow): string[] {
-  const normalized = `${game.name} ${game.slug}`.toLowerCase();
+function resolvePlayFlavor(game: GameRow): "racing" | "flight" | "fps" | "brawler" | "default" {
+  const normalized = `${game.name} ${game.slug} ${game.genre}`.toLowerCase();
 
   if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
-    return [
-      "조향: ← / → 또는 A / D",
-      "가속/감속: ↑ / ↓ 또는 W / S · 부스트: Shift",
-      "핵심: 코너 진입 전 감속하고 탈출 구간에서 재가속",
-      "재시작: R",
-    ];
+    return "racing";
   }
 
   if (/(flight|pilot|비행|항공)/.test(normalized)) {
-    return [
-      "자세 제어: W/S 피치 · A/D 롤 · Q/E 요",
-      "속도 제어: ↑/↓ 스로틀 · Shift 부스트",
-      "핵심: 큰 조작보다 짧은 미세 보정",
-      "재시작: R",
-    ];
+    return "flight";
   }
 
   if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
+    return "fps";
+  }
+
+  if (/(fight|brawler|격투|근접|난투|duel)/.test(normalized)) {
+    return "brawler";
+  }
+
+  return "default";
+}
+
+function controlsByGame(game: GameRow): string[] {
+  const flavor = resolvePlayFlavor(game);
+  if (flavor === "racing") {
+    return [
+      "조향: ← / → 또는 A / D",
+      "가속/감속: ↑ / ↓ 또는 W / S · 부스트: Shift",
+      "재시작: R",
+    ];
+  }
+  if (flavor === "flight") {
+    return [
+      "자세 제어: W/S 피치 · A/D 롤 · Q/E 요",
+      "속도 제어: ↑/↓ 스로틀 · Shift 부스트",
+      "재시작: R",
+    ];
+  }
+  if (flavor === "fps") {
     return [
       "이동: W / A / S / D 또는 방향키",
       "공격: Space 또는 클릭(게임 모드에 따라 다름)",
@@ -190,40 +207,52 @@ function controlsByGame(game: GameRow): string[] {
       "재시작: R",
     ];
   }
-
+  if (flavor === "brawler") {
+    return [
+      "이동: W / A / S / D 또는 방향키",
+      "공격: Space",
+      "회피: Shift",
+      "재시작: R",
+    ];
+  }
   return [
     "기본 이동: ← / → 또는 A / D",
-    "액션: ↑ / W 또는 Space",
-    "핵심: 위험 구간은 먼저 위치를 확보",
+    "액션: Space",
     "재시작: R",
   ];
 }
 
 function overviewByGame(game: GameRow): string[] {
-  const normalized = `${game.name} ${game.slug}`.toLowerCase();
+  const flavor = resolvePlayFlavor(game);
   const lines: string[] = [];
-  lines.push(`${game.name}의 목표를 빠르게 파악하고 즉시 플레이하세요.`);
+  lines.push(`${game.name}의 목표를 확인하고 바로 플레이하세요.`);
 
-  if (/(f1|formula|circuit|race|racing|레이싱|그랑프리)/.test(normalized)) {
-    lines.push("체크포인트를 연속 통과해 랩 흐름을 유지하면 점수가 급격히 상승합니다.");
-    lines.push("브레이크-턴인-재가속 리듬을 만들수록 안정성과 속도가 함께 올라갑니다.");
+  if (flavor === "racing") {
+    lines.push("체크포인트를 연속 통과하며 충돌 없이 완주 시간을 단축하세요.");
+    lines.push("코너 진입 전 감속하고 탈출 구간에서 재가속하면 안정적으로 기록이 오릅니다.");
     return lines;
   }
 
-  if (/(flight|pilot|비행|항공)/.test(normalized)) {
-    lines.push("링 통과를 이어가며 속도와 기체 안정성을 동시에 유지하는 것이 핵심입니다.");
-    lines.push("피치·롤·요를 분리해 조작하면 실수를 줄이고 누적 점수를 지키기 쉽습니다.");
+  if (flavor === "flight") {
+    lines.push("링 통과를 이어가며 속도와 기체 안정성을 동시에 유지하세요.");
+    lines.push("피치·롤·요를 짧게 분리 조작하면 경로 이탈을 줄일 수 있습니다.");
     return lines;
   }
 
-  if (/(fps|shooter|총|사격|슈팅)/.test(normalized)) {
+  if (flavor === "fps") {
     lines.push("이동과 공격 리듬을 유지해 생존 시간과 처치 효율을 동시에 올리세요.");
     lines.push("정면에서 버티기보다 측면 이동으로 전장을 관리하면 안정성이 올라갑니다.");
     return lines;
   }
 
-  lines.push("핵심 조작을 먼저 익힌 뒤 난도를 올리면 완주율과 점수가 함께 올라갑니다.");
-  lines.push("초반에는 생존 중심, 익숙해지면 공격적인 루프로 전환하세요.");
+  if (flavor === "brawler") {
+    lines.push("거리 조절과 회피 타이밍을 맞춰 연속 공격 기회를 만드세요.");
+    lines.push("짧은 콤보를 안정적으로 연결하면 점수와 생존율이 함께 올라갑니다.");
+    return lines;
+  }
+
+  lines.push("상단 목표와 조작 안내를 기준으로 핵심 루프를 빠르게 익히세요.");
+  lines.push("초반에는 생존 우선으로 운영하고, 익숙해지면 점수 루프를 확장하세요.");
   return lines;
 }
 
