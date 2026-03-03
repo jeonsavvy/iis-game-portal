@@ -1,5 +1,7 @@
 "use client";
 
+import Image from "next/image";
+
 import {
   CONTROL_LABELS,
   MOBILE_TABS,
@@ -57,6 +59,7 @@ export function CommandHead({
         <div>
           <h3 className="section-title">자동 제작</h3>
         </div>
+        <Image src="/assets/admin/stage-queue.svg" width={28} height={28} alt="" aria-hidden="true" />
         <div className="ops-status-strip">
           <span className="status-chip tone-running">실행중 {globalStatus.running}</span>
           {globalStatus.retry > 0 ? <span className="status-chip tone-warn">재시도 {globalStatus.retry}</span> : null}

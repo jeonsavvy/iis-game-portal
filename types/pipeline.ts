@@ -22,7 +22,48 @@ export type PipelineStage =
 export type PipelineStatus = "queued" | "running" | "success" | "error" | "retry" | "skipped";
 export type PipelineControlAction = "pause" | "resume" | "cancel" | "retry";
 
+export type QualityGateDetail = {
+  ok?: boolean;
+  score?: number;
+  threshold?: number;
+  failed_checks?: string[];
+};
+
+export type PlayabilityGateDetail = {
+  ok?: boolean;
+  score?: number;
+  fail_reasons?: string[];
+};
+
+export type SmokeGateDetail = {
+  ok?: boolean;
+  reason?: string | null;
+  fatal_errors?: string[] | null;
+  non_fatal_warnings?: string[] | null;
+};
+
+export type QualityGateReport = {
+  quality?: QualityGateDetail;
+  gameplay?: QualityGateDetail;
+  visual?: QualityGateDetail;
+  playability?: PlayabilityGateDetail;
+  smoke?: SmokeGateDetail;
+};
+
 export type PipelineLogMetadata = {
+  generation_engine_version?: string;
+  quality_gate_report?: QualityGateReport;
+  blocking_reasons?: string[];
+  quality_floor_passed?: boolean;
+  quality_floor_enforced?: boolean;
+  quality_floor_fail_reasons?: string[];
+  quality_floor_score?: number;
+  final_quality_score?: number;
+  final_gameplay_score?: number;
+  final_visual_score?: number;
+  final_builder_quality_score?: number;
+  final_smoke_ok?: boolean;
+  final_smoke_reason?: string | null;
   deliverables?: string[];
   contract_status?: "pass" | "warn" | "fail" | string;
   contract_summary?: string;
@@ -46,7 +87,6 @@ export type PipelineLogMetadata = {
   rqc_passed?: boolean;
   rebuild_source?: string;
   module_signature?: string;
-  gen_core_mode?: "legacy" | "modular" | string;
   rqc_version?: string;
   event_type?: "contract_compile" | "module_assemble" | "selfcheck" | "publish" | string;
   [key: string]: unknown;

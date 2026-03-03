@@ -132,6 +132,7 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         mobileTab={mobileTab}
         previewMode={previewMode}
         selectedPipelineId={selectedPipelineId}
+        selectedLogs={selectedLogs}
         setSelectedPipelineId={setSelectedPipelineId}
         setFeedback={setFeedback}
         recentFailures={recentFailures}
