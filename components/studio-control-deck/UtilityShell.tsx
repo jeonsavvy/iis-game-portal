@@ -32,10 +32,12 @@ export function UtilityShell({
 }: UtilityShellProps) {
   const qualityLog =
     selectedLogs.find((log) => Boolean(log.metadata?.quality_gate_report)) ??
+    selectedLogs.find((log) => Boolean(log.metadata?.intent_gate_report)) ??
     selectedLogs.find((log) => Array.isArray(log.metadata?.blocking_reasons)) ??
     selectedLogs.find((log) => Array.isArray(log.metadata?.quality_floor_fail_reasons)) ??
     null;
   const qualityReport = qualityLog?.metadata?.quality_gate_report;
+  const intentGateReport = qualityLog?.metadata?.intent_gate_report;
   const qualityRows = [
     {
       key: "quality",
@@ -80,6 +82,11 @@ export function UtilityShell({
         ? qualityLog?.metadata?.quality_floor_fail_reasons
         : []
     ).filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  const intentBlockingReasons = Array.isArray(intentGateReport?.failed_items)
+    ? intentGateReport.failed_items.filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    : [];
+  const usageLog = selectedLogs.find((log) => typeof log.metadata?.usage?.total_tokens === "number") ?? qualityLog;
+  const usage = usageLog?.metadata?.usage;
 
   return (
     <section className={`surface ops-utility-shell ops-pane ${mobileTab === "control" ? "is-active" : ""}`}>
@@ -175,6 +182,47 @@ export function UtilityShell({
                 {blockingReasons.slice(0, 6).map((reason) => (
                   <li key={reason}>{reason}</li>
                 ))}
+              </ul>
+            </>
+          ) : null}
+
+          {intentGateReport ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                의도 게이트
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>Intent</strong>: {intentGateReport.ok ? "PASS" : "FAIL"}
+                  {typeof intentGateReport.score === "number"
+                    ? ` (${intentGateReport.score}${typeof intentGateReport.threshold === "number" ? ` / ${intentGateReport.threshold}` : ""})`
+                    : ""}
+                </li>
+                {intentBlockingReasons.slice(0, 4).map((reason) => (
+                  <li key={`intent-${reason}`}>{reason}</li>
+                ))}
+              </ul>
+            </>
+          ) : null}
+
+          {usage ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                토큰/비용
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>Prompt</strong>: {typeof usage.prompt_tokens === "number" ? usage.prompt_tokens.toLocaleString() : "-"}
+                </li>
+                <li>
+                  <strong>Completion</strong>: {typeof usage.completion_tokens === "number" ? usage.completion_tokens.toLocaleString() : "-"}
+                </li>
+                <li>
+                  <strong>Total</strong>: {typeof usage.total_tokens === "number" ? usage.total_tokens.toLocaleString() : "-"}
+                </li>
+                <li>
+                  <strong>Cost</strong>: {typeof usage.estimated_cost_usd === "number" ? `$${usage.estimated_cost_usd.toFixed(4)}` : "-"}
+                </li>
               </ul>
             </>
           ) : null}

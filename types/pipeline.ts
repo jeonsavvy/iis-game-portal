@@ -50,9 +50,33 @@ export type QualityGateReport = {
   smoke?: SmokeGateDetail;
 };
 
+export type IntentContract = {
+  fantasy?: string;
+  player_verbs?: string[];
+  camera_interaction?: string;
+  progression_loop?: string[];
+  fail_restart_loop?: string;
+  non_negotiables?: string[];
+};
+
+export type IntentGateReport = {
+  ok?: boolean;
+  score?: number;
+  threshold?: number;
+  failed_items?: string[];
+  checks?: Record<string, boolean>;
+  reason_by_item?: Record<string, string[]>;
+};
+
 export type PipelineLogMetadata = {
   generation_engine_version?: string;
   quality_gate_report?: QualityGateReport;
+  intent_contract?: IntentContract;
+  intent_contract_hash?: string;
+  intent_gate_report?: IntentGateReport;
+  strict_vertex_only?: boolean;
+  fallback_blocked?: boolean;
+  codegen_generation_attempts?: number;
   blocking_reasons?: string[];
   quality_floor_passed?: boolean;
   quality_floor_enforced?: boolean;
@@ -83,6 +107,12 @@ export type PipelineLogMetadata = {
     failed_reasons?: string[];
     checks?: Record<string, boolean>;
     [key: string]: unknown;
+  };
+  usage?: {
+    prompt_tokens?: number;
+    completion_tokens?: number;
+    total_tokens?: number;
+    estimated_cost_usd?: number;
   };
   rqc_passed?: boolean;
   rebuild_source?: string;
