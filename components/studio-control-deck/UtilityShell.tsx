@@ -87,6 +87,13 @@ export function UtilityShell({
     : [];
   const usageLog = selectedLogs.find((log) => typeof log.metadata?.usage?.total_tokens === "number") ?? qualityLog;
   const usage = usageLog?.metadata?.usage;
+  const latestErrorLog = selectedLogs.find((log) => log.status === "error") ?? null;
+  const detailedErrorReason = compactReason(
+    (typeof latestErrorLog?.metadata?.upstream_reason === "string" && latestErrorLog.metadata.upstream_reason) ||
+      (typeof latestErrorLog?.metadata?.vertex_error === "string" && latestErrorLog.metadata.vertex_error) ||
+      null,
+    140,
+  );
   const synapseContract = qualityLog?.metadata?.synapse_contract;
   const synapseHash =
     typeof qualityLog?.metadata?.synapse_contract_hash === "string" ? qualityLog.metadata.synapse_contract_hash : null;
@@ -159,6 +166,14 @@ export function UtilityShell({
                 {summarizedReason ?? "-"}
               </span>
             </li>
+            {detailedErrorReason ? (
+              <li>
+                <strong>상세 사유:</strong>{" "}
+                <span className="ops-error-reason" title={detailedErrorReason}>
+                  {detailedErrorReason}
+                </span>
+              </li>
+            ) : null}
           </ul>
         </article>
 

@@ -176,6 +176,8 @@ export function sanitizePipelineLogMetadata(raw: unknown): PipelineLogMetadata {
 
   const stringKeys = [
     "generation_engine_version",
+    "upstream_reason",
+    "vertex_error",
     "substrate_id",
     "camera_model",
     "module_signature",

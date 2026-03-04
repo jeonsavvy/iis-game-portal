@@ -89,6 +89,8 @@ export type SynapseContract = {
 
 export type PipelineLogMetadata = {
   generation_engine_version?: string;
+  upstream_reason?: string;
+  vertex_error?: string;
   quality_gate_report?: QualityGateReport;
   intent_contract?: IntentContract;
   intent_contract_hash?: string;
