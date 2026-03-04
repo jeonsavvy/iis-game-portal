@@ -58,6 +58,13 @@ export function CollabBoard({
   const selectedEvidence = stageEvidence(selectedStageLog);
   const summarizedReason = compactReason(pipelineSummary?.error_reason);
   const dualAgentSummaries = deriveDualAgentSummaries(latestStageMap);
+  const dualAgentModeDetected = selectedLogs.some((log) => {
+    if (log.metadata?.pipeline_dual_agent_mode === true) return true;
+    if (log.stage === "plan" && log.metadata?.gdd_source === "dual_agent_synth") return true;
+    if (log.stage === "design" && log.metadata?.design_spec_source === "dual_agent_synth") return true;
+    const message = (log.message || "").toLowerCase();
+    return message.includes("2-agent") || message.includes("dual_agent_synth");
+  });
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
@@ -88,8 +95,16 @@ export function CollabBoard({
           </div>
 
           <div className="ops-dual-agent-strip" aria-label="2-agent collaboration status">
+            <header className="ops-dual-agent-strip-head">
+              <strong>2-Agent 협업실</strong>
+              <span className={`status-chip tone-${dualAgentModeDetected ? "success" : "warn"}`}>
+                {dualAgentModeDetected ? "Dual On" : "Legacy"}
+              </span>
+            </header>
             {dualAgentSummaries.map((agent) => {
               const tone = statusTone(agent.status);
+              const latestStage =
+                (agent.latestLog && AGENT_LAYOUT.find((item) => item.stage === agent.latestLog?.stage)?.role) || "-";
               return (
                 <article key={agent.id} className={`ops-dual-agent-card tone-${tone}`}>
                   <div className="ops-dual-agent-head">
@@ -97,10 +112,14 @@ export function CollabBoard({
                     <span className={`status-chip tone-${tone}`}>{agent.status ? STATUS_LABELS[agent.status] : "유휴"}</span>
                   </div>
                   <p>
-                    단계:{" "}
+                    협업 단계:{" "}
                     {agent.stages
                       .map((stage) => AGENT_LAYOUT.find((item) => item.stage === stage)?.role ?? stage)
                       .join(" · ")}
+                  </p>
+                  <p className="ops-dual-agent-message">
+                    최근 단계: {latestStage}
+                    {agent.latestLog ? ` · ${compactMessage(agent.latestLog.message)}` : ""}
                   </p>
                   <div className="ops-dual-agent-meta">
                     <span>치명 {agent.fatal}</span>

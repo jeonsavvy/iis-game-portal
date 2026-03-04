@@ -187,6 +187,10 @@ export function sanitizePipelineLogMetadata(raw: unknown): PipelineLogMetadata {
     "public_url",
     "event_type",
     "intent_contract_hash",
+    "gdd_source",
+    "plan_source",
+    "design_spec_source",
+    "design_contract_source",
   ] as const;
   for (const key of stringKeys) {
     const value = truncateText(metadata[key], MAX_TEXT_LENGTH);
@@ -219,6 +223,7 @@ export function sanitizePipelineLogMetadata(raw: unknown): PipelineLogMetadata {
     "rqc_passed",
     "strict_vertex_only",
     "fallback_blocked",
+    "pipeline_dual_agent_mode",
   ] as const;
   for (const key of booleanKeys) {
     const value = toBoolean(metadata[key]);

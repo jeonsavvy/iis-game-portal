@@ -95,6 +95,23 @@
   display: grid;
   gap: 8px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  background: linear-gradient(180deg, rgba(4, 10, 20, 0.92), rgba(3, 8, 16, 0.88));
+}
+
+.ops-dual-agent-strip-head {
+  grid-column: 1 / -1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.ops-dual-agent-strip-head strong {
+  font-size: 13px;
+  color: #e2e8f0;
 }
 
 .ops-dual-agent-card {
@@ -127,6 +144,10 @@
   color: #bfdbfe;
   font-size: 11px;
   line-height: 1.35;
+}
+
+.ops-dual-agent-message {
+  color: #dbeafe !important;
 }
 
 .ops-dual-agent-head {
