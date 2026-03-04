@@ -69,6 +69,7 @@ npm run build
 ### 서버 전용
 - `FEATURED_GAME_SLUG` *(선택: 홈 Hero 대표작 슬러그 고정)*
 - `IIS_DEMO_PREVIEW` *(선택: `1`이면 Supabase 조회를 건너뛰고 샘플 데이터로 프리뷰 모드 렌더링)*
+- `OPS_COLLAB_ROOM_V2` *(선택: 기본 on, `0/false/off`로 레거시 보드 롤백)*
 - `LEGACY_GAME_SANDBOX` *(선택: `1`이면 레거시 게임 호환을 위해 iframe `allow-same-origin` 임시 복구)*
 - `LEGACY_GAME_SANDBOX_ALLOWLIST` *(선택: `id/slug` CSV. 전역 복구 없이 특정 게임만 레거시 sandbox 허용)*
 - `ADMIN_ALLOWED_EMAILS` (예: `jeonsavvy@gmail.com`)

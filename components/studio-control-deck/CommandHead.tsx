@@ -37,6 +37,12 @@ type CommandHeadProps = {
   >;
   busyAction: PipelineControlAction | null;
   runControl: (action: PipelineControlAction) => Promise<void>;
+  pipelineLookupRef: string;
+  setPipelineLookupRef: (value: string) => void;
+  diagnosticsLoading: boolean;
+  diagnosticsCandidates: string[];
+  diagnosticsError: string | null;
+  diagnosticsResolvedPipelineId: string | null;
 };
 
 export function CommandHead({
@@ -52,6 +58,12 @@ export function CommandHead({
   controlAvailability,
   busyAction,
   runControl,
+  pipelineLookupRef,
+  setPipelineLookupRef,
+  diagnosticsLoading,
+  diagnosticsCandidates,
+  diagnosticsError,
+  diagnosticsResolvedPipelineId,
 }: CommandHeadProps) {
   return (
     <section className="surface ops-command-head">
@@ -70,17 +82,29 @@ export function CommandHead({
       </div>
 
       <div className="ops-command-grid">
-        <label className="field">
-          <span>파이프라인</span>
-          <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
-            {pipelines.length === 0 ? <option value="">(파이프라인 없음)</option> : null}
-            {pipelines.map((item) => (
-              <option key={item.pipeline_id} value={item.pipeline_id}>
-                {item.pipeline_id.slice(0, 8)} · {STAGE_LABELS[item.stage]} · {STATUS_LABELS[item.status]} · {compactMessage(item.message)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <div className="ops-command-inputs">
+          <label className="field">
+            <span>파이프라인</span>
+            <select className="input" value={selectedPipelineId ?? ""} onChange={(event) => setSelectedPipelineId(event.target.value || null)}>
+              {pipelines.length === 0 ? <option value="">(파이프라인 없음)</option> : null}
+              {pipelines.map((item) => (
+                <option key={item.pipeline_id} value={item.pipeline_id}>
+                  {item.pipeline_id.slice(0, 8)} · {STAGE_LABELS[item.stage]} · {STATUS_LABELS[item.status]} · {compactMessage(item.message)}
+                </option>
+              ))}
+            </select>
+          </label>
+
+          <label className="field">
+            <span>빠른 찾기 (ID / prefix)</span>
+            <input
+              className="input"
+              value={pipelineLookupRef}
+              placeholder="예: bb06d86e-398"
+              onChange={(event) => setPipelineLookupRef(event.target.value)}
+            />
+          </label>
+        </div>
 
         <div className="ops-command-buttons">
           {(["pause", "resume", "cancel", "retry"] as PipelineControlAction[]).map((action) => (
@@ -97,6 +121,19 @@ export function CommandHead({
           ))}
         </div>
       </div>
+
+      {pipelineLookupRef.trim() ? (
+        <div className="ops-context-tags">
+          {diagnosticsLoading ? <span className="terminal-tag subtle">진단 조회중...</span> : null}
+          {diagnosticsResolvedPipelineId ? (
+            <span className="terminal-tag subtle">resolved: {diagnosticsResolvedPipelineId.slice(0, 12)}</span>
+          ) : null}
+          {diagnosticsCandidates.length > 0 ? (
+            <span className="terminal-tag subtle">ambiguous: {diagnosticsCandidates.map((id) => id.slice(0, 12)).join(", ")}</span>
+          ) : null}
+          {diagnosticsError ? <span className="terminal-tag subtle">diagnostics: {diagnosticsError}</span> : null}
+        </div>
+      ) : null}
 
       <div className="ops-context-tags">
         <span className="terminal-tag">파이프라인: {selectedPipelineId ? selectedPipelineId.slice(0, 12) : "-"}</span>

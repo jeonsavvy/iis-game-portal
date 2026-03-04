@@ -174,6 +174,29 @@ export function sanitizePipelineLogMetadata(raw: unknown): PipelineLogMetadata {
   const metadata = raw as Record<string, unknown>;
   const sanitized: PipelineLogMetadata = {};
 
+  const agentLane = metadata.agent_lane;
+  if (agentLane === "A" || agentLane === "B" || agentLane === "SYSTEM") {
+    sanitized.agent_lane = agentLane;
+  }
+  const handoffStage = metadata.handoff_to_stage;
+  if (
+    handoffStage === "analyze" ||
+    handoffStage === "plan" ||
+    handoffStage === "design" ||
+    handoffStage === "build" ||
+    handoffStage === "qa_runtime" ||
+    handoffStage === "qa_quality" ||
+    handoffStage === "release" ||
+    handoffStage === "report" ||
+    handoffStage === "done"
+  ) {
+    sanitized.handoff_to_stage = handoffStage;
+  }
+  const handoffSummary = truncateText(metadata.handoff_summary, MAX_TEXT_LENGTH);
+  if (handoffSummary) {
+    sanitized.handoff_summary = handoffSummary;
+  }
+
   const stringKeys = [
     "generation_engine_version",
     "upstream_reason",

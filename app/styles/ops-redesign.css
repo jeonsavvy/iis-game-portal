@@ -27,6 +27,11 @@
   align-items: end;
 }
 
+.ops-command-inputs {
+  display: grid;
+  gap: 8px;
+}
+
 .ops-command-buttons {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -46,6 +51,142 @@
 .ops-main-layout {
   padding: 0;
   overflow: hidden;
+}
+
+.ops-collab-v2-shell {
+  padding: 14px;
+  display: grid;
+  gap: 12px;
+}
+
+.ops-collab-v2-header {
+  display: grid;
+  gap: 8px;
+}
+
+.ops-collab-v2-grid {
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr) minmax(320px, 0.9fr);
+  min-height: 620px;
+}
+
+.ops-collab-v2-main {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-collab-v2-side {
+  display: grid;
+  gap: 12px;
+}
+
+.ops-collab-v2-card {
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+}
+
+.ops-collab-v2-room,
+.ops-collab-v2-rail {
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.ops-collab-v2-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.ops-collab-v2-lanes {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-collab-v2-lane {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  padding: 10px;
+  background: rgba(2, 6, 23, 0.62);
+  display: grid;
+  gap: 8px;
+}
+
+.ops-collab-v2-lane header {
+  display: grid;
+  gap: 2px;
+}
+
+.ops-collab-v2-lane ul,
+.ops-collab-v2-rail ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ops-collab-v2-bubble {
+  width: 100%;
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.76);
+  padding: 8px;
+  display: grid;
+  gap: 5px;
+  text-align: left;
+  color: #e2e8f0;
+}
+
+.ops-collab-v2-bubble.tone-success {
+  border-color: rgba(34, 197, 94, 0.42);
+}
+
+.ops-collab-v2-bubble.tone-error {
+  border-color: rgba(248, 113, 113, 0.52);
+}
+
+.ops-collab-v2-bubble.tone-running {
+  border-color: rgba(96, 165, 250, 0.44);
+}
+
+.ops-collab-v2-bubble.tone-warn {
+  border-color: rgba(250, 204, 21, 0.44);
+}
+
+.ops-collab-v2-bubble.is-selected {
+  box-shadow: 0 0 0 1px rgba(96, 165, 250, 0.45);
+}
+
+.ops-collab-v2-bubble-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.ops-collab-v2-bubble p,
+.ops-collab-v2-bubble small,
+.ops-collab-v2-rail-item p,
+.ops-collab-v2-rail-item small {
+  margin: 0;
+}
+
+.ops-collab-v2-rail-item {
+  border: 1px solid rgba(148, 163, 184, 0.24);
+  border-radius: 10px;
+  background: rgba(2, 6, 23, 0.72);
+  padding: 8px;
+  display: grid;
+  gap: 6px;
+}
+
+.ops-collab-v2-rail-item time {
+  color: #94a3b8;
+  font-size: 11px;
 }
 
 .ops-main-grid {
@@ -572,4 +713,14 @@
 .danger-checkbox input {
   margin-top: 2px;
   accent-color: #ef4444;
+}
+
+@media (max-width: 1400px) {
+  .ops-collab-v2-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .ops-collab-v2-lanes {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

@@ -13,6 +13,7 @@ import {
   STATUS_LABELS,
 } from "@/components/studio-control-deck/config";
 import { usePipelineControl } from "@/components/studio-control-deck/hooks/usePipelineControl";
+import { usePipelineDiagnostics } from "@/components/studio-control-deck/hooks/usePipelineDiagnostics";
 import { usePipelineLogs } from "@/components/studio-control-deck/hooks/usePipelineLogs";
 import type { PipelineLog, PipelineStage } from "@/types/pipeline";
 
@@ -24,10 +25,19 @@ function isInteractiveLog(log: PipelineLog): log is PipelineLog & { stage: Exclu
   return isInteractiveStage(log.stage);
 }
 
-export function StudioControlDeck({ initialLogs, previewMode = false }: { initialLogs: PipelineLog[]; previewMode?: boolean }) {
+export function StudioControlDeck({
+  initialLogs,
+  previewMode = false,
+  collabRoomV2Enabled = false,
+}: {
+  initialLogs: PipelineLog[];
+  previewMode?: boolean;
+  collabRoomV2Enabled?: boolean;
+}) {
   const [mobileTab, setMobileTab] = useState<(typeof MOBILE_TABS)[number]["key"]>("board");
   const [selectedStage, setSelectedStage] = useState<Exclude<PipelineStage, "done">>("analyze");
   const [stageSelectionLocked, setStageSelectionLocked] = useState(false);
+  const [pipelineLookupRef, setPipelineLookupRef] = useState("");
   const previousPipelineIdRef = useRef<string | null>(null);
 
   const {
@@ -52,6 +62,26 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
     statusLabels: STATUS_LABELS,
     refreshRecentLogs,
   });
+
+  const { diagnostics, diagnosticsLoading, diagnosticsError, diagnosticsCandidates } = usePipelineDiagnostics({
+    previewMode,
+    selectedPipelineId,
+    pipelineLookupRef,
+    refreshCursor: selectedLogs[0]?.created_at ?? "",
+  });
+
+  useEffect(() => {
+    if (!pipelineLookupRef.trim()) {
+      return;
+    }
+    if (!diagnostics?.resolved_pipeline_id) {
+      return;
+    }
+    if (diagnostics.resolved_pipeline_id === selectedPipelineId) {
+      return;
+    }
+    setSelectedPipelineId(diagnostics.resolved_pipeline_id);
+  }, [pipelineLookupRef, diagnostics, selectedPipelineId, setSelectedPipelineId]);
 
   useEffect(() => {
     const pipelineChanged = previousPipelineIdRef.current !== selectedPipelineId;
@@ -110,6 +140,12 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         controlAvailability={controlAvailability}
         busyAction={busyAction}
         runControl={runControl}
+        pipelineLookupRef={pipelineLookupRef}
+        setPipelineLookupRef={setPipelineLookupRef}
+        diagnosticsLoading={diagnosticsLoading}
+        diagnosticsCandidates={diagnosticsCandidates}
+        diagnosticsError={diagnosticsError}
+        diagnosticsResolvedPipelineId={diagnostics?.resolved_pipeline_id ?? null}
       />
 
       <CollabBoard
@@ -124,6 +160,12 @@ export function StudioControlDeck({ initialLogs, previewMode = false }: { initia
         controlAvailability={controlAvailability}
         busyAction={busyAction}
         runControl={runControl}
+        diagnostics={diagnostics}
+        diagnosticsLoading={diagnosticsLoading}
+        diagnosticsError={diagnosticsError}
+        diagnosticsCandidates={diagnosticsCandidates}
+        pipelineLookupRef={pipelineLookupRef}
+        collabRoomV2Enabled={collabRoomV2Enabled}
       />
 
       <MobileActivityPane mobileTab={mobileTab} selectedLogs={selectedLogs} />

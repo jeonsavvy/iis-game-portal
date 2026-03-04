@@ -129,7 +129,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Playwright smoke and quality gate passed.",
     reason: null,
     attempt: 1,
-    metadata: { non_fatal_warnings: ["minor contrast warning"] },
+    metadata: { non_fatal_warnings: ["minor contrast warning"], agent_lane: "B", handoff_to_stage: "release" },
     created_at: minutes(6),
   },
   {
@@ -141,7 +141,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Packaging WebGL bundle and generating release assets.",
     reason: null,
     attempt: 1,
-    metadata: {},
+    metadata: { agent_lane: "A", handoff_to_stage: "qa_runtime" },
     created_at: minutes(8),
   },
   {
@@ -153,7 +153,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Visual token set and viewport-safe UI spec generated.",
     reason: null,
     attempt: 1,
-    metadata: {},
+    metadata: { agent_lane: "A", handoff_to_stage: "build" },
     created_at: minutes(10),
   },
   {
@@ -165,7 +165,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Gameplay loop, risk matrix, and IA draft completed.",
     reason: null,
     attempt: 1,
-    metadata: {},
+    metadata: { agent_lane: "A", handoff_to_stage: "design" },
     created_at: minutes(12),
   },
   {
@@ -177,7 +177,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Keyword intake validated and mission started.",
     reason: null,
     attempt: 1,
-    metadata: {},
+    metadata: { agent_lane: "A", handoff_to_stage: "plan" },
     created_at: minutes(14),
   },
   {
@@ -189,7 +189,7 @@ export const PREVIEW_PIPELINE_LOGS: PipelineLog[] = [
     message: "Mobile HUD overlap detected on 390x844 viewport.",
     reason: "layout_overlap",
     attempt: 2,
-    metadata: { fatal_errors: ["hud_overlap"] },
+    metadata: { fatal_errors: ["hud_overlap"], agent_lane: "B" },
     created_at: minutes(18),
   },
 ];

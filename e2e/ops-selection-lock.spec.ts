@@ -1,9 +1,16 @@
 import { expect, test } from "@playwright/test";
 
+test("운영실은 A/B 협업 대화실 구조를 렌더링한다", async ({ page }) => {
+  await page.goto("/admin");
+  await expect(page.getByText("A/B 협업실").first()).toBeVisible();
+  await expect(page.getByText("A 생성기").first()).toBeVisible();
+  await expect(page.getByText("B 검증·출시").first()).toBeVisible();
+});
+
 test("운영실에서 선택한 에이전트 카드가 자동으로 원복되지 않는다", async ({ page }) => {
   await page.goto("/admin");
 
-  const developerCard = page.locator(".ops-node", { hasText: "개발" }).first();
+  const developerCard = page.locator(".ops-collab-v2-bubble", { hasText: "개발" }).first();
   await developerCard.click();
   await expect(developerCard).toHaveClass(/is-selected/);
 

@@ -1,6 +1,8 @@
 "use client";
 
+import { AgentCollabRoom } from "@/components/studio-control-deck/AgentCollabRoom";
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
+import { HandoffRail } from "@/components/studio-control-deck/HandoffRail";
 import { AGENT_LABELS, AGENT_LAYOUT, STATUS_LABELS } from "@/components/studio-control-deck/config";
 import {
   compactMessage,
@@ -10,7 +12,7 @@ import {
   stageEvidence,
   statusTone,
 } from "@/components/studio-control-deck/utils";
-import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
+import type { PipelineControlAction, PipelineDiagnosticsResponse, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
 
@@ -37,6 +39,12 @@ type CollabBoardProps = {
   >;
   busyAction: PipelineControlAction | null;
   runControl: (action: PipelineControlAction) => Promise<void>;
+  diagnostics: PipelineDiagnosticsResponse | null;
+  diagnosticsLoading: boolean;
+  diagnosticsError: string | null;
+  diagnosticsCandidates: string[];
+  pipelineLookupRef: string;
+  collabRoomV2Enabled: boolean;
 };
 
 export function CollabBoard({
@@ -51,6 +59,12 @@ export function CollabBoard({
   controlAvailability,
   busyAction,
   runControl,
+  diagnostics,
+  diagnosticsLoading,
+  diagnosticsError,
+  diagnosticsCandidates,
+  pipelineLookupRef,
+  collabRoomV2Enabled,
 }: CollabBoardProps) {
   const selectedStageLog = latestStageMap.get(selectedStage) ?? null;
   const selectedAgent = AGENT_LAYOUT.find((item) => item.stage === selectedStage) ?? AGENT_LAYOUT[0];
@@ -65,6 +79,267 @@ export function CollabBoard({
     const message = (log.message || "").toLowerCase();
     return message.includes("2-agent") || message.includes("dual_agent_synth");
   });
+  const failureGroups = diagnostics?.failure_reason_groups ?? [];
+  const stageFailures = diagnostics?.stage_failure_map ? Object.entries(diagnostics.stage_failure_map).slice(0, 6) : [];
+  const fallbackThread = [...selectedLogs]
+    .sort((a, b) => a.created_at.localeCompare(b.created_at))
+    .map((log) => {
+      const lane =
+        log.metadata?.agent_lane === "A" || log.metadata?.agent_lane === "B" || log.metadata?.agent_lane === "SYSTEM"
+          ? log.metadata.agent_lane
+          : ["analyze", "plan", "design", "build"].includes(log.stage)
+            ? "A"
+            : ["qa_runtime", "qa_quality", "release", "report"].includes(log.stage)
+              ? "B"
+              : "SYSTEM";
+      return {
+        id: `${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`,
+        lane,
+        stage: log.stage,
+        status: log.status,
+        agent_name: log.agent_name,
+        message: log.message,
+        reason: log.reason,
+        created_at: log.created_at,
+      };
+    });
+  const fallbackHandoff = fallbackThread
+    .slice(1)
+    .filter((event, index) => event.lane !== fallbackThread[index].lane)
+    .map((event, index) => ({
+      id: `${event.id}-fallback-${index}`,
+      from_lane: fallbackThread[index].lane,
+      to_lane: event.lane,
+      stage: event.stage,
+      created_at: event.created_at,
+      summary: `${fallbackThread[index].stage} → ${event.stage}`,
+      reason: event.reason,
+    }));
+  const threadEvents = diagnostics?.agent_thread && diagnostics.agent_thread.length > 0 ? diagnostics.agent_thread : fallbackThread;
+  const handoffEvents = diagnostics?.handoff_events && diagnostics.handoff_events.length > 0 ? diagnostics.handoff_events : fallbackHandoff;
+
+  if (collabRoomV2Enabled) {
+    return (
+      <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
+        <div className="ops-collab-v2-shell">
+          <header className="ops-collab-v2-header">
+            <div className="section-head compact">
+              <div>
+                <h3 className="section-title">A/B 협업실</h3>
+              </div>
+              <div className="ops-counters">
+                <span>
+                  <strong>{telemetry.found}</strong>
+                  <small>설계 완료</small>
+                </span>
+                <span>
+                  <strong>{telemetry.built}</strong>
+                  <small>제작 완료</small>
+                </span>
+                <span>
+                  <strong>{telemetry.sent}</strong>
+                  <small>배포 완료</small>
+                </span>
+                <span>
+                  <strong>{telemetry.replied}</strong>
+                  <small>보고 완료</small>
+                </span>
+              </div>
+            </div>
+            <div className="ops-context-tags">
+              <span className={`status-chip tone-${dualAgentModeDetected ? "success" : "warn"}`}>
+                {dualAgentModeDetected ? "Dual On" : "Legacy"}
+              </span>
+              {pipelineLookupRef.trim() ? <span className="terminal-tag subtle">lookup {pipelineLookupRef.trim()}</span> : null}
+              <span className="terminal-tag subtle">
+                reason {diagnostics?.primary_failure_reason ?? summarizedReason ?? "-"}
+              </span>
+            </div>
+          </header>
+
+          <div className="ops-collab-v2-grid">
+            <div className="ops-collab-v2-main">
+              <AgentCollabRoom thread={threadEvents} selectedStage={selectedStage} onSelectStage={setSelectedStage} />
+              <HandoffRail events={handoffEvents} />
+            </div>
+
+            <aside className="ops-collab-v2-side">
+              <article className="surface ops-collab-v2-card">
+                <header className="section-head compact">
+                  <h4 className="section-title">자동 실패 분석</h4>
+                </header>
+                {diagnosticsLoading ? <p className="muted-text">진단 조회중...</p> : null}
+                {diagnosticsError ? <p className="inline-feedback">진단 오류: {diagnosticsError}</p> : null}
+                {diagnosticsCandidates.length > 0 ? (
+                  <p className="muted-text">모호한 ID: {diagnosticsCandidates.map((id) => id.slice(0, 12)).join(", ")}</p>
+                ) : null}
+                <ul className="bullet-list compact">
+                  <li>
+                    <strong>1차 원인</strong>: {diagnostics?.primary_failure_reason ?? "-"}
+                  </li>
+                  <li>
+                    <strong>2차 원인</strong>:{" "}
+                    {diagnostics?.secondary_reasons && diagnostics.secondary_reasons.length > 0
+                      ? diagnostics.secondary_reasons.slice(0, 3).join(", ")
+                      : "-"}
+                  </li>
+                </ul>
+                {failureGroups.length > 0 ? (
+                  <ul className="bullet-list compact">
+                    {failureGroups.slice(0, 4).map((group) => (
+                      <li key={group.category}>
+                        <strong>{group.category}</strong>: {group.reasons.slice(0, 2).join(", ")}
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </article>
+
+              <article className="surface ops-collab-v2-card">
+                <header className="section-head compact">
+                  <h4 className="section-title">Gate 스냅샷</h4>
+                </header>
+                <ul className="bullet-list compact">
+                  <li>
+                    <strong>Quality</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.quality?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.quality.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Gameplay</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.gameplay?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.gameplay.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Visual</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.visual?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.visual.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Intent</strong>:{" "}
+                    {typeof diagnostics?.intent_snapshot?.ok === "boolean"
+                      ? diagnostics.intent_snapshot.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                </ul>
+                {stageFailures.length > 0 ? (
+                  <>
+                    <p className="muted-text">Stage 차단 맵</p>
+                    <ul className="bullet-list compact">
+                      {stageFailures.map(([stage, reasons]) => (
+                        <li key={stage}>
+                          <strong>{stage}</strong>: {Array.isArray(reasons) ? reasons.slice(0, 2).join(", ") : "-"}
+                        </li>
+                      ))}
+                    </ul>
+                  </>
+                ) : null}
+              </article>
+
+              <article className="surface ops-collab-v2-card">
+                <header className="section-head compact">
+                  <h4 className="section-title">{selectedAgent.role} 제어</h4>
+                </header>
+                <div className="ops-workbench-actions">
+                  <button
+                    className="button button-ghost"
+                    type="button"
+                    title={!controlAvailability.pause.enabled ? controlAvailability.pause.reason : undefined}
+                    onClick={() => void runControl("pause")}
+                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.pause.enabled}
+                  >
+                    일시정지
+                  </button>
+                  <button
+                    className="button button-primary"
+                    type="button"
+                    title={!controlAvailability.resume.enabled ? controlAvailability.resume.reason : undefined}
+                    onClick={() => void runControl("resume")}
+                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.resume.enabled}
+                  >
+                    재개
+                  </button>
+                  <button
+                    className="button button-danger"
+                    type="button"
+                    title={!controlAvailability.cancel.enabled ? controlAvailability.cancel.reason : undefined}
+                    onClick={() => void runControl("cancel")}
+                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.cancel.enabled}
+                  >
+                    중단
+                  </button>
+                  <button
+                    className="button button-ghost"
+                    type="button"
+                    title={!controlAvailability.retry.enabled ? controlAvailability.retry.reason : undefined}
+                    onClick={() => void runControl("retry")}
+                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.retry.enabled}
+                  >
+                    재시도
+                  </button>
+                </div>
+              </article>
+            </aside>
+
+            <aside className="ops-live-log">
+              <div className="section-head compact">
+                <div>
+                  <h3 className="section-title">로그</h3>
+                </div>
+                <span className="muted-text">{selectedLogs.length}개</span>
+              </div>
+
+              <ul className="ops-log-list">
+                {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
+                {selectedLogs.slice(0, 26).map((log) => {
+                  const tone = statusTone(log.status);
+                  const signals = qualitySignals(log);
+                  const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "reporter";
+                  const evidence = stageEvidence(log);
+                  return (
+                    <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>
+                      <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} />
+                      <div>
+                        <strong>{AGENT_LABELS[log.agent_name] ?? log.agent_name}</strong>
+                        <p>{compactMessage(log.message)}</p>
+                        {evidence.length > 0 ? (
+                          <div className="ops-log-evidence">
+                            {evidence.slice(0, 2).map((item) => (
+                              <span key={item}>{item}</span>
+                            ))}
+                          </div>
+                        ) : null}
+                        {(signals.fatal > 0 || signals.warning > 0) && (
+                          <small>
+                            치명 {signals.fatal} · 경고 {signals.warning}
+                          </small>
+                        )}
+                      </div>
+                      <div className="ops-log-item-meta">
+                        <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
+                        <time>{new Date(log.created_at).toLocaleTimeString()}</time>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </aside>
+          </div>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>

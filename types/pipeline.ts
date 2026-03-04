@@ -21,6 +21,7 @@ export type PipelineStage =
 
 export type PipelineStatus = "queued" | "running" | "success" | "error" | "retry" | "skipped";
 export type PipelineControlAction = "pause" | "resume" | "cancel" | "retry";
+export type AgentLane = "A" | "B" | "SYSTEM";
 
 export type QualityGateDetail = {
   ok?: boolean;
@@ -108,6 +109,9 @@ export type BuilderPreflightReport = {
 };
 
 export type PipelineLogMetadata = {
+  agent_lane?: AgentLane;
+  handoff_to_stage?: PipelineStage;
+  handoff_summary?: string;
   generation_engine_version?: string;
   upstream_reason?: string;
   vertex_error?: string;
@@ -220,4 +224,51 @@ export type PipelineControlResponse = {
   execution_mode: "auto";
   status: PipelineStatus;
   error_reason: string | null;
+};
+
+export type FailureReasonGroup = {
+  category: "visual" | "gameplay" | "runtime" | "intent" | "system" | "other";
+  reasons: string[];
+};
+
+export type AgentThreadEvent = {
+  id: string;
+  lane: AgentLane;
+  stage: PipelineStage | "done";
+  status: PipelineStatus;
+  agent_name: AgentName | "reporter";
+  message: string;
+  reason: string | null;
+  created_at: string;
+  tags?: string[];
+};
+
+export type HandoffEvent = {
+  id: string;
+  from_lane: AgentLane;
+  to_lane: AgentLane;
+  stage: PipelineStage | "done";
+  created_at: string;
+  summary: string;
+  reason?: string | null;
+};
+
+export type PipelineDiagnosticsResponse = {
+  resolved_pipeline_id: string;
+  status: PipelineStatus;
+  error_reason: string | null;
+  primary_failure_reason: string | null;
+  secondary_reasons: string[];
+  failure_reason_groups: FailureReasonGroup[];
+  stage_failure_map: Partial<Record<PipelineStage | "done", string[]>>;
+  quality_snapshot: {
+    quality?: QualityGateDetail;
+    gameplay?: QualityGateDetail;
+    visual?: QualityGateDetail;
+    playability?: PlayabilityGateDetail;
+    smoke?: SmokeGateDetail;
+  } | null;
+  intent_snapshot: IntentGateReport | null;
+  agent_thread: AgentThreadEvent[];
+  handoff_events: HandoffEvent[];
 };

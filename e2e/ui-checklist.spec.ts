@@ -29,7 +29,7 @@ test("운영실이 에이전트/상세/로그 구조를 노출한다", async ({ 
 
   await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "자동 제작" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "보드" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "A/B 협업실" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "로그" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "실행", exact: true })).toBeVisible();
   await expect(page.getByRole("heading", { name: "게임 완전 삭제 (DB · 스토리지 · 아카이브)" })).toBeVisible();

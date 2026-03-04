@@ -27,6 +27,7 @@ function renderAdminSurface({
   tokenSummary,
   tokenRows,
   previewMode,
+  collabRoomV2Enabled,
 }: {
   roleLabel: string;
   identityLabel: string;
@@ -35,6 +36,7 @@ function renderAdminSurface({
   tokenSummary: TokenUsageSummary;
   tokenRows: TokenUsageByGameRow[];
   previewMode: boolean;
+  collabRoomV2Enabled: boolean;
 }) {
   return (
     <section className="console-page">
@@ -52,7 +54,7 @@ function renderAdminSurface({
         </div>
       </section>
 
-      <StudioControlDeck initialLogs={logs} previewMode={previewMode} />
+      <StudioControlDeck initialLogs={logs} previewMode={previewMode} collabRoomV2Enabled={collabRoomV2Enabled} />
 
       <TokenCostKPI summary={tokenSummary} rows={tokenRows} />
 
@@ -63,6 +65,7 @@ function renderAdminSurface({
 
 export default async function AdminPage() {
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
+  const collabRoomV2Enabled = !["0", "false", "off"].includes((process.env.OPS_COLLAB_ROOM_V2 || "").trim().toLowerCase());
   const previewGames: RecentGameRow[] = PREVIEW_GAMES.map((game) => ({
     id: game.id,
     name: game.name,
@@ -81,6 +84,7 @@ export default async function AdminPage() {
       tokenSummary: PREVIEW_TOKEN_SUMMARY,
       tokenRows: PREVIEW_TOKEN_ROWS,
       previewMode: true,
+      collabRoomV2Enabled,
     });
   }
 
@@ -170,5 +174,6 @@ export default async function AdminPage() {
     tokenSummary: tokenReport.summary,
     tokenRows: tokenReport.rows,
     previewMode: false,
+    collabRoomV2Enabled,
   });
 }
