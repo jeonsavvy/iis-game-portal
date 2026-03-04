@@ -37,6 +37,10 @@ export function UtilityShell({
     selectedLogs.find((log) => Array.isArray(log.metadata?.quality_floor_fail_reasons)) ??
     null;
   const qualityReport = qualityLog?.metadata?.quality_gate_report;
+  const visualMetrics =
+    qualityReport && typeof qualityReport.visual_metrics === "object" && qualityReport.visual_metrics !== null
+      ? qualityReport.visual_metrics
+      : null;
   const intentGateReport = qualityLog?.metadata?.intent_gate_report;
   const qualityRows = [
     {
@@ -101,6 +105,9 @@ export function UtilityShell({
     synapseContract && typeof synapseContract.runtime_contract?.engine_mode === "string"
       ? synapseContract.runtime_contract.engine_mode
       : null;
+  const preflightReport = qualityLog?.metadata?.builder_preflight_report;
+  const runtimeCompiler = qualityLog?.metadata?.runtime_compiler;
+  const assetUsageReport = qualityLog?.metadata?.asset_usage_report;
   const summarizedReason = compactReason(pipelineSummary?.error_reason, 120);
 
   return (
@@ -205,7 +212,7 @@ export function UtilityShell({
                 차단 사유
               </p>
               <ul className="bullet-list compact">
-                {blockingReasons.slice(0, 6).map((reason) => (
+                {blockingReasons.slice(0, 5).map((reason) => (
                   <li key={reason}>{reason}</li>
                 ))}
               </ul>
@@ -268,6 +275,94 @@ export function UtilityShell({
                 </li>
                 <li>
                   <strong>Cost</strong>: {typeof usage.estimated_cost_usd === "number" ? `$${usage.estimated_cost_usd.toFixed(4)}` : "-"}
+                </li>
+              </ul>
+            </>
+          ) : null}
+
+          {preflightReport ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                Builder Preflight
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>선택</strong>: {preflightReport.selection_reason ?? "-"}
+                </li>
+                <li>
+                  <strong>RAW</strong>:{" "}
+                  {typeof preflightReport.raw?.builder === "number"
+                    ? `B ${preflightReport.raw.builder} / V ${preflightReport.raw.visual ?? "-"}`
+                    : "-"}
+                </li>
+                <li>
+                  <strong>FIXED</strong>:{" "}
+                  {typeof preflightReport.fixed?.builder === "number"
+                    ? `B ${preflightReport.fixed.builder} / V ${preflightReport.fixed.visual ?? "-"}`
+                    : "-"}
+                </li>
+              </ul>
+            </>
+          ) : null}
+
+          {runtimeCompiler ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                Runtime Compiler
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>Transforms</strong>:{" "}
+                  {Array.isArray(runtimeCompiler.transforms_applied) && runtimeCompiler.transforms_applied.length > 0
+                    ? runtimeCompiler.transforms_applied.slice(0, 4).join(", ")
+                    : "-"}
+                </li>
+              </ul>
+            </>
+          ) : null}
+
+          {assetUsageReport ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                Asset Usage
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>Used</strong>:{" "}
+                  {typeof assetUsageReport.asset_usage_count === "number" ? assetUsageReport.asset_usage_count : "-"}
+                </li>
+                <li>
+                  <strong>Keys</strong>:{" "}
+                  {Array.isArray(assetUsageReport.used_asset_keys) && assetUsageReport.used_asset_keys.length > 0
+                    ? assetUsageReport.used_asset_keys.slice(0, 5).join(", ")
+                    : "-"}
+                </li>
+              </ul>
+            </>
+          ) : null}
+
+          {visualMetrics ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                Visual Metrics
+              </p>
+              <ul className="bullet-list compact">
+                <li>
+                  <strong>contrast</strong>: {typeof visualMetrics.luminance_std === "number" ? visualMetrics.luminance_std.toFixed(2) : "-"}
+                </li>
+                <li>
+                  <strong>diversity</strong>: {typeof visualMetrics.color_bucket_count === "number" ? visualMetrics.color_bucket_count : "-"}
+                </li>
+                <li>
+                  <strong>edge</strong>: {typeof visualMetrics.edge_energy === "number" ? visualMetrics.edge_energy.toFixed(4) : "-"}
+                </li>
+                <li>
+                  <strong>motion</strong>:{" "}
+                  {typeof visualMetrics.motion_delta === "number"
+                    ? visualMetrics.motion_delta.toFixed(6)
+                    : typeof visualMetrics.motion_delta_p90 === "number"
+                      ? visualMetrics.motion_delta_p90.toFixed(6)
+                      : "-"}
                 </li>
               </ul>
             </>

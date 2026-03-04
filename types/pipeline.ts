@@ -48,6 +48,7 @@ export type QualityGateReport = {
   visual?: QualityGateDetail;
   playability?: PlayabilityGateDetail;
   smoke?: SmokeGateDetail;
+  visual_metrics?: Record<string, number | string | boolean | null | undefined>;
 };
 
 export type IntentContract = {
@@ -87,6 +88,25 @@ export type SynapseContract = {
   non_negotiables?: string[];
 };
 
+export type BuilderPreflightScores = {
+  quality?: number;
+  gameplay?: number;
+  visual?: number;
+  playability?: number;
+  builder?: number;
+  smoke_ok?: boolean;
+};
+
+export type BuilderPreflightReport = {
+  enabled?: boolean;
+  selection_reason?: string;
+  raw?: BuilderPreflightScores;
+  fixed?: BuilderPreflightScores;
+  applied_transforms?: string[];
+  asset_usage_count?: number;
+  runtime_compiler?: Record<string, unknown>;
+};
+
 export type PipelineLogMetadata = {
   generation_engine_version?: string;
   upstream_reason?: string;
@@ -101,6 +121,8 @@ export type PipelineLogMetadata = {
   fallback_blocked?: boolean;
   codegen_generation_attempts?: number;
   blocking_reasons?: string[];
+  blocking_reason_groups?: Record<string, string[]>;
+  blocking_reasons_normalized?: string[];
   quality_floor_passed?: boolean;
   quality_floor_enforced?: boolean;
   quality_floor_fail_reasons?: string[];
@@ -111,6 +133,23 @@ export type PipelineLogMetadata = {
   final_builder_quality_score?: number;
   final_smoke_ok?: boolean;
   final_smoke_reason?: string | null;
+  visual_profile_id?: string;
+  builder_preflight_report?: BuilderPreflightReport;
+  runtime_compiler?: {
+    transforms_applied?: string[];
+    precheck_before?: Record<string, unknown>;
+    precheck_after?: Record<string, unknown>;
+    asset_usage_count?: number;
+    required_asset_keys?: string[];
+    used_asset_keys?: string[];
+    [key: string]: unknown;
+  };
+  asset_usage_report?: {
+    asset_usage_count?: number;
+    required_asset_keys?: string[];
+    used_asset_keys?: string[];
+    [key: string]: unknown;
+  };
   deliverables?: string[];
   contract_status?: "pass" | "warn" | "fail" | string;
   contract_summary?: string;
