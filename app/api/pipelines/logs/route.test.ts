@@ -153,6 +153,54 @@ describe("GET /api/pipelines/logs", () => {
     expect(response.headers.get("Cache-Control")).toBe("no-store, max-age=0");
   });
 
+  it("returns unsanitized metadata when raw=1 is provided", async () => {
+    const longMessage = `build-${"x".repeat(500)}`;
+    const manyReasons = Array.from({ length: 12 }, (_, index) => `reason_${index + 1}`);
+    const { supabase } = buildSupabaseMock({
+      logsData: [
+        {
+          id: 1,
+          pipeline_id: "pid-raw",
+          stage: "build",
+          status: "error",
+          agent_name: "developer",
+          message: longMessage,
+          reason: "builder_quality_floor_unmet",
+          attempt: 1,
+          metadata: {
+            blocking_reasons: manyReasons,
+          },
+          created_at: "2026-03-01T00:00:00Z",
+        },
+      ],
+      adminData: [
+        {
+          id: "pid-raw",
+          keyword: "k",
+          trigger_source: "console",
+          payload: {},
+          status: "error",
+          error_reason: "builder_quality_floor_unmet",
+          created_at: "2026-03-01T00:00:00Z",
+          updated_at: "2026-03-01T00:00:00Z",
+        },
+      ],
+    });
+    mockedWithAdminGuard.mockResolvedValueOnce({
+      userId: "user-1",
+      role: "master_admin",
+      supabase,
+    } as never);
+
+    const response = await GET(new Request("https://portal.example.com/api/pipelines/logs?pipelineId=pid-raw&raw=1"));
+    expect(response.status).toBe(200);
+
+    const payload = await response.json();
+    const first = payload.logs[0];
+    expect(first.message).toBe(longMessage);
+    expect(first.metadata.blocking_reasons).toHaveLength(12);
+  });
+
   it("adds synthetic queued logs when pipeline logs are missing", async () => {
     const { supabase } = buildSupabaseMock({
       logsData: [],

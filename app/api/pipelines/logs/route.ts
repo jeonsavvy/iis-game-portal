@@ -35,6 +35,8 @@ function createSyntheticLog(row: Database["public"]["Tables"]["admin_config"]["R
 export async function GET(request: Request) {
   const url = new URL(request.url);
   const pipelineId = url.searchParams.get("pipelineId")?.trim() || null;
+  const rawModeParam = (url.searchParams.get("raw") || "").trim().toLowerCase();
+  const rawMode = rawModeParam === "1" || rawModeParam === "true";
   const limitParam = Number(url.searchParams.get("limit") ?? "80");
   const limit = Number.isFinite(limitParam) ? Math.min(Math.max(Math.trunc(limitParam), 1), 120) : 80;
 
@@ -80,10 +82,12 @@ export async function GET(request: Request) {
         });
       }
 
-      const typedLogs = ((data ?? []) as PipelineLog[]).map(sanitizePipelineLog);
+      const typedLogs = rawMode ? ((data ?? []) as PipelineLog[]) : ((data ?? []) as PipelineLog[]).map(sanitizePipelineLog);
       const typedAdminRows = (adminRows ?? []) as Database["public"]["Tables"]["admin_config"]["Row"][];
       const existingPipelineIds = new Set(typedLogs.map((row) => row.pipeline_id));
-      const syntheticLogs = typedAdminRows.filter((row) => !existingPipelineIds.has(row.id)).map((row) => sanitizePipelineLog(createSyntheticLog(row)));
+      const syntheticLogs = typedAdminRows
+        .filter((row) => !existingPipelineIds.has(row.id))
+        .map((row) => (rawMode ? createSyntheticLog(row) : sanitizePipelineLog(createSyntheticLog(row))));
       const mergedLogs = [...typedLogs, ...syntheticLogs]
         .sort((a, b) => b.created_at.localeCompare(a.created_at))
         .slice(0, limit);
