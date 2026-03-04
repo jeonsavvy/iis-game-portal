@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { compactReason, eventTypeLabel, stageEvidence } from "@/components/studio-control-deck/utils";
+import { compactReason, deriveDualAgentSummaries, eventTypeLabel, stageEvidence } from "@/components/studio-control-deck/utils";
 import type { PipelineLog } from "@/types/pipeline";
 
 function buildLog(partial: Partial<PipelineLog>): PipelineLog {
@@ -47,5 +47,45 @@ describe("studio deck utils", () => {
     expect(summarized).not.toBeNull();
     expect((summarized ?? "").length).toBeLessThanOrEqual(41);
     expect(summarized?.endsWith("…")).toBe(true);
+  });
+
+  it("derives dual-agent summary from stage map", () => {
+    const now = Date.now();
+    const latestStageMap = new Map<PipelineLog["stage"], PipelineLog>([
+      [
+        "analyze",
+        buildLog({
+          stage: "analyze",
+          status: "success",
+          agent_name: "analyzer",
+          created_at: new Date(now - 6_000).toISOString(),
+        }),
+      ],
+      [
+        "build",
+        buildLog({
+          stage: "build",
+          status: "running",
+          created_at: new Date(now - 2_000).toISOString(),
+        }),
+      ],
+      [
+        "qa_quality",
+        buildLog({
+          stage: "qa_quality",
+          status: "error",
+          agent_name: "qa_quality",
+          metadata: { fatal_errors: ["visual_gate_unmet"], non_fatal_warnings: ["color_diversity"] },
+          created_at: new Date(now - 1_000).toISOString(),
+        }),
+      ],
+    ]);
+    const summaries = deriveDualAgentSummaries(latestStageMap);
+    const creator = summaries.find((row) => row.id === "creator");
+    const operator = summaries.find((row) => row.id === "operator");
+    expect(creator?.status).toBe("running");
+    expect(operator?.status).toBe("error");
+    expect(operator?.fatal).toBe(1);
+    expect(operator?.warning).toBe(1);
   });
 });

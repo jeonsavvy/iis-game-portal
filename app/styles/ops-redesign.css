@@ -91,6 +91,63 @@
   font-size: 10px;
 }
 
+.ops-dual-agent-strip {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.ops-dual-agent-card {
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 12px;
+  background: rgba(3, 8, 16, 0.85);
+  padding: 10px;
+  display: grid;
+  gap: 6px;
+}
+
+.ops-dual-agent-card.tone-running {
+  border-color: rgba(96, 165, 250, 0.4);
+}
+
+.ops-dual-agent-card.tone-success {
+  border-color: rgba(34, 197, 94, 0.36);
+}
+
+.ops-dual-agent-card.tone-error {
+  border-color: rgba(248, 113, 113, 0.45);
+}
+
+.ops-dual-agent-card.tone-warn {
+  border-color: rgba(250, 204, 21, 0.45);
+}
+
+.ops-dual-agent-card p {
+  margin: 0;
+  color: #bfdbfe;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ops-dual-agent-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.ops-dual-agent-head strong {
+  font-size: 13px;
+}
+
+.ops-dual-agent-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 11px;
+}
+
 .ops-graph-canvas {
   position: relative;
   border: 1px solid rgba(148, 163, 184, 0.16);

@@ -150,6 +150,11 @@ export type PipelineLogMetadata = {
     used_asset_keys?: string[];
     [key: string]: unknown;
   };
+  pipeline_dual_agent_mode?: boolean;
+  gdd_source?: string;
+  plan_source?: string;
+  design_spec_source?: string;
+  design_contract_source?: string;
   deliverables?: string[];
   contract_status?: "pass" | "warn" | "fail" | string;
   contract_summary?: string;

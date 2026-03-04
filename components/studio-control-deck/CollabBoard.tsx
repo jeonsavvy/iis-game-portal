@@ -2,7 +2,14 @@
 
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
 import { AGENT_LABELS, AGENT_LAYOUT, STATUS_LABELS } from "@/components/studio-control-deck/config";
-import { compactMessage, compactReason, qualitySignals, stageEvidence, statusTone } from "@/components/studio-control-deck/utils";
+import {
+  compactMessage,
+  compactReason,
+  deriveDualAgentSummaries,
+  qualitySignals,
+  stageEvidence,
+  statusTone,
+} from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
@@ -50,6 +57,7 @@ export function CollabBoard({
   const selectedSignals = qualitySignals(selectedStageLog);
   const selectedEvidence = stageEvidence(selectedStageLog);
   const summarizedReason = compactReason(pipelineSummary?.error_reason);
+  const dualAgentSummaries = deriveDualAgentSummaries(latestStageMap);
 
   return (
     <section className={`surface ops-main-layout ops-pane ${mobileTab === "board" ? "is-active" : ""}`}>
@@ -77,6 +85,31 @@ export function CollabBoard({
                 <small>보고 완료</small>
               </span>
             </div>
+          </div>
+
+          <div className="ops-dual-agent-strip" aria-label="2-agent collaboration status">
+            {dualAgentSummaries.map((agent) => {
+              const tone = statusTone(agent.status);
+              return (
+                <article key={agent.id} className={`ops-dual-agent-card tone-${tone}`}>
+                  <div className="ops-dual-agent-head">
+                    <strong>{agent.label}</strong>
+                    <span className={`status-chip tone-${tone}`}>{agent.status ? STATUS_LABELS[agent.status] : "유휴"}</span>
+                  </div>
+                  <p>
+                    단계:{" "}
+                    {agent.stages
+                      .map((stage) => AGENT_LAYOUT.find((item) => item.stage === stage)?.role ?? stage)
+                      .join(" · ")}
+                  </p>
+                  <div className="ops-dual-agent-meta">
+                    <span>치명 {agent.fatal}</span>
+                    <span>경고 {agent.warning}</span>
+                    <span>{agent.latestLog ? new Date(agent.latestLog.created_at).toLocaleTimeString() : "-"}</span>
+                  </div>
+                </article>
+              );
+            })}
           </div>
 
           <div className="ops-graph-canvas">

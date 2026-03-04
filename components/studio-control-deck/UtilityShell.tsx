@@ -1,10 +1,12 @@
 "use client";
 
+import { useMemo } from "react";
+
 import Image from "next/image";
 
 import { TriggerForm } from "@/components/TriggerForm";
 import { STAGE_LABELS, STATUS_LABELS } from "@/components/studio-control-deck/config";
-import { compactMessage, compactReason } from "@/components/studio-control-deck/utils";
+import { compactMessage, compactReason, deriveDualAgentSummaries } from "@/components/studio-control-deck/utils";
 import type { PipelineLog, PipelineSummary } from "@/types/pipeline";
 
 type MobileTabKey = "board" | "activity" | "control";
@@ -30,6 +32,31 @@ export function UtilityShell({
   recentFailures,
   pipelineSummary,
 }: UtilityShellProps) {
+  const latestStageMap = useMemo(() => {
+    const stageMap = new Map<PipelineLog["stage"], PipelineLog>();
+    for (const log of selectedLogs) {
+      const previous = stageMap.get(log.stage);
+      if (!previous) {
+        stageMap.set(log.stage, log);
+        continue;
+      }
+      if (new Date(log.created_at).getTime() > new Date(previous.created_at).getTime()) {
+        stageMap.set(log.stage, log);
+      }
+    }
+    return stageMap;
+  }, [selectedLogs]);
+  const dualAgentSummaries = useMemo(() => deriveDualAgentSummaries(latestStageMap), [latestStageMap]);
+  const dualAgentModeDetected = useMemo(
+    () =>
+      selectedLogs.some((log) => {
+        if (log.metadata?.pipeline_dual_agent_mode === true) return true;
+        if (log.stage === "plan" && log.metadata?.gdd_source === "dual_agent_synth") return true;
+        if (log.stage === "design" && log.metadata?.design_spec_source === "dual_agent_synth") return true;
+        return false;
+      }),
+    [selectedLogs],
+  );
   const qualityLog =
     selectedLogs.find((log) => Boolean(log.metadata?.quality_gate_report)) ??
     selectedLogs.find((log) => Boolean(log.metadata?.intent_gate_report)) ??
@@ -113,6 +140,29 @@ export function UtilityShell({
   return (
     <section className={`surface ops-utility-shell ops-pane ${mobileTab === "control" ? "is-active" : ""}`}>
       <div className="ops-utility-grid">
+        <article className="surface form-panel ops-utility-card">
+          <div className="section-head compact">
+            <div>
+              <h3 className="section-title">2-Agent 협업 상태</h3>
+            </div>
+            <span className={`status-chip tone-${dualAgentModeDetected ? "success" : "warn"}`}>
+              {dualAgentModeDetected ? "Dual On" : "Legacy"}
+            </span>
+          </div>
+          <ul className="bullet-list compact">
+            {dualAgentSummaries.map((row) => (
+              <li key={row.id}>
+                <strong>{row.label}</strong>: {row.status ? STATUS_LABELS[row.status] : "유휴"}
+                {row.latestLog ? ` · ${new Date(row.latestLog.created_at).toLocaleTimeString()}` : ""}
+                {` · 치명 ${row.fatal} / 경고 ${row.warning}`}
+              </li>
+            ))}
+          </ul>
+          <p className="muted-text" style={{ marginTop: 8 }}>
+            A(생성): 분석→기획→디자인→개발 / B(검증·출시): QA→배포→기록
+          </p>
+        </article>
+
         {previewMode ? (
           <article className="surface form-panel ops-utility-card">
             <div className="section-head compact">

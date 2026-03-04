@@ -1,5 +1,20 @@
 import type { PipelineLog, PipelineStatus } from "@/types/pipeline";
 
+const CREATOR_STAGES: ReadonlyArray<PipelineLog["stage"]> = ["analyze", "plan", "design", "build"];
+const OPERATOR_STAGES: ReadonlyArray<PipelineLog["stage"]> = ["qa_runtime", "qa_quality", "release", "report"];
+
+type DualAgentId = "creator" | "operator";
+
+export type DualAgentSummary = {
+  id: DualAgentId;
+  label: string;
+  stages: ReadonlyArray<PipelineLog["stage"]>;
+  latestLog: PipelineLog | null;
+  status: PipelineStatus | null;
+  fatal: number;
+  warning: number;
+};
+
 export function statusTone(status: PipelineStatus | null): "success" | "error" | "running" | "warn" | "idle" | "muted" {
   switch (status) {
     case "success":
@@ -85,6 +100,58 @@ export function qualitySignals(log: PipelineLog | null): { fatal: number; warnin
     ? metadata.non_fatal_warnings.filter((entry) => typeof entry === "string").length
     : 0;
   return { fatal, warning };
+}
+
+function latestLogForStages(
+  latestStageMap: Map<PipelineLog["stage"], PipelineLog>,
+  stages: ReadonlyArray<PipelineLog["stage"]>,
+): PipelineLog | null {
+  let latest: PipelineLog | null = null;
+  for (const stage of stages) {
+    const current = latestStageMap.get(stage);
+    if (!current) continue;
+    if (!latest) {
+      latest = current;
+      continue;
+    }
+    if (new Date(current.created_at).getTime() > new Date(latest.created_at).getTime()) {
+      latest = current;
+    }
+  }
+  return latest;
+}
+
+export function deriveDualAgentSummaries(latestStageMap: Map<PipelineLog["stage"], PipelineLog>): DualAgentSummary[] {
+  const withSignals = (row: {
+    id: DualAgentId;
+    label: string;
+    stages: ReadonlyArray<PipelineLog["stage"]>;
+  }): DualAgentSummary => {
+    const latestLog = latestLogForStages(latestStageMap, row.stages);
+    const stageLogs = row.stages.map((stage) => latestStageMap.get(stage)).filter((item): item is PipelineLog => Boolean(item));
+    const signalSum = stageLogs.reduce(
+      (acc, log) => {
+        const signals = qualitySignals(log);
+        return {
+          fatal: acc.fatal + signals.fatal,
+          warning: acc.warning + signals.warning,
+        };
+      },
+      { fatal: 0, warning: 0 },
+    );
+    return {
+      ...row,
+      latestLog,
+      status: latestLog?.status ?? null,
+      fatal: signalSum.fatal,
+      warning: signalSum.warning,
+    };
+  };
+
+  return [
+    withSignals({ id: "creator", label: "A 생성기", stages: CREATOR_STAGES }),
+    withSignals({ id: "operator", label: "B 검증·출시", stages: OPERATOR_STAGES }),
+  ];
 }
 
 function numberValue(value: unknown): number | null {

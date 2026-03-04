@@ -27,6 +27,10 @@
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .ops-dual-agent-strip {
+    grid-template-columns: 1fr;
+  }
+
   .ops-danger-grid,
   .arcade-section.two-column,
   .play-first-screen,
@@ -90,6 +94,10 @@
   }
 
   .ops-observe-kpis {
+    grid-template-columns: 1fr;
+  }
+
+  .ops-dual-agent-strip {
     grid-template-columns: 1fr;
   }
 
