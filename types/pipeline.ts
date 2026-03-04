@@ -68,11 +68,32 @@ export type IntentGateReport = {
   reason_by_item?: Record<string, string[]>;
 };
 
+export type SynapseContract = {
+  schema_version?: string;
+  runtime_contract?: {
+    engine_mode?: "2d_phaser" | "3d_three" | string;
+    single_artifact_html?: boolean;
+    preserve_boot_flags?: boolean;
+  };
+  quality_bar?: {
+    quality_min?: number;
+    gameplay_min?: number;
+    visual_min?: number;
+  };
+  required_mechanics?: string[];
+  required_progression?: string[];
+  required_visual_signals?: string[];
+  required_assets?: string[];
+  non_negotiables?: string[];
+};
+
 export type PipelineLogMetadata = {
   generation_engine_version?: string;
   quality_gate_report?: QualityGateReport;
   intent_contract?: IntentContract;
   intent_contract_hash?: string;
+  synapse_contract?: SynapseContract;
+  synapse_contract_hash?: string;
   intent_gate_report?: IntentGateReport;
   strict_vertex_only?: boolean;
   fallback_blocked?: boolean;

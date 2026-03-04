@@ -87,6 +87,13 @@ export function UtilityShell({
     : [];
   const usageLog = selectedLogs.find((log) => typeof log.metadata?.usage?.total_tokens === "number") ?? qualityLog;
   const usage = usageLog?.metadata?.usage;
+  const synapseContract = qualityLog?.metadata?.synapse_contract;
+  const synapseHash =
+    typeof qualityLog?.metadata?.synapse_contract_hash === "string" ? qualityLog.metadata.synapse_contract_hash : null;
+  const synapseEngine =
+    synapseContract && typeof synapseContract.runtime_contract?.engine_mode === "string"
+      ? synapseContract.runtime_contract.engine_mode
+      : null;
   const summarizedReason = compactReason(pipelineSummary?.error_reason, 120);
 
   return (
@@ -205,6 +212,26 @@ export function UtilityShell({
                 {intentBlockingReasons.slice(0, 4).map((reason) => (
                   <li key={`intent-${reason}`}>{reason}</li>
                 ))}
+              </ul>
+            </>
+          ) : null}
+
+          {synapseHash || synapseEngine ? (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                Synapse 계약
+              </p>
+              <ul className="bullet-list compact">
+                {synapseEngine ? (
+                  <li>
+                    <strong>Engine</strong>: {synapseEngine}
+                  </li>
+                ) : null}
+                {synapseHash ? (
+                  <li>
+                    <strong>Hash</strong>: {synapseHash.slice(0, 12)}
+                  </li>
+                ) : null}
               </ul>
             </>
           ) : null}
