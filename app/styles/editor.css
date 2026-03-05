@@ -73,8 +73,34 @@
 .editor-workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(320px, 380px) minmax(0, 1fr) auto;
+  grid-template-columns: minmax(320px, 380px) 8px minmax(0, 1fr) 8px minmax(320px, 360px);
   overflow: hidden;
+}
+
+.editor-resizer {
+  width: 8px;
+  cursor: col-resize;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.8), rgba(30, 41, 59, 0.9));
+  border-left: 1px solid rgba(148, 163, 184, 0.2);
+  border-right: 1px solid rgba(148, 163, 184, 0.2);
+  position: relative;
+}
+
+.editor-resizer::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    to bottom,
+    rgba(148, 163, 184, 0.08) 0 4px,
+    rgba(148, 163, 184, 0.22) 4px 8px
+  );
+  opacity: 0.65;
+}
+
+body.editor-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 /* ---- Chat Panel ---- */
@@ -313,7 +339,7 @@
   flex-direction: column;
 }
 .editor-agent-panel--open {
-  width: 340px;
+  width: 100%;
 }
 
 .editor-agent-toggle {
@@ -333,6 +359,14 @@
 }
 .editor-agent-toggle:hover {
   background: rgba(255, 255, 255, 0.03);
+}
+
+.editor-agent-toggle--locked {
+  cursor: default;
+}
+
+.editor-agent-toggle--locked:hover {
+  background: transparent;
 }
 
 .editor-agent-toggle-icon {
@@ -448,11 +482,16 @@
 }
 
 /* ---- Responsive ---- */
-@media (max-width: 768px) {
+@media (max-width: 1099px) {
   .editor-workspace {
     grid-template-columns: 1fr;
     grid-template-rows: minmax(320px, 48vh) minmax(320px, 1fr) minmax(280px, 40vh);
   }
+
+  .editor-resizer {
+    display: none;
+  }
+
   .editor-chat-panel {
     max-height: none;
   }

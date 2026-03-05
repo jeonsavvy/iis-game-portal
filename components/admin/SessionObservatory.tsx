@@ -245,32 +245,38 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
   const selectedSession = sessions.find((session) => session.session_id === selectedSessionId) ?? null;
 
   return (
-    <section className="console-page" style={{ display: "grid", gap: 16 }}>
-      <section className="surface console-hero" style={{ display: "grid", gap: 8 }}>
-        <h1 className="hero-title" style={{ margin: 0 }}>Session Observatory</h1>
-        <p className="muted-text" style={{ margin: 0 }}>
+    <section className="console-page observatory-page">
+      <section className="surface console-hero observatory-hero">
+        <h1 className="hero-title observatory-title">Session Observatory</h1>
+        <p className="muted-text observatory-subtitle">
           Session-first 멀티에이전트 이벤트 관제실
         </p>
+        <div className="observatory-chips">
+          <span className="observatory-chip">🧠 Codegen</span>
+          <span className="observatory-chip">👁️ Visual QA</span>
+          <span className="observatory-chip">🎮 Playtester</span>
+          <span className="observatory-chip">⚡ Session Loop</span>
+        </div>
       </section>
 
       {error ? (
-        <section className="surface" style={{ color: "#fecaca" }}>
+        <section className="surface observatory-error">
           {error}
         </section>
       ) : null}
 
-      <section className="surface" style={{ display: "grid", gap: 12 }}>
+      <section className="surface observatory-kpi-shell">
         <h2 style={{ margin: 0 }}>KPI</h2>
-        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))" }}>
-          <div className="card"><strong>{kpi.avgRefine.toFixed(2)}</strong><p>세션당 평균 refine 횟수</p></div>
-          <div className="card"><strong>{kpi.qaFailureRate.toFixed(1)}%</strong><p>QA 실패율</p></div>
-          <div className="card"><strong>{kpi.publishSuccessRate.toFixed(1)}%</strong><p>Publish 성공률</p></div>
-          <div className="card"><strong>{kpi.modelErrorRate.toFixed(1)}%</strong><p>모델 오류율</p></div>
+        <div className="observatory-kpi-grid">
+          <div className="card observatory-kpi-card"><strong>{kpi.avgRefine.toFixed(2)}</strong><p>세션당 평균 refine 횟수</p></div>
+          <div className="card observatory-kpi-card"><strong>{kpi.qaFailureRate.toFixed(1)}%</strong><p>QA 실패율</p></div>
+          <div className="card observatory-kpi-card"><strong>{kpi.publishSuccessRate.toFixed(1)}%</strong><p>Publish 성공률</p></div>
+          <div className="card observatory-kpi-card"><strong>{kpi.modelErrorRate.toFixed(1)}%</strong><p>모델 오류율</p></div>
         </div>
       </section>
 
-      <section className="surface" style={{ display: "grid", gap: 12 }}>
-        <div style={{ display: "grid", gap: 8, gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))" }}>
+      <section className="surface observatory-shell">
+        <div className="observatory-filter-grid">
           <label>
             상태
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
@@ -311,14 +317,14 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
           </label>
         </div>
 
-        <div style={{ display: "grid", gap: 12, gridTemplateColumns: "minmax(240px, 320px) 1fr" }}>
-          <div style={{ display: "grid", gap: 8, maxHeight: 520, overflow: "auto" }}>
+        <div className="observatory-main-grid">
+          <div className="observatory-session-list">
             {visibleSessions.map((session) => (
               <button
                 key={session.session_id}
                 type="button"
                 onClick={() => setSelectedSessionId(session.session_id)}
-                className="card"
+                className="card observatory-session-card"
                 aria-pressed={selectedSessionId === session.session_id}
                 style={{
                   textAlign: "left",
@@ -330,15 +336,15 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 <small>{session.session_id}</small>
               </button>
             ))}
-            {visibleSessions.length === 0 ? <p>세션이 없습니다.</p> : null}
+            {visibleSessions.length === 0 ? <p className="observatory-empty">세션이 없습니다.</p> : null}
           </div>
 
-          <div style={{ display: "grid", gap: 8, maxHeight: 520, overflow: "auto" }}>
+          <div className="observatory-event-list">
             <h3 style={{ margin: 0 }}>
               Event Timeline {selectedSession ? `· ${selectedSession.title}` : ""}
             </h3>
             {filteredEvents.map((event) => (
-              <article key={event.id} className="card" style={{ display: "grid", gap: 4 }}>
+              <article key={event.id} className="card observatory-event-card">
                 <strong>
                   [{event.agent || event.event_type}] {event.action || "-"}
                 </strong>
@@ -356,7 +362,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 {event.error_code ? <p style={{ margin: 0, color: "#fca5a5" }}>error_code: {event.error_code}</p> : null}
               </article>
             ))}
-            {filteredEvents.length === 0 ? <p>표시할 이벤트가 없습니다.</p> : null}
+            {filteredEvents.length === 0 ? <p className="observatory-empty">표시할 이벤트가 없습니다.</p> : null}
           </div>
         </div>
       </section>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 
 import { AgentLogPanel, type AgentActivity } from "@/components/editor/AgentLogPanel";
 import { ChatPanel, type ChatMessage } from "@/components/editor/ChatPanel";
@@ -15,7 +15,28 @@ type SessionState = {
   activities: AgentActivity[];
 };
 
+type SessionEvent = {
+  id: string;
+  event_type: string;
+  agent?: string | null;
+  action?: string | null;
+  summary?: string;
+  score?: number | null;
+  decision_reason?: string;
+  input_signal?: string;
+  change_impact?: string;
+  confidence?: number | null;
+  error_code?: string | null;
+  before_score?: number | null;
+  after_score?: number | null;
+  created_at?: string;
+};
+
 const API_BASE = "/api/sessions";
+const CHAT_MIN_WIDTH = 300;
+const CHAT_MAX_WIDTH = 520;
+const LOG_MIN_WIDTH = 300;
+const LOG_MAX_WIDTH = 520;
 
 let msgCounter = 0;
 function makeId() {
@@ -37,6 +58,42 @@ function summarizeActivity(activity: AgentActivity): string {
   return `${activity.agent}/${activity.action}${score}${delta} · ${activity.summary || "처리 완료"}`;
 }
 
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function normalizeActivityFromEvent(event: SessionEvent): AgentActivity | null {
+  if (!event.agent) return null;
+  return {
+    agent: event.agent,
+    action: event.action || "event",
+    summary: event.summary || event.event_type,
+    score: typeof event.score === "number" ? event.score : 0,
+    decision_reason: event.decision_reason || "",
+    input_signal: event.input_signal || "",
+    change_impact: event.change_impact || "",
+    confidence: typeof event.confidence === "number" ? event.confidence : undefined,
+    error_code: event.error_code || null,
+    before_score: typeof event.before_score === "number" ? event.before_score : null,
+    after_score: typeof event.after_score === "number" ? event.after_score : null,
+  };
+}
+
+function summarizeFailure(event: SessionEvent | null): string {
+  if (!event) {
+    return "코어 엔진 요청이 실패했습니다. 잠시 후 다시 시도하거나 QA 재실행을 눌러주세요.";
+  }
+  const chunks = [
+    event.summary?.trim() || "",
+    event.error_code?.trim() ? `code=${event.error_code}` : "",
+    event.decision_reason?.trim() ? `why=${event.decision_reason}` : "",
+  ].filter(Boolean);
+  if (chunks.length === 0) {
+    return "코어 엔진 요청이 실패했습니다. 이벤트 상세를 확인해주세요.";
+  }
+  return chunks.join(" · ");
+}
+
 function normalizeError(payload: unknown): string {
   if (!payload || typeof payload !== "object") {
     return "요청 처리 중 오류가 발생했습니다";
@@ -56,7 +113,13 @@ function normalizeError(payload: unknown): string {
     }
   }
 
-  if (typeof row.error === "string" && row.error.trim()) return row.error;
+  if (typeof row.error === "string" && row.error.trim()) {
+    const code = typeof row.code === "string" ? row.code.trim() : "";
+    const detail = typeof row.detail === "string" ? row.detail.trim() : "";
+    if (code && detail) return `${row.error} (${code}) · ${detail}`;
+    if (code) return `${row.error} (${code})`;
+    return row.error;
+  }
   if (typeof row.detail === "string" && row.detail.trim()) return row.detail;
   return "요청 처리 중 오류가 발생했습니다";
 }
@@ -64,10 +127,18 @@ function normalizeError(payload: unknown): string {
 export function EditorWorkspace() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [agentPanelOpen, setAgentPanelOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
+  const [chatWidth, setChatWidth] = useState(360);
+  const [logWidth, setLogWidth] = useState(340);
+  const [isDesktop, setIsDesktop] = useState(false);
+  const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const dragStateRef = useRef<{
+    mode: "chat" | "log";
+    rectLeft: number;
+    rectRight: number;
+  } | null>(null);
 
   const ensureSession = useCallback(async (): Promise<string> => {
     if (session?.id) return session.id;
@@ -94,14 +165,88 @@ export function EditorWorkspace() {
     return newId;
   }, [session]);
 
+  useEffect(() => {
+    const syncViewport = () => {
+      setIsDesktop(window.innerWidth >= 1100);
+    };
+    syncViewport();
+    window.addEventListener("resize", syncViewport);
+    return () => window.removeEventListener("resize", syncViewport);
+  }, []);
+
+  useEffect(() => {
+    const handleMouseMove = (event: MouseEvent) => {
+      const drag = dragStateRef.current;
+      if (!drag) return;
+
+      if (drag.mode === "chat") {
+        const target = event.clientX - drag.rectLeft;
+        const maxChat = Math.max(
+          CHAT_MIN_WIDTH,
+          Math.min(CHAT_MAX_WIDTH, drag.rectRight - drag.rectLeft - LOG_MIN_WIDTH - 460),
+        );
+        setChatWidth(clamp(target, CHAT_MIN_WIDTH, maxChat));
+        return;
+      }
+
+      const fromRight = drag.rectRight - event.clientX;
+      const maxLog = Math.max(
+        LOG_MIN_WIDTH,
+        Math.min(LOG_MAX_WIDTH, drag.rectRight - drag.rectLeft - CHAT_MIN_WIDTH - 460),
+      );
+      setLogWidth(clamp(fromRight, LOG_MIN_WIDTH, maxLog));
+    };
+
+    const handleMouseUp = () => {
+      dragStateRef.current = null;
+      document.body.classList.remove("editor-resizing");
+    };
+
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseup", handleMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, []);
+
+  const startResize = useCallback(
+    (mode: "chat" | "log") => (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (!isDesktop) return;
+      const rect = workspaceRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      dragStateRef.current = {
+        mode,
+        rectLeft: rect.left,
+        rectRight: rect.right,
+      };
+      document.body.classList.add("editor-resizing");
+      event.preventDefault();
+    },
+    [isDesktop],
+  );
+
+  const loadRecentEvents = useCallback(async (sessionId: string): Promise<SessionEvent[]> => {
+    const res = await fetch(`${API_BASE}/${sessionId}/events?limit=12`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const payload = (await res.json().catch(() => ({}))) as { events?: SessionEvent[] };
+    if (!Array.isArray(payload.events)) return [];
+    return payload.events.slice().reverse();
+  }, []);
+
   const handleSend = useCallback(
     async (prompt: string) => {
       setIsGenerating(true);
       setError(null);
       setLastPrompt(prompt);
+      let activeSessionId: string | null = null;
 
       try {
         const sessionId = await ensureSession();
+        activeSessionId = sessionId;
 
         const userMsg: ChatMessage = {
           id: makeId(),
@@ -161,27 +306,49 @@ export function EditorWorkspace() {
         });
       } catch (err) {
         const msg = err instanceof Error ? err.message : "알 수 없는 오류";
-        setError(msg);
+        const diagnostics = activeSessionId ? await loadRecentEvents(activeSessionId) : [];
+        const failedEvent =
+          diagnostics
+            .slice()
+            .reverse()
+            .find((event) => event.event_type.includes("failed") || Boolean(event.error_code)) || null;
+        const failureSummary = summarizeFailure(failedEvent);
+        const nextActivities = diagnostics
+          .map((event) => normalizeActivityFromEvent(event))
+          .filter((row): row is AgentActivity => Boolean(row));
+
+        const normalizedMessage = `${msg} · ${failureSummary}`;
+        setError(normalizedMessage);
         setSession((prev) => {
           if (!prev) return prev;
+          const diagnosticMessages: ChatMessage[] = diagnostics
+            .slice(-4)
+            .map((event) => ({
+              id: makeId(),
+              role: activityRole(event.agent || "codegen"),
+              content: `🧾 ${event.event_type}: ${event.summary || event.error_code || "상세 없음"}`,
+              timestamp: Date.now(),
+            }));
           return {
             ...prev,
             messages: [
               ...prev.messages,
+              ...diagnosticMessages,
               {
                 id: makeId(),
                 role: "system",
-                content: `⚠️ ${msg}`,
+                content: `⚠️ ${normalizedMessage}`,
                 timestamp: Date.now(),
               },
             ],
+            activities: nextActivities.length > 0 ? nextActivities : prev.activities,
           };
         });
       } finally {
         setIsGenerating(false);
       }
     },
-    [ensureSession],
+    [ensureSession, loadRecentEvents],
   );
 
   const handlePublish = useCallback(async () => {
@@ -278,13 +445,39 @@ export function EditorWorkspace() {
         </div>
       )}
 
-      <div className="editor-workspace">
+      <div
+        className="editor-workspace"
+        ref={workspaceRef}
+        style={
+          isDesktop
+            ? { gridTemplateColumns: `${chatWidth}px 8px minmax(0,1fr) 8px ${logWidth}px` }
+            : undefined
+        }
+      >
         <ChatPanel messages={session?.messages ?? []} onSend={handleSend} isGenerating={isGenerating} />
+        {isDesktop ? (
+          <div
+            className="editor-resizer editor-resizer--chat"
+            onMouseDown={startResize("chat")}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="채팅 패널 너비 조절"
+          />
+        ) : null}
         <GamePreview html={session?.html ?? ""} />
+        {isDesktop ? (
+          <div
+            className="editor-resizer editor-resizer--log"
+            onMouseDown={startResize("log")}
+            role="separator"
+            aria-orientation="vertical"
+            aria-label="에이전트 로그 너비 조절"
+          />
+        ) : null}
         <AgentLogPanel
           activities={session?.activities ?? []}
-          isOpen={agentPanelOpen}
-          onToggle={() => setAgentPanelOpen(!agentPanelOpen)}
+          isOpen
+          lockOpen
           onRetryLast={handleRetryLast}
           onRerunQa={handleRerunQa}
           onRestorePrevious={handleRestorePrevious}

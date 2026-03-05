@@ -15,13 +15,14 @@ export type AgentActivity = {
 };
 
 type AgentLogPanelProps = {
-    activities: AgentActivity[];
-    isOpen: boolean;
-    onToggle: () => void;
-    onRetryLast?: () => void;
-    onRerunQa?: () => void;
-    onRestorePrevious?: () => void;
-    isBusy?: boolean;
+  activities: AgentActivity[];
+  isOpen: boolean;
+  onToggle?: () => void;
+  lockOpen?: boolean;
+  onRetryLast?: () => void;
+  onRerunQa?: () => void;
+  onRestorePrevious?: () => void;
+  isBusy?: boolean;
 };
 
 const AGENT_ICONS: Record<string, string> = {
@@ -59,32 +60,42 @@ export function AgentLogPanel({
   activities,
   isOpen,
   onToggle,
+  lockOpen,
   onRetryLast,
   onRerunQa,
   onRestorePrevious,
   isBusy,
 }: AgentLogPanelProps) {
+  const open = lockOpen ? true : isOpen;
   const activeAgents = uniqueAgents(activities);
 
   return (
-    <aside className={`editor-agent-panel ${isOpen ? "editor-agent-panel--open" : ""}`}>
-      <button
-        type="button"
-        className="editor-agent-toggle"
-        onClick={onToggle}
-        aria-expanded={isOpen}
-        aria-label={isOpen ? "에이전트 로그 접기" : "에이전트 로그 열기"}
-        title={isOpen ? "에이전트 로그 접기" : "에이전트 로그 열기"}
-      >
-        <span className="editor-agent-toggle-icon">{isOpen ? "▸" : "◂"}</span>
-        {isOpen ? (
+    <aside className={`editor-agent-panel ${open ? "editor-agent-panel--open" : ""}`}>
+      {lockOpen ? (
+        <div className="editor-agent-toggle editor-agent-toggle--locked">
+          <span className="editor-agent-toggle-icon">🧠</span>
           <span className="editor-agent-toggle-label">에이전트 로그</span>
-        ) : (
           <span className="editor-agent-toggle-count">{activities.length}</span>
-        )}
-      </button>
+        </div>
+      ) : (
+        <button
+          type="button"
+          className="editor-agent-toggle"
+          onClick={onToggle}
+          aria-expanded={open}
+          aria-label={open ? "에이전트 로그 접기" : "에이전트 로그 열기"}
+          title={open ? "에이전트 로그 접기" : "에이전트 로그 열기"}
+        >
+          <span className="editor-agent-toggle-icon">{open ? "▸" : "◂"}</span>
+          {open ? (
+            <span className="editor-agent-toggle-label">에이전트 로그</span>
+          ) : (
+            <span className="editor-agent-toggle-count">{activities.length}</span>
+          )}
+        </button>
+      )}
 
-      {isOpen && (
+      {open && (
         <div className="editor-agent-list">
           <div className="editor-agent-intro">
             <strong>🧠 멀티에이전트 타임라인</strong>

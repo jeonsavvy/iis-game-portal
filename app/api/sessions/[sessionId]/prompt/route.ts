@@ -16,7 +16,7 @@ export async function POST(
     return forwardToCoreEngine({
       path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/prompt`,
       method: "POST",
-      timeoutMs: 45000,
+      timeoutMs: 180000,
       retries: 1,
       body: {
         prompt: body.prompt ?? "",
