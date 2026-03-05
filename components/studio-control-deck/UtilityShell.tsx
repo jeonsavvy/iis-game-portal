@@ -5,9 +5,9 @@ import Image from "next/image";
 import { TriggerForm } from "@/components/TriggerForm";
 import { STAGE_LABELS, STATUS_LABELS } from "@/components/studio-control-deck/config";
 import { compactMessage, compactReason } from "@/components/studio-control-deck/utils";
-import type { PipelineLog, PipelineSummary } from "@/types/pipeline";
+import type { PipelineControlAction, PipelineLog, PipelineSummary } from "@/types/pipeline";
 
-type MobileTabKey = "board" | "activity" | "control";
+type MobileTabKey = "board" | "control";
 
 type UtilityShellProps = {
   mobileTab: MobileTabKey;
@@ -18,6 +18,15 @@ type UtilityShellProps = {
   setFeedback: (value: string) => void;
   recentFailures: PipelineLog[];
   pipelineSummary: PipelineSummary | null;
+  controlAvailability: Record<
+    PipelineControlAction,
+    {
+      enabled: boolean;
+      reason: string;
+    }
+  >;
+  busyAction: PipelineControlAction | null;
+  runControl: (action: PipelineControlAction) => Promise<void>;
 };
 
 export function UtilityShell({
@@ -29,6 +38,9 @@ export function UtilityShell({
   setFeedback,
   recentFailures,
   pipelineSummary,
+  controlAvailability,
+  busyAction,
+  runControl,
 }: UtilityShellProps) {
   const qualityLog =
     selectedLogs.find((log) => Boolean(log.metadata?.quality_gate_report)) ??
@@ -117,15 +129,31 @@ export function UtilityShell({
           <article className="surface form-panel ops-utility-card">
             <div className="section-head compact">
               <div>
-                <h3 className="section-title">실행</h3>
+                <h3 className="section-title">직접 제어</h3>
               </div>
             </div>
             <p className="muted-text">프리뷰 모드에서는 실제 트리거/제어 요청을 전송하지 않습니다.</p>
-            <p className="inline-feedback">상단 제어 버튼은 시뮬레이션 피드백만 제공합니다.</p>
+            <p className="inline-feedback">직접 제어 영역은 시뮬레이션 피드백만 제공합니다.</p>
           </article>
         ) : (
           <TriggerForm
             className="ops-utility-card"
+            controlPanel={
+              <div className="ops-workbench-actions" style={{ marginTop: 10 }}>
+                {(["pause", "resume", "cancel", "retry"] as PipelineControlAction[]).map((action) => (
+                  <button
+                    key={action}
+                    className={`button ${action === "cancel" ? "button-danger" : action === "resume" ? "button-primary" : "button-ghost"}`}
+                    type="button"
+                    title={!controlAvailability[action].enabled ? controlAvailability[action].reason : undefined}
+                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability[action].enabled}
+                    onClick={() => void runControl(action)}
+                  >
+                    {busyAction === action ? "처리중..." : action === "retry" ? "재시도" : action === "pause" ? "일시정지" : action === "resume" ? "재개" : "중단"}
+                  </button>
+                ))}
+              </div>
+            }
             onTriggered={(item) => {
               setSelectedPipelineId(item.pipelineId);
               setFeedback(`신규 파이프라인 등록: ${item.pipelineId}`);
@@ -136,27 +164,7 @@ export function UtilityShell({
         <article className="surface form-panel ops-utility-card">
           <div className="section-head compact">
             <div>
-              <h3 className="section-title">실패 내역</h3>
-            </div>
-          </div>
-
-          {recentFailures.length === 0 ? (
-            <p className="muted-text">최근 실패가 없습니다.</p>
-          ) : (
-            <ul className="bullet-list compact">
-              {recentFailures.map((log) => (
-                <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-failure`}>
-                  <strong>{STAGE_LABELS[log.stage]}:</strong> {compactMessage(log.reason ?? log.message)}
-                </li>
-              ))}
-            </ul>
-          )}
-        </article>
-
-        <article className="surface form-panel ops-utility-card">
-          <div className="section-head compact">
-            <div>
-              <h3 className="section-title">실행 상태</h3>
+              <h3 className="section-title">실행/실패 상태</h3>
             </div>
           </div>
 
@@ -182,6 +190,22 @@ export function UtilityShell({
               </li>
             ) : null}
           </ul>
+          {recentFailures.length === 0 ? (
+            <p className="muted-text">최근 실패가 없습니다.</p>
+          ) : (
+            <>
+              <p className="muted-text" style={{ marginTop: 8 }}>
+                최근 실패 내역
+              </p>
+              <ul className="bullet-list compact">
+                {recentFailures.map((log) => (
+                  <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-failure`}>
+                    <strong>{STAGE_LABELS[log.stage]}:</strong> {compactMessage(log.reason ?? log.message)}
+                  </li>
+                ))}
+              </ul>
+            </>
+          )}
         </article>
 
         <article className="surface form-panel ops-utility-card">

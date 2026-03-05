@@ -71,6 +71,5 @@ export const STAGE_GUIDE: Record<Exclude<PipelineStage, "done">, string> = {
 
 export const MOBILE_TABS = [
   { key: "board", label: "보드" },
-  { key: "activity", label: "로그" },
   { key: "control", label: "제어" },
 ] as const;

@@ -23,7 +23,7 @@
 .ops-command-grid {
   display: grid;
   gap: 10px;
-  grid-template-columns: minmax(0, 1fr) minmax(280px, auto);
+  grid-template-columns: minmax(0, 1fr);
   align-items: end;
 }
 
@@ -67,7 +67,7 @@
 .ops-collab-v2-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 0.85fr) minmax(320px, 0.9fr);
+  grid-template-columns: minmax(0, 1.4fr) minmax(320px, 0.9fr);
   min-height: 620px;
 }
 

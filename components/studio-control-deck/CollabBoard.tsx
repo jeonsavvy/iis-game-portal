@@ -2,7 +2,6 @@
 
 import { AgentCollabRoom } from "@/components/studio-control-deck/AgentCollabRoom";
 import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
-import { HandoffRail } from "@/components/studio-control-deck/HandoffRail";
 import { AGENT_LABELS, AGENT_LAYOUT, STATUS_LABELS } from "@/components/studio-control-deck/config";
 import {
   compactMessage,
@@ -14,7 +13,7 @@ import {
 } from "@/components/studio-control-deck/utils";
 import type { PipelineControlAction, PipelineDiagnosticsResponse, PipelineLog, PipelineStage, PipelineSummary } from "@/types/pipeline";
 
-type MobileTabKey = "board" | "activity" | "control";
+type MobileTabKey = "board" | "control";
 
 type CollabBoardProps = {
   mobileTab: MobileTabKey;
@@ -120,20 +119,7 @@ export function CollabBoard({
         created_at: log.created_at,
       };
     });
-  const fallbackHandoff = fallbackThread
-    .slice(1)
-    .filter((event, index) => event.lane !== fallbackThread[index].lane)
-    .map((event, index) => ({
-      id: `${event.id}-fallback-${index}`,
-      from_lane: fallbackThread[index].lane,
-      to_lane: event.lane,
-      stage: event.stage,
-      created_at: event.created_at,
-      summary: `${fallbackThread[index].stage} → ${event.stage}`,
-      reason: event.reason,
-    }));
   const threadEvents = diagnostics?.agent_thread && diagnostics.agent_thread.length > 0 ? diagnostics.agent_thread : fallbackThread;
-  const handoffEvents = diagnostics?.handoff_events && diagnostics.handoff_events.length > 0 ? diagnostics.handoff_events : fallbackHandoff;
 
   if (collabRoomV2Enabled) {
     return (
@@ -175,13 +161,12 @@ export function CollabBoard({
           <div className="ops-collab-v2-grid">
             <div className="ops-collab-v2-main">
               <AgentCollabRoom thread={threadEvents} selectedStage={selectedStage} onSelectStage={setSelectedStage} />
-              <HandoffRail events={handoffEvents} />
             </div>
 
             <aside className="ops-collab-v2-side">
               <article className="surface ops-collab-v2-card">
                 <header className="section-head compact">
-                  <h4 className="section-title">이번 실패 요약</h4>
+                  <h4 className="section-title">제작 보고서</h4>
                 </header>
                 {diagnosticsLoading ? <p className="muted-text">진단 조회중...</p> : null}
                 {diagnosticsError ? <p className="inline-feedback">진단 오류: {diagnosticsError}</p> : null}
@@ -195,6 +180,38 @@ export function CollabBoard({
                   <li>
                     <strong>보조 원인</strong>:{" "}
                     {secondaryFailureDisplay.length > 0 ? secondaryFailureDisplay.slice(0, 3).join(", ") : "-"}
+                  </li>
+                  <li>
+                    <strong>Quality</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.quality?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.quality.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Gameplay</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.gameplay?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.gameplay.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Visual</strong>:{" "}
+                    {typeof diagnostics?.quality_snapshot?.visual?.ok === "boolean"
+                      ? diagnostics.quality_snapshot.visual.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
+                  </li>
+                  <li>
+                    <strong>Intent</strong>:{" "}
+                    {typeof diagnostics?.intent_snapshot?.ok === "boolean"
+                      ? diagnostics.intent_snapshot.ok
+                        ? "PASS"
+                        : "FAIL"
+                      : "-"}
                   </li>
                 </ul>
                 {failureGroupsHuman.length > 0 ? (
@@ -233,134 +250,6 @@ export function CollabBoard({
                   </details>
                 )}
               </article>
-
-              <article className="surface ops-collab-v2-card">
-                <header className="section-head compact">
-                  <h4 className="section-title">품질 게이트 스냅샷</h4>
-                </header>
-                <ul className="bullet-list compact">
-                  <li>
-                    <strong>Quality</strong>:{" "}
-                    {typeof diagnostics?.quality_snapshot?.quality?.ok === "boolean"
-                      ? diagnostics.quality_snapshot.quality.ok
-                        ? "PASS"
-                        : "FAIL"
-                      : "-"}
-                  </li>
-                  <li>
-                    <strong>Gameplay</strong>:{" "}
-                    {typeof diagnostics?.quality_snapshot?.gameplay?.ok === "boolean"
-                      ? diagnostics.quality_snapshot.gameplay.ok
-                        ? "PASS"
-                        : "FAIL"
-                      : "-"}
-                  </li>
-                  <li>
-                    <strong>Visual</strong>:{" "}
-                    {typeof diagnostics?.quality_snapshot?.visual?.ok === "boolean"
-                      ? diagnostics.quality_snapshot.visual.ok
-                        ? "PASS"
-                        : "FAIL"
-                      : "-"}
-                  </li>
-                  <li>
-                    <strong>Intent</strong>:{" "}
-                    {typeof diagnostics?.intent_snapshot?.ok === "boolean"
-                      ? diagnostics.intent_snapshot.ok
-                        ? "PASS"
-                        : "FAIL"
-                      : "-"}
-                  </li>
-                </ul>
-              </article>
-
-              <article className="surface ops-collab-v2-card">
-                <header className="section-head compact">
-                  <h4 className="section-title">{selectedAgent.role} 제어</h4>
-                </header>
-                <div className="ops-workbench-actions">
-                  <button
-                    className="button button-ghost"
-                    type="button"
-                    title={!controlAvailability.pause.enabled ? controlAvailability.pause.reason : undefined}
-                    onClick={() => void runControl("pause")}
-                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.pause.enabled}
-                  >
-                    일시정지
-                  </button>
-                  <button
-                    className="button button-primary"
-                    type="button"
-                    title={!controlAvailability.resume.enabled ? controlAvailability.resume.reason : undefined}
-                    onClick={() => void runControl("resume")}
-                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.resume.enabled}
-                  >
-                    재개
-                  </button>
-                  <button
-                    className="button button-danger"
-                    type="button"
-                    title={!controlAvailability.cancel.enabled ? controlAvailability.cancel.reason : undefined}
-                    onClick={() => void runControl("cancel")}
-                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.cancel.enabled}
-                  >
-                    중단
-                  </button>
-                  <button
-                    className="button button-ghost"
-                    type="button"
-                    title={!controlAvailability.retry.enabled ? controlAvailability.retry.reason : undefined}
-                    onClick={() => void runControl("retry")}
-                    disabled={!selectedPipelineId || busyAction !== null || !controlAvailability.retry.enabled}
-                  >
-                    재시도
-                  </button>
-                </div>
-              </article>
-            </aside>
-
-            <aside className="ops-live-log">
-              <div className="section-head compact">
-                <div>
-                  <h3 className="section-title">로그</h3>
-                </div>
-                <span className="muted-text">{selectedLogs.length}개</span>
-              </div>
-
-              <ul className="ops-log-list">
-                {selectedLogs.length === 0 ? <li className="muted-text">선택된 파이프라인 로그가 없습니다.</li> : null}
-                {selectedLogs.slice(0, 26).map((log) => {
-                  const tone = statusTone(log.status);
-                  const signals = qualitySignals(log);
-                  const icon = AGENT_LAYOUT.find((item) => item.stage === log.stage)?.icon ?? "reporter";
-                  const evidence = stageEvidence(log);
-                  return (
-                    <li key={`${log.pipeline_id}-${log.id ?? log.created_at}-${log.stage}`} className={`ops-log-item tone-${tone}`}>
-                      <AgentGlyph icon={icon} tone={tone} active={log.status === "running"} />
-                      <div>
-                        <strong>{AGENT_LABELS[log.agent_name] ?? log.agent_name}</strong>
-                        <p>{compactMessage(log.message)}</p>
-                        {evidence.length > 0 ? (
-                          <div className="ops-log-evidence">
-                            {evidence.slice(0, 2).map((item) => (
-                              <span key={item}>{item}</span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {(signals.fatal > 0 || signals.warning > 0) && (
-                          <small>
-                            치명 {signals.fatal} · 경고 {signals.warning}
-                          </small>
-                        )}
-                      </div>
-                      <div className="ops-log-item-meta">
-                        <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[log.status]}</span>
-                        <time>{new Date(log.created_at).toLocaleTimeString()}</time>
-                      </div>
-                    </li>
-                  );
-                })}
-              </ul>
             </aside>
           </div>
         </div>

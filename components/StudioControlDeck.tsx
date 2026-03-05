@@ -4,7 +4,6 @@ import { useEffect, useRef, useState } from "react";
 
 import { CollabBoard } from "@/components/studio-control-deck/CollabBoard";
 import { CommandHead } from "@/components/studio-control-deck/CommandHead";
-import { MobileActivityPane } from "@/components/studio-control-deck/MobileActivityPane";
 import { UtilityShell } from "@/components/studio-control-deck/UtilityShell";
 import {
   AGENT_LAYOUT,
@@ -137,9 +136,6 @@ export function StudioControlDeck({
         feedback={feedback}
         mobileTab={mobileTab}
         setMobileTab={setMobileTab}
-        controlAvailability={controlAvailability}
-        busyAction={busyAction}
-        runControl={runControl}
         pipelineLookupRef={pipelineLookupRef}
         setPipelineLookupRef={setPipelineLookupRef}
         diagnosticsLoading={diagnosticsLoading}
@@ -168,8 +164,6 @@ export function StudioControlDeck({
         collabRoomV2Enabled={collabRoomV2Enabled}
       />
 
-      <MobileActivityPane mobileTab={mobileTab} selectedLogs={selectedLogs} />
-
       <UtilityShell
         mobileTab={mobileTab}
         previewMode={previewMode}
@@ -179,6 +173,9 @@ export function StudioControlDeck({
         setFeedback={setFeedback}
         recentFailures={recentFailures}
         pipelineSummary={pipelineSummary}
+        controlAvailability={controlAvailability}
+        busyAction={busyAction}
+        runControl={runControl}
       />
     </section>
   );

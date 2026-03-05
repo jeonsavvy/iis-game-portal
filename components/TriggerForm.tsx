@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, ReactNode, useEffect, useState } from "react";
 import { sanitizeTriggerKeyword } from "@/lib/text/trigger-keyword";
 
 type TriggerHistoryItem = {
@@ -63,9 +63,11 @@ function statusLabel(value: string): string {
 export function TriggerForm({
   onTriggered,
   className,
+  controlPanel,
 }: {
   onTriggered?: (item: TriggerHistoryItem) => void;
   className?: string;
+  controlPanel?: ReactNode;
 } = {}) {
   const [keyword, setKeyword] = useState("");
   const [pipelineVersion, setPipelineVersion] = useState("forgeflow-v1");
@@ -148,7 +150,7 @@ export function TriggerForm({
     <section className={`surface form-panel${className ? ` ${className}` : ""}`}>
       <div className="section-head compact">
         <div>
-          <h3 className="section-title">실행</h3>
+          <h3 className="section-title">직접 제어</h3>
         </div>
       </div>
 
@@ -178,6 +180,7 @@ export function TriggerForm({
         </button>
       </form>
       {status ? <p className="inline-feedback">{status}</p> : null}
+      {controlPanel ?? null}
 
       {/* history logic removed based on user feedback to prevent static status confusion */}
     </section>

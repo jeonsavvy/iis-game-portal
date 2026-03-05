@@ -3,14 +3,12 @@
 import Image from "next/image";
 
 import {
-  CONTROL_LABELS,
   MOBILE_TABS,
   STAGE_LABELS,
   STATUS_LABELS,
 } from "@/components/studio-control-deck/config";
 import { compactMessage } from "@/components/studio-control-deck/utils";
 import type {
-  PipelineControlAction,
   PipelineLog,
   PipelineStatus,
   PipelineSummary,
@@ -28,15 +26,6 @@ type CommandHeadProps = {
   feedback: string;
   mobileTab: MobileTabKey;
   setMobileTab: (tab: MobileTabKey) => void;
-  controlAvailability: Record<
-    PipelineControlAction,
-    {
-      enabled: boolean;
-      reason: string;
-    }
-  >;
-  busyAction: PipelineControlAction | null;
-  runControl: (action: PipelineControlAction) => Promise<void>;
   pipelineLookupRef: string;
   setPipelineLookupRef: (value: string) => void;
   diagnosticsLoading: boolean;
@@ -55,9 +44,6 @@ export function CommandHead({
   feedback,
   mobileTab,
   setMobileTab,
-  controlAvailability,
-  busyAction,
-  runControl,
   pipelineLookupRef,
   setPipelineLookupRef,
   diagnosticsLoading,
@@ -106,20 +92,6 @@ export function CommandHead({
           </label>
         </div>
 
-        <div className="ops-command-buttons">
-          {(["pause", "resume", "cancel", "retry"] as PipelineControlAction[]).map((action) => (
-            <button
-              key={action}
-              className={`button ${action === "cancel" ? "button-danger" : action === "resume" ? "button-primary" : "button-ghost"}`}
-              type="button"
-              title={!controlAvailability[action].enabled ? controlAvailability[action].reason : undefined}
-              disabled={!selectedPipelineId || busyAction !== null || !controlAvailability[action].enabled}
-              onClick={() => void runControl(action)}
-            >
-              {busyAction === action ? `${CONTROL_LABELS[action]}...` : CONTROL_LABELS[action]}
-            </button>
-          ))}
-        </div>
       </div>
 
       {pipelineLookupRef.trim() ? (
