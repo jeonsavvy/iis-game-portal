@@ -44,6 +44,7 @@ function renderAdminSurface({
         <div className="console-hero-copy">
           <h1 className="hero-title">운영실</h1>
           <p className="muted-text">권한: {roleLabel} · {identityLabel}</p>
+          <p className="muted-text">에이전트A와 에이전트B가 게임을 함께 제작 중</p>
           {previewMode ? <p className="muted-text">프리뷰 모드: 실서버 호출 없이 샘플 데이터로 협업 인터페이스를 검수합니다.</p> : null}
         </div>
         <div className="console-hero-actions">

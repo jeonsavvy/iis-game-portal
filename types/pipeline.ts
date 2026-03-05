@@ -227,7 +227,7 @@ export type PipelineControlResponse = {
 };
 
 export type FailureReasonGroup = {
-  category: "visual" | "gameplay" | "runtime" | "intent" | "system" | "other";
+  category: "visual" | "gameplay" | "runtime" | "intent" | "quality" | "codegen" | "system" | "other";
   reasons: string[];
 };
 
@@ -241,6 +241,7 @@ export type AgentThreadEvent = {
   reason: string | null;
   created_at: string;
   tags?: string[];
+  display_text?: string;
 };
 
 export type HandoffEvent = {
@@ -258,8 +259,11 @@ export type PipelineDiagnosticsResponse = {
   status: PipelineStatus;
   error_reason: string | null;
   primary_failure_reason: string | null;
+  primary_failure_reason_human?: string | null;
   secondary_reasons: string[];
+  secondary_reasons_human?: string[];
   failure_reason_groups: FailureReasonGroup[];
+  failure_reason_groups_human?: Array<{ category: FailureReasonGroup["category"]; reasons: string[] }>;
   stage_failure_map: Partial<Record<PipelineStage | "done", string[]>>;
   quality_snapshot: {
     quality?: QualityGateDetail;

@@ -1,5 +1,6 @@
 "use client";
 
+import { AgentGlyph } from "@/components/studio-control-deck/AgentGlyph";
 import { STATUS_LABELS, STAGE_LABELS } from "@/components/studio-control-deck/config";
 import { compactMessage, statusTone } from "@/components/studio-control-deck/utils";
 import type { AgentThreadEvent, PipelineStage } from "@/types/pipeline";
@@ -24,17 +25,21 @@ export function AgentCollabRoom({ thread, selectedStage, onSelectStage }: AgentC
   return (
     <section className="surface ops-collab-v2-room">
       <header className="ops-collab-v2-head">
-        <h3 className="section-title">A/B 협업 대화실</h3>
+        <h3 className="section-title">에이전트 듀오 대화</h3>
+        <span className="muted-text">함께 작업중</span>
       </header>
 
       <div className="ops-collab-v2-lanes">
         <article className="ops-collab-v2-lane">
           <header>
-            <strong>A 생성기</strong>
-            <span className="muted-text">분석 → 기획 → 디자인 → 개발</span>
+            <strong className="ops-lane-title">
+              <AgentGlyph icon="analyzer" tone="running" active={true} />
+              에이전트A
+            </strong>
+            <span className="muted-text">아이디어·씬·플레이를 만드는 중</span>
           </header>
           <ul>
-            {laneA.length === 0 ? <li className="muted-text">A lane 로그가 없습니다.</li> : null}
+            {laneA.length === 0 ? <li className="muted-text">에이전트A 대화가 아직 없습니다.</li> : null}
             {laneA.map((event) => {
               const tone = statusTone(event.status);
               const selectable = event.stage !== "done";
@@ -54,7 +59,7 @@ export function AgentCollabRoom({ thread, selectedStage, onSelectStage }: AgentC
                       <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[event.status]}</span>
                     </div>
                     <p>{compactMessage(event.message)}</p>
-                    {event.reason ? <small>reason: {event.reason}</small> : null}
+                    {event.display_text ? <small>포인트: {event.display_text}</small> : event.reason ? <small>포인트: {event.reason}</small> : null}
                   </button>
                 </li>
               );
@@ -64,11 +69,14 @@ export function AgentCollabRoom({ thread, selectedStage, onSelectStage }: AgentC
 
         <article className="ops-collab-v2-lane">
           <header>
-            <strong>B 검증·출시</strong>
-            <span className="muted-text">QA 런타임 → QA 품질 → 배포 → 기록</span>
+            <strong className="ops-lane-title">
+              <AgentGlyph icon="qaRuntime" tone="running" active={true} />
+              에이전트B
+            </strong>
+            <span className="muted-text">플레이 체감·완성도를 다듬는 중</span>
           </header>
           <ul>
-            {laneB.length === 0 ? <li className="muted-text">B lane 로그가 없습니다.</li> : null}
+            {laneB.length === 0 ? <li className="muted-text">에이전트B 대화가 아직 없습니다.</li> : null}
             {laneB.map((event) => {
               const tone = statusTone(event.status);
               const selectable = event.stage !== "done";
@@ -88,7 +96,7 @@ export function AgentCollabRoom({ thread, selectedStage, onSelectStage }: AgentC
                       <span className={`status-chip tone-${tone}`}>{STATUS_LABELS[event.status]}</span>
                     </div>
                     <p>{compactMessage(event.message)}</p>
-                    {event.reason ? <small>reason: {event.reason}</small> : null}
+                    {event.display_text ? <small>포인트: {event.display_text}</small> : event.reason ? <small>포인트: {event.reason}</small> : null}
                   </button>
                 </li>
               );

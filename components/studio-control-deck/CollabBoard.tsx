@@ -80,7 +80,24 @@ export function CollabBoard({
     return message.includes("2-agent") || message.includes("dual_agent_synth");
   });
   const failureGroups = diagnostics?.failure_reason_groups ?? [];
+  const failureGroupsHuman = diagnostics?.failure_reason_groups_human ?? [];
+  const failureCategoryLabel: Record<string, string> = {
+    visual: "시각",
+    gameplay: "게임플레이",
+    runtime: "런타임",
+    intent: "의도",
+    quality: "품질",
+    codegen: "코드 생성",
+    system: "시스템",
+    other: "기타",
+  };
   const stageFailures = diagnostics?.stage_failure_map ? Object.entries(diagnostics.stage_failure_map).slice(0, 6) : [];
+  const primaryFailureDisplay =
+    diagnostics?.primary_failure_reason_human ?? diagnostics?.primary_failure_reason ?? summarizedReason ?? "-";
+  const secondaryFailureDisplay =
+    diagnostics?.secondary_reasons_human && diagnostics.secondary_reasons_human.length > 0
+      ? diagnostics.secondary_reasons_human
+      : diagnostics?.secondary_reasons ?? [];
   const fallbackThread = [...selectedLogs]
     .sort((a, b) => a.created_at.localeCompare(b.created_at))
     .map((log) => {
@@ -125,7 +142,8 @@ export function CollabBoard({
           <header className="ops-collab-v2-header">
             <div className="section-head compact">
               <div>
-                <h3 className="section-title">A/B 협업실</h3>
+                <h3 className="section-title">에이전트 듀오 스테이지</h3>
+                <p className="muted-text">에이전트A와 에이전트B가 게임 완성도를 함께 끌어올리고 있어요.</p>
               </div>
               <div className="ops-counters">
                 <span>
@@ -148,12 +166,10 @@ export function CollabBoard({
             </div>
             <div className="ops-context-tags">
               <span className={`status-chip tone-${dualAgentModeDetected ? "success" : "warn"}`}>
-                {dualAgentModeDetected ? "Dual On" : "Legacy"}
+                {dualAgentModeDetected ? "함께 작업중" : "준비중"}
               </span>
-              {pipelineLookupRef.trim() ? <span className="terminal-tag subtle">lookup {pipelineLookupRef.trim()}</span> : null}
-              <span className="terminal-tag subtle">
-                reason {diagnostics?.primary_failure_reason ?? summarizedReason ?? "-"}
-              </span>
+              {pipelineLookupRef.trim() ? <span className="terminal-tag subtle">찾기 {pipelineLookupRef.trim()}</span> : null}
+              <span className="terminal-tag subtle">이슈 {compactReason(primaryFailureDisplay, 44) ?? "-"}</span>
             </div>
           </header>
 
@@ -166,7 +182,7 @@ export function CollabBoard({
             <aside className="ops-collab-v2-side">
               <article className="surface ops-collab-v2-card">
                 <header className="section-head compact">
-                  <h4 className="section-title">자동 실패 분석</h4>
+                  <h4 className="section-title">이번 실패 요약</h4>
                 </header>
                 {diagnosticsLoading ? <p className="muted-text">진단 조회중...</p> : null}
                 {diagnosticsError ? <p className="inline-feedback">진단 오류: {diagnosticsError}</p> : null}
@@ -175,29 +191,53 @@ export function CollabBoard({
                 ) : null}
                 <ul className="bullet-list compact">
                   <li>
-                    <strong>1차 원인</strong>: {diagnostics?.primary_failure_reason ?? "-"}
+                    <strong>핵심 원인</strong>: {primaryFailureDisplay}
                   </li>
                   <li>
-                    <strong>2차 원인</strong>:{" "}
-                    {diagnostics?.secondary_reasons && diagnostics.secondary_reasons.length > 0
-                      ? diagnostics.secondary_reasons.slice(0, 3).join(", ")
-                      : "-"}
+                    <strong>보조 원인</strong>:{" "}
+                    {secondaryFailureDisplay.length > 0 ? secondaryFailureDisplay.slice(0, 3).join(", ") : "-"}
                   </li>
                 </ul>
-                {failureGroups.length > 0 ? (
+                {failureGroupsHuman.length > 0 ? (
                   <ul className="bullet-list compact">
-                    {failureGroups.slice(0, 4).map((group) => (
+                    {failureGroupsHuman.slice(0, 4).map((group) => (
                       <li key={group.category}>
-                        <strong>{group.category}</strong>: {group.reasons.slice(0, 2).join(", ")}
+                        <strong>{failureCategoryLabel[group.category] ?? group.category}</strong>: {group.reasons.slice(0, 2).join(", ")}
                       </li>
                     ))}
                   </ul>
                 ) : null}
+                {(failureGroups.length > 0 || stageFailures.length > 0) && (
+                  <details className="ops-debug-details">
+                    <summary>상세 보기</summary>
+                    {failureGroups.length > 0 ? (
+                      <ul className="bullet-list compact">
+                        {failureGroups.slice(0, 5).map((group) => (
+                          <li key={`raw-${group.category}`}>
+                            <strong>{group.category}</strong>: {group.reasons.slice(0, 3).join(", ")}
+                          </li>
+                        ))}
+                      </ul>
+                    ) : null}
+                    {stageFailures.length > 0 ? (
+                      <>
+                        <p className="muted-text">단계별 원인</p>
+                        <ul className="bullet-list compact">
+                          {stageFailures.map(([stage, reasons]) => (
+                            <li key={stage}>
+                              <strong>{stage}</strong>: {Array.isArray(reasons) ? reasons.slice(0, 2).join(", ") : "-"}
+                            </li>
+                          ))}
+                        </ul>
+                      </>
+                    ) : null}
+                  </details>
+                )}
               </article>
 
               <article className="surface ops-collab-v2-card">
                 <header className="section-head compact">
-                  <h4 className="section-title">Gate 스냅샷</h4>
+                  <h4 className="section-title">품질 게이트 스냅샷</h4>
                 </header>
                 <ul className="bullet-list compact">
                   <li>
@@ -233,18 +273,6 @@ export function CollabBoard({
                       : "-"}
                   </li>
                 </ul>
-                {stageFailures.length > 0 ? (
-                  <>
-                    <p className="muted-text">Stage 차단 맵</p>
-                    <ul className="bullet-list compact">
-                      {stageFailures.map(([stage, reasons]) => (
-                        <li key={stage}>
-                          <strong>{stage}</strong>: {Array.isArray(reasons) ? reasons.slice(0, 2).join(", ") : "-"}
-                        </li>
-                      ))}
-                    </ul>
-                  </>
-                ) : null}
               </article>
 
               <article className="surface ops-collab-v2-card">
@@ -369,11 +397,11 @@ export function CollabBoard({
             </div>
           </div>
 
-          <div className="ops-dual-agent-strip" aria-label="2-agent collaboration status">
+          <div className="ops-dual-agent-strip" aria-label="agent duo collaboration status">
             <header className="ops-dual-agent-strip-head">
-              <strong>2-Agent 협업실</strong>
+              <strong>듀오 협업 상태</strong>
               <span className={`status-chip tone-${dualAgentModeDetected ? "success" : "warn"}`}>
-                {dualAgentModeDetected ? "Dual On" : "Legacy"}
+                {dualAgentModeDetected ? "함께 작업중" : "준비중"}
               </span>
             </header>
             {dualAgentSummaries.map((agent) => {

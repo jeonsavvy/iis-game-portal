@@ -69,7 +69,8 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <h3 className="section-title">자동 제작</h3>
+          <h3 className="section-title">에이전트 듀오 작업대</h3>
+          <p className="muted-text">에이전트A와 에이전트B가 함께 작업중</p>
         </div>
         <Image src="/assets/admin/stage-queue.svg" width={28} height={28} alt="" aria-hidden="true" />
         <div className="ops-status-strip">
@@ -124,14 +125,14 @@ export function CommandHead({
 
       {pipelineLookupRef.trim() ? (
         <div className="ops-context-tags">
-          {diagnosticsLoading ? <span className="terminal-tag subtle">진단 조회중...</span> : null}
+          {diagnosticsLoading ? <span className="terminal-tag subtle">실패 원인 확인중...</span> : null}
           {diagnosticsResolvedPipelineId ? (
-            <span className="terminal-tag subtle">resolved: {diagnosticsResolvedPipelineId.slice(0, 12)}</span>
+            <span className="terminal-tag subtle">확정 ID: {diagnosticsResolvedPipelineId.slice(0, 12)}</span>
           ) : null}
           {diagnosticsCandidates.length > 0 ? (
-            <span className="terminal-tag subtle">ambiguous: {diagnosticsCandidates.map((id) => id.slice(0, 12)).join(", ")}</span>
+            <span className="terminal-tag subtle">후보: {diagnosticsCandidates.map((id) => id.slice(0, 12)).join(", ")}</span>
           ) : null}
-          {diagnosticsError ? <span className="terminal-tag subtle">diagnostics: {diagnosticsError}</span> : null}
+          {diagnosticsError ? <span className="terminal-tag subtle">진단 오류: {diagnosticsError}</span> : null}
         </div>
       ) : null}
 

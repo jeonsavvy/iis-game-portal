@@ -28,10 +28,13 @@ test("운영실이 에이전트/상세/로그 구조를 노출한다", async ({ 
   await page.goto("/admin");
 
   await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "자동 제작" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "A/B 협업실" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "에이전트 듀오 작업대" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "에이전트 듀오 스테이지" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "로그" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "실행", exact: true })).toBeVisible();
+  await expect(page.getByText("자동 제작")).toHaveCount(0);
+  await expect(page.getByText("A/B 협업실")).toHaveCount(0);
+  await expect(page.getByText("Dual On")).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "게임 완전 삭제 (DB · 스토리지 · 아카이브)" })).toBeVisible();
   await expect(page.getByText("프리뷰 모드: 이 화면은 위험 액션 UX 점검용이며 실제 삭제 요청은 차단됩니다.")).toBeVisible();
   await expect(page.getByRole("button", { name: "완전 삭제 실행" })).toBeDisabled();

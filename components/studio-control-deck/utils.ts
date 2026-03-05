@@ -37,7 +37,13 @@ export function statusTone(status: PipelineStatus | null): "success" | "error" |
 export function compactMessage(message?: string | null): string {
   if (!message) return "대기중";
   const normalized = message.replace(/\s+/g, " ").trim();
-  const lowered = normalized.toLowerCase();
+  const friendly = normalized
+    .replace(/\b2-agent mode\b/gi, "에이전트 듀오")
+    .replace(/\bdual_agent_synth\b/gi, "듀오 합성")
+    .replace(/\bA 생성기\b/g, "에이전트A")
+    .replace(/\bB 검증·출시\b/g, "에이전트B");
+  const text = friendly.trim();
+  const lowered = text.toLowerCase();
   if (lowered.includes("candidate") && lowered.includes("evaluated")) return "후보 검토";
   if (lowered.includes("generation started")) return "생성 시작";
   if (lowered.includes("artifact selected")) return "후보 확정";
@@ -47,8 +53,8 @@ export function compactMessage(message?: string | null): string {
   if (lowered.includes("quality qa")) return "품질 점검";
   if (lowered.includes("published") || lowered.includes("archive sync")) return "배포 반영";
   if (lowered.includes("pipeline finished")) return "파이프라인 완료";
-  if (normalized.length <= 86) return normalized;
-  return `${normalized.slice(0, 86)}…`;
+  if (text.length <= 86) return text;
+  return `${text.slice(0, 86)}…`;
 }
 
 export function compactReason(reason?: string | null, maxLength = 92): string | null {
@@ -149,8 +155,8 @@ export function deriveDualAgentSummaries(latestStageMap: Map<PipelineLog["stage"
   };
 
   return [
-    withSignals({ id: "creator", label: "A 생성기", stages: CREATOR_STAGES }),
-    withSignals({ id: "operator", label: "B 검증·출시", stages: OPERATOR_STAGES }),
+    withSignals({ id: "creator", label: "에이전트A", stages: CREATOR_STAGES }),
+    withSignals({ id: "operator", label: "에이전트B", stages: OPERATOR_STAGES }),
   ];
 }
 

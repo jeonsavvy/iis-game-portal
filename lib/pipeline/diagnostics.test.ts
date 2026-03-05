@@ -100,4 +100,33 @@ describe("pipeline diagnostics", () => {
     expect(report.agent_thread[1]?.lane).toBe("B");
     expect(report.handoff_events.length).toBeGreaterThan(0);
   });
+
+  it("maps checklist reasons into visual/runtime categories with humanized copy", () => {
+    const logs: PipelineLog[] = [
+      buildLog({
+        stage: "build",
+        status: "error",
+        reason: "builder_quality_floor_unmet",
+        metadata: {
+          blocking_reasons: ["generation_checklist_unmet", "other:checklist:visual_contrast", "checklist:input_reaction"],
+        },
+        created_at: "2026-03-04T10:12:00Z",
+      }),
+    ];
+
+    const report = buildPipelineDiagnostics({
+      resolvedPipelineId: "p-2",
+      status: "error",
+      errorReason: "builder_quality_floor_unmet",
+      logs,
+    });
+
+    expect(report.failure_reason_groups.find((row) => row.category === "visual")?.reasons).toEqual(
+      expect.arrayContaining(["checklist:visual_contrast"]),
+    );
+    expect(report.failure_reason_groups.find((row) => row.category === "runtime")?.reasons).toEqual(
+      expect.arrayContaining(["checklist:input_reaction"]),
+    );
+    expect(report.secondary_reasons_human ?? []).toEqual(expect.arrayContaining(["시각 대비 체크 미통과"]));
+  });
 });
