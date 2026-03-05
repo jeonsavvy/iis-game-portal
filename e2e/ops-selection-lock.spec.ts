@@ -3,11 +3,11 @@ import { expect, test } from "@playwright/test";
 test("운영실은 Session Observatory 구조를 렌더링한다", async ({ page }) => {
   await page.goto("/admin");
 
-  await expect(page.getByRole("heading", { name: "Session Observatory" })).toBeVisible();
-  await expect(page.getByText("세션당 평균 refine 횟수")).toBeVisible();
-  await expect(page.getByText("QA 실패율")).toBeVisible();
-  await expect(page.getByText("Publish 성공률")).toBeVisible();
-  await expect(page.getByText("Event Timeline")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "세션 운영실" })).toBeVisible();
+  await expect(page.getByText("세션 목록")).toBeVisible();
+  await expect(page.getByText("이벤트 타임라인")).toBeVisible();
+  await expect(page.getByText("협업 수정 흐름")).toBeVisible();
+  await expect(page.getByText("퍼블리시 승인 흐름")).toBeVisible();
   await expect(page.getByText("자동 제작")).toHaveCount(0);
   await expect(page.getByText("A/B 협업실")).toHaveCount(0);
 });
