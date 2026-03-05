@@ -7,7 +7,7 @@ type GamePreviewProps = {
     title?: string;
 };
 
-export function GamePreview({ html, title = "Game Preview" }: GamePreviewProps) {
+export function GamePreview({ html, title = "게임 미리보기" }: GamePreviewProps) {
     const frameRef = useRef<HTMLIFrameElement | null>(null);
     const [loaded, setLoaded] = useState(false);
 
@@ -26,8 +26,8 @@ export function GamePreview({ html, title = "Game Preview" }: GamePreviewProps) 
             <div className="editor-preview-empty">
                 <div className="editor-preview-empty-inner">
                     <span className="editor-preview-icon">🎮</span>
-                    <h3>게임을 만들어보세요</h3>
-                    <p>왼쪽에서 프롬프트를 보내면 Codegen → Visual QA → Playtester 순서로 자동 개선합니다.</p>
+                    <h3>게임 미리보기가 여기에 표시됩니다</h3>
+                    <p>왼쪽에서 요청을 보내면 Codegen → Visual QA → Playtester가 순서대로 결과를 개선합니다.</p>
                 </div>
             </div>
         );

@@ -70,11 +70,16 @@ type ApplyFixResponse = {
 };
 
 const API_BASE = "/api/sessions";
-const CHAT_MIN_WIDTH = 300;
+const CHAT_MIN_WIDTH = 320;
 const CHAT_MAX_WIDTH = 560;
-const LOG_MIN_WIDTH = 320;
+const LOG_MIN_WIDTH = 360;
 const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
+const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
+  gameplay: "게임플레이",
+  visual: "비주얼",
+  runtime: "런타임",
+};
 
 let msgCounter = 0;
 function makeId() {
@@ -161,7 +166,7 @@ export function EditorWorkspace() {
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
   const [chatWidth, setChatWidth] = useState(360);
-  const [logWidth, setLogWidth] = useState(360);
+  const [logWidth, setLogWidth] = useState(390);
   const [isDesktop, setIsDesktop] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
@@ -402,7 +407,7 @@ export function EditorWorkspace() {
                       {
                         id: makeId(),
                         role: "system",
-                        content: `🗺️ plan-draft(${planPayload.mode ?? "unknown"}): ${planPayload.summary}${checklist ? ` · ${checklist}` : ""}`,
+                        content: `🗺️ 기획 초안(${planPayload.mode ?? "unknown"}): ${planPayload.summary}${checklist ? ` · ${checklist}` : ""}`,
                         timestamp: Date.now(),
                       },
                     ],
@@ -438,7 +443,7 @@ export function EditorWorkspace() {
                   {
                     id: makeId(),
                     role: "system",
-                    content: `⏳ Run queued: ${queuedRunId}`,
+                    content: `⏳ 실행 대기열 등록: ${queuedRunId}`,
                     timestamp: Date.now(),
                   },
                 ],
@@ -474,11 +479,11 @@ export function EditorWorkspace() {
                 ...activityMessages,
                 {
                   id: makeId(),
-                  role: "assistant",
-                  content: `✅ Run 완료 (점수: ${score}/100)`,
-                  timestamp: Date.now(),
-                },
-              ],
+                    role: "assistant",
+                    content: `✅ 실행 완료 (점수: ${score}/100)`,
+                    timestamp: Date.now(),
+                  },
+                ],
               activities: runResult.activities ?? prev.activities,
             };
           });
@@ -501,7 +506,7 @@ export function EditorWorkspace() {
                   {
                     id: makeId(),
                     role: "system",
-                    content: `⚠️ Run 실패: ${failure}`,
+                    content: `⚠️ 실행 실패: ${failure}`,
                     timestamp: Date.now(),
                   },
                 ],
@@ -530,13 +535,13 @@ export function EditorWorkspace() {
             messages: [
               ...prev.messages,
               ...diagnosticMessages,
-              {
-                id: makeId(),
-                role: "system",
-                content: `⚠️ ${msg}`,
-                timestamp: Date.now(),
-              },
-            ],
+                  {
+                    id: makeId(),
+                    role: "system",
+                    content: `⚠️ 코어 엔진 응답 오류: ${msg}`,
+                    timestamp: Date.now(),
+                  },
+                ],
             activities: nextActivities.length > 0 ? nextActivities : prev.activities,
           };
         });
@@ -585,7 +590,7 @@ export function EditorWorkspace() {
                 {
                   id: makeId(),
                   role: "system",
-                  content: `🧩 이슈 등록 완료 (${issueCategory}) · issue_id=${payload.issue_id}`,
+                  content: `🧩 이슈 등록 완료 (${ISSUE_CATEGORY_LABELS[issueCategory]}) · issue_id=${payload.issue_id}`,
                   timestamp: Date.now(),
                 },
               ],
@@ -761,7 +766,7 @@ export function EditorWorkspace() {
 
   const handleRerunQa = useCallback(() => {
     if (!session?.id || isGenerating) return;
-    void handleSend("현재 게임 플레이는 유지하고 품질 이슈만 재검토해서 개선해줘.");
+    void handleSend("현재 게임 플레이는 유지하고 품질 이슈만 다시 검사해서 개선해줘.");
   }, [handleSend, isGenerating, session?.id]);
 
   const handleRestorePrevious = useCallback(() => {
@@ -786,12 +791,12 @@ export function EditorWorkspace() {
   return (
     <div className="editor-layout">
       <header className="editor-header">
-        <h2>🕹 Session Editor</h2>
+        <h2>🕹 세션 에디터</h2>
         <div className="editor-header-actions">
-          <span className="editor-loop-badge">Codegen · Visual QA · Playtester</span>
-          {session?.score ? <span className="editor-score">점수: {session.score}/100</span> : null}
+          <span className="editor-loop-badge">Codegen · Visual QA · Playtester 루프</span>
+          {session?.score ? <span className="editor-score">품질 점수: {session.score}/100</span> : null}
           <button type="button" className="button button-ghost" disabled={!session?.id || isGenerating} onClick={handleApprovePublish}>
-            ✅ 승인
+            ✅ 퍼블리시 승인
           </button>
           <button
             type="button"

@@ -112,9 +112,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
                 지금 플레이
               </Link>
             ) : (
-              <Link className="button button-ghost" href="/admin">
-                운영실 이동
-              </Link>
+              <p className="arcade-hero-hint">새 게임이 퍼블리시되면 이 자리에서 바로 플레이할 수 있어요.</p>
             )}
           </div>
         </div>

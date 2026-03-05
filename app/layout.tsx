@@ -38,13 +38,22 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
           <div className="nav-links">
             <Link className="nav-link" href="/">
-              홈
+              <span className="nav-link-icon" aria-hidden>
+                🏠
+              </span>
+              <span className="nav-link-text">홈</span>
             </Link>
             <Link className="nav-link" href="/editor">
-              🛠️ 에디터
+              <span className="nav-link-icon" aria-hidden>
+                🛠️
+              </span>
+              <span className="nav-link-text">에디터</span>
             </Link>
             <Link className="nav-link" href="/admin">
-              운영실
+              <span className="nav-link-icon" aria-hidden>
+                🛰️
+              </span>
+              <span className="nav-link-text">운영실</span>
             </Link>
           </div>
         </nav>

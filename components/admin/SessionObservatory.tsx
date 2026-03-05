@@ -41,16 +41,58 @@ type SessionListResponse = {
   sessions: SessionSummary[];
 };
 
-type SessionMetric = {
-  refineCount: number;
-  qaFailCount: number;
-  qaTotal: number;
-  modelErrorCount: number;
-  eventCount: number;
-  runTotal: number;
-  runFailCount: number;
-  engineAuditCount: number;
-  engineDriftCount: number;
+type SessionObservatoryProps = {
+  previewMode?: boolean;
+};
+
+const SESSION_STATUS_LABELS: Record<string, string> = {
+  active: "작업 중",
+  published: "퍼블리시 완료",
+  cancelled: "취소됨",
+  failed: "실패",
+  idle: "대기",
+};
+
+const RUN_STATUS_LABELS: Record<string, string> = {
+  idle: "대기",
+  queued: "대기열",
+  running: "실행 중",
+  succeeded: "완료",
+  failed: "실패",
+  cancelled: "취소됨",
+};
+
+const AGENT_LABELS: Record<string, string> = {
+  codegen: "코드젠",
+  visual_qa: "비주얼 QA",
+  playtester: "플레이테스터",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  generate: "생성",
+  modify: "수정",
+  evaluate: "평가",
+  test: "테스트",
+  refine: "개선",
+  run: "실행",
+  publish: "퍼블리시",
+  create: "생성",
+  approve: "승인",
+  audit: "감사",
+};
+
+const EVENT_LABELS: Record<string, string> = {
+  issue_reported: "이슈 등록",
+  fix_proposed: "수정안 제안",
+  fix_applied: "수정안 적용",
+  publish_blocked_unapproved: "승인 전 퍼블리시 차단",
+  publish_approved: "퍼블리시 승인",
+  publish_success: "퍼블리시 성공",
+  prompt_run_queued: "실행 대기",
+  prompt_run_started: "실행 시작",
+  prompt_run_succeeded: "실행 성공",
+  prompt_run_failed: "실행 실패",
+  prompt_run_cancelled: "실행 취소",
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -61,15 +103,6 @@ async function fetchJson<T>(url: string): Promise<T> {
     throw new Error(typeof row.error === "string" ? row.error : "요청 실패");
   }
   return payload as T;
-}
-
-function isEngineDrift(event: SessionEvent): boolean {
-  if (event.event_type !== "engine_audit") return false;
-  const metadata = event.metadata ?? {};
-  const compliance = metadata.compliance;
-  if (compliance === false) return true;
-  const detected = typeof metadata.detected_engine === "string" ? metadata.detected_engine : "";
-  return detected === "unknown";
 }
 
 function latestRunStatus(events: SessionEvent[]): string {
@@ -86,41 +119,38 @@ function latestRunStatus(events: SessionEvent[]): string {
   return "queued";
 }
 
-function buildMetrics(events: SessionEvent[]): SessionMetric {
-  const refineCount = events.filter((event) => event.action === "refine").length;
-  const qaEvents = events.filter((event) => event.agent === "visual_qa" || event.agent === "playtester");
-  const qaFailCount = qaEvents.filter((event) => {
-    const impact = (event.change_impact || "").toLowerCase();
-    return impact.includes("issue") || impact.includes("failed") || impact.includes("below");
-  }).length;
-  const modelErrorCount = events.filter((event) => Boolean(event.error_code)).length;
-  const runTotal = events.filter((event) => event.event_type.startsWith("prompt_run_")).length;
-  const runFailCount = events.filter((event) => event.event_type === "prompt_run_failed").length;
-  const engineAuditCount = events.filter((event) => event.event_type === "engine_audit").length;
-  const engineDriftCount = events.filter((event) => isEngineDrift(event)).length;
-
-  return {
-    refineCount,
-    qaFailCount,
-    qaTotal: qaEvents.length,
-    modelErrorCount,
-    eventCount: events.length,
-    runTotal,
-    runFailCount,
-    engineAuditCount,
-    engineDriftCount,
-  };
+function labelForStatus(status: string): string {
+  return SESSION_STATUS_LABELS[status] ?? status;
 }
 
-type SessionObservatoryProps = {
-  previewMode?: boolean;
-};
+function labelForRunStatus(status: string): string {
+  return RUN_STATUS_LABELS[status] ?? status;
+}
+
+function labelForAgent(agent: string | null | undefined, eventType: string): string {
+  if (agent) return AGENT_LABELS[agent] ?? agent;
+  return EVENT_LABELS[eventType] ?? eventType;
+}
+
+function labelForAction(action: string | null | undefined): string {
+  if (!action) return "이벤트";
+  return ACTION_LABELS[action] ?? action;
+}
+
+function labelForEvent(eventType: string): string {
+  return EVENT_LABELS[eventType] ?? eventType;
+}
+
+function formatDateTime(value: string): string {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return value;
+  return parsed.toLocaleString("ko-KR", { hour12: false });
+}
 
 export function SessionObservatory({ previewMode = false }: SessionObservatoryProps) {
   const [sessions, setSessions] = useState<SessionSummary[]>([]);
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [events, setEvents] = useState<SessionEvent[]>([]);
-  const [metricsBySession, setMetricsBySession] = useState<Record<string, SessionMetric>>({});
   const [eventsBySession, setEventsBySession] = useState<Record<string, SessionEvent[]>>({});
   const [error, setError] = useState<string>("");
 
@@ -147,11 +177,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
       const previewEventMap = Object.fromEntries(
         previewRows.map((row) => [row.session_id, (PREVIEW_SESSION_EVENTS[row.session_id] ?? []) as SessionEvent[]]),
       );
-      const previewMetrics = Object.fromEntries(
-        previewRows.map((row) => [row.session_id, buildMetrics((PREVIEW_SESSION_EVENTS[row.session_id] ?? []) as SessionEvent[])]),
-      );
       setEventsBySession(previewEventMap);
-      setMetricsBySession(previewMetrics);
       return;
     }
 
@@ -162,27 +188,24 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
       setSelectedSessionId(rows[0].session_id);
     }
 
-    const metricEntries = await Promise.all(
+    const eventEntries = await Promise.all(
       rows.slice(0, 30).map(async (session) => {
         try {
           const eventPayload = await fetchJson<SessionEventsResponse>(
             `/api/sessions/${encodeURIComponent(session.session_id)}/events?limit=140`,
           );
-          const rows = Array.isArray(eventPayload.events) ? eventPayload.events : [];
-          return [session.session_id, rows, buildMetrics(rows)] as const;
+          const eventRows = Array.isArray(eventPayload.events) ? eventPayload.events : [];
+          return [session.session_id, eventRows] as const;
         } catch {
-          return [session.session_id, [], buildMetrics([])] as const;
+          return [session.session_id, []] as const;
         }
       }),
     );
 
-    const nextMetrics: Record<string, SessionMetric> = {};
     const nextEventsMap: Record<string, SessionEvent[]> = {};
-    metricEntries.forEach(([sessionId, items, metric]) => {
-      nextMetrics[sessionId] = metric;
+    eventEntries.forEach(([sessionId, items]) => {
       nextEventsMap[sessionId] = [...items];
     });
-    setMetricsBySession(nextMetrics);
     setEventsBySession(nextEventsMap);
   }, [previewMode, selectedSessionId]);
 
@@ -267,31 +290,6 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
     return sessions.filter((session) => (statusFilter ? session.status === statusFilter : true));
   }, [sessions, statusFilter]);
 
-  const kpi = useMemo(() => {
-    const totalSessions = sessions.length;
-    const published = sessions.filter((session) => session.status === "published").length;
-
-    const metrics = Object.values(metricsBySession);
-    const refineTotal = metrics.reduce((acc, row) => acc + row.refineCount, 0);
-    const qaTotal = metrics.reduce((acc, row) => acc + row.qaTotal, 0);
-    const qaFail = metrics.reduce((acc, row) => acc + row.qaFailCount, 0);
-    const modelErr = metrics.reduce((acc, row) => acc + row.modelErrorCount, 0);
-    const eventTotal = metrics.reduce((acc, row) => acc + row.eventCount, 0);
-    const runTotal = metrics.reduce((acc, row) => acc + row.runTotal, 0);
-    const runFail = metrics.reduce((acc, row) => acc + row.runFailCount, 0);
-    const engineAuditTotal = metrics.reduce((acc, row) => acc + row.engineAuditCount, 0);
-    const engineDrift = metrics.reduce((acc, row) => acc + row.engineDriftCount, 0);
-
-    return {
-      avgRefine: totalSessions ? refineTotal / totalSessions : 0,
-      qaFailureRate: qaTotal ? (qaFail / qaTotal) * 100 : 0,
-      publishSuccessRate: totalSessions ? (published / totalSessions) * 100 : 0,
-      modelErrorRate: eventTotal ? (modelErr / eventTotal) * 100 : 0,
-      runFailureRate: runTotal ? (runFail / runTotal) * 100 : 0,
-      engineDriftRate: engineAuditTotal ? (engineDrift / engineAuditTotal) * 100 : 0,
-    };
-  }, [metricsBySession, sessions]);
-
   const runBoard = useMemo(() => {
     return visibleSessions.map((session) => {
       const items = eventsBySession[session.session_id] ?? [];
@@ -318,47 +316,15 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
   return (
     <section className="console-page observatory-page">
       <section className="surface console-hero observatory-hero">
-        <h1 className="hero-title observatory-title">🎛 Session Observatory // Retro Ops</h1>
-        <p className="muted-text observatory-subtitle">run 보드 · 승인 큐 · 엔진 드리프트 감시</p>
+        <h1 className="hero-title observatory-title">🎛️ 세션 운영실</h1>
+        <p className="muted-text observatory-subtitle">세션별 실행 상태와 에이전트 이벤트를 한 화면에서 확인합니다.</p>
         <div className="observatory-chips">
-          <span className="observatory-chip">🧠 Codegen</span>
-          <span className="observatory-chip">👁️ Visual QA</span>
-          <span className="observatory-chip">🎮 Playtester</span>
-          <span className="observatory-chip">🛡 Human Approval Gate</span>
+          <span className="observatory-chip">세션 {sessions.length}개</span>
+          {selectedSession ? <span className="observatory-chip">선택: {selectedSession.title}</span> : null}
         </div>
       </section>
 
       {error ? <section className="surface observatory-error">{error}</section> : null}
-
-      <section className="surface observatory-kpi-shell">
-        <h2 style={{ margin: 0 }}>KPI</h2>
-        <div className="observatory-kpi-grid">
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.avgRefine.toFixed(2)}</strong>
-            <p>세션당 평균 refine 횟수</p>
-          </div>
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.qaFailureRate.toFixed(1)}%</strong>
-            <p>QA 실패율</p>
-          </div>
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.publishSuccessRate.toFixed(1)}%</strong>
-            <p>Publish 성공률</p>
-          </div>
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.modelErrorRate.toFixed(1)}%</strong>
-            <p>모델 오류율</p>
-          </div>
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.runFailureRate.toFixed(1)}%</strong>
-            <p>Run 실패율</p>
-          </div>
-          <div className="card observatory-kpi-card">
-            <strong>{kpi.engineDriftRate.toFixed(1)}%</strong>
-            <p>엔진 드리프트율</p>
-          </div>
-        </div>
-      </section>
 
       <section className="surface observatory-shell">
         <div className="observatory-filter-grid">
@@ -366,45 +332,46 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
             상태
             <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="">전체</option>
-              <option value="active">active</option>
-              <option value="published">published</option>
-              <option value="cancelled">cancelled</option>
+              <option value="active">작업 중</option>
+              <option value="published">퍼블리시 완료</option>
+              <option value="cancelled">취소됨</option>
             </select>
           </label>
           <label>
-            agent
+            에이전트
             <select value={agentFilter} onChange={(event) => setAgentFilter(event.target.value)}>
               <option value="">전체</option>
-              <option value="codegen">codegen</option>
-              <option value="visual_qa">visual_qa</option>
-              <option value="playtester">playtester</option>
+              <option value="codegen">코드젠</option>
+              <option value="visual_qa">비주얼 QA</option>
+              <option value="playtester">플레이테스터</option>
             </select>
           </label>
           <label>
-            action
+            작업 단계
             <select value={actionFilter} onChange={(event) => setActionFilter(event.target.value)}>
               <option value="">전체</option>
-              <option value="generate">generate</option>
-              <option value="modify">modify</option>
-              <option value="evaluate">evaluate</option>
-              <option value="test">test</option>
-              <option value="refine">refine</option>
-              <option value="run">run</option>
-              <option value="publish">publish</option>
+              <option value="generate">생성</option>
+              <option value="modify">수정</option>
+              <option value="evaluate">평가</option>
+              <option value="test">테스트</option>
+              <option value="refine">개선</option>
+              <option value="run">실행</option>
+              <option value="publish">퍼블리시</option>
             </select>
           </label>
           <label>
-            error
+            오류 여부
             <select value={errorFilter} onChange={(event) => setErrorFilter(event.target.value)}>
               <option value="">전체</option>
-              <option value="has_error">error only</option>
-              <option value="no_error">non-error only</option>
+              <option value="has_error">오류만</option>
+              <option value="no_error">오류 제외</option>
             </select>
           </label>
         </div>
 
         <div className="observatory-main-grid">
           <div className="observatory-session-list">
+            <h3 style={{ margin: 0 }}>세션 목록</h3>
             {runBoard.map((session) => (
               <button
                 key={session.session_id}
@@ -419,11 +386,11 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
               >
                 <strong>{session.title}</strong>
                 <p style={{ margin: "4px 0 0" }}>
-                  {session.status} · score {session.score}
+                  {labelForStatus(session.status)} · 점수 {session.score}
                 </p>
                 <small>
-                  run={session.runStatus}
-                  {session.latestError ? ` · err=${session.latestError}` : ""}
+                  실행 상태: {labelForRunStatus(session.runStatus)}
+                  {session.latestError ? ` · 최근 오류: ${session.latestError}` : ""}
                 </small>
               </button>
             ))}
@@ -431,24 +398,26 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
           </div>
 
           <div className="observatory-event-list">
-            <h3 style={{ margin: 0 }}>Event Timeline {selectedSession ? `· ${selectedSession.title}` : ""}</h3>
+            <h3 style={{ margin: 0 }}>이벤트 타임라인 {selectedSession ? `· ${selectedSession.title}` : ""}</h3>
             {filteredEvents.map((event) => (
               <article key={event.id} className="card observatory-event-card">
                 <strong>
-                  [{event.agent || event.event_type}] {event.action || "-"}
+                  [{labelForAgent(event.agent, event.event_type)}] {labelForAction(event.action)}
                 </strong>
-                <small>{event.created_at}</small>
+                <small>
+                  {formatDateTime(event.created_at)} · {labelForEvent(event.event_type)}
+                </small>
                 {event.summary ? <p style={{ margin: 0 }}>{event.summary}</p> : null}
-                {event.input_signal ? <p style={{ margin: 0 }}>input: {event.input_signal}</p> : null}
-                {event.decision_reason ? <p style={{ margin: 0 }}>why: {event.decision_reason}</p> : null}
-                {event.change_impact ? <p style={{ margin: 0 }}>impact: {event.change_impact}</p> : null}
+                {event.input_signal ? <p style={{ margin: 0 }}>입력: {event.input_signal}</p> : null}
+                {event.decision_reason ? <p style={{ margin: 0 }}>판단 근거: {event.decision_reason}</p> : null}
+                {event.change_impact ? <p style={{ margin: 0 }}>영향: {event.change_impact}</p> : null}
                 {event.before_score !== null && event.after_score !== null ? (
                   <p style={{ margin: 0 }}>
-                    score Δ: {event.before_score} → {event.after_score}
+                    점수 변화: {event.before_score} → {event.after_score}
                   </p>
                 ) : null}
-                {typeof event.confidence === "number" ? <p style={{ margin: 0 }}>confidence: {event.confidence.toFixed(2)}</p> : null}
-                {event.error_code ? <p style={{ margin: 0, color: "#fca5a5" }}>error_code: {event.error_code}</p> : null}
+                {typeof event.confidence === "number" ? <p style={{ margin: 0 }}>신뢰도: {event.confidence.toFixed(2)}</p> : null}
+                {event.error_code ? <p style={{ margin: 0, color: "#fca5a5" }}>오류 코드: {event.error_code}</p> : null}
               </article>
             ))}
             {filteredEvents.length === 0 ? <p className="observatory-empty">표시할 이벤트가 없습니다.</p> : null}
@@ -457,25 +426,25 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
 
         <div className="observatory-queue-grid">
           <section className="card observatory-queue-card">
-            <h4>🧩 Issue Queue</h4>
+            <h4>🧩 협업 수정 흐름</h4>
             {issueQueue.length === 0 ? (
-              <p className="observatory-empty">등록된 이슈 이벤트가 없습니다.</p>
+              <p className="observatory-empty">등록된 협업 수정 이벤트가 없습니다.</p>
             ) : (
               issueQueue.map((event) => (
                 <p key={event.id}>
-                  [{event.event_type}] {event.summary}
+                  [{labelForEvent(event.event_type)}] {event.summary}
                 </p>
               ))
             )}
           </section>
           <section className="card observatory-queue-card">
-            <h4>✅ Publish Approval Queue</h4>
+            <h4>✅ 퍼블리시 승인 흐름</h4>
             {approvalQueue.length === 0 ? (
               <p className="observatory-empty">승인/퍼블리시 이벤트가 없습니다.</p>
             ) : (
               approvalQueue.map((event) => (
                 <p key={event.id}>
-                  [{event.event_type}] {event.summary}
+                  [{labelForEvent(event.event_type)}] {event.summary}
                 </p>
               ))
             )}

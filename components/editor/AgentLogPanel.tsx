@@ -46,9 +46,9 @@ const AGENT_ICONS: Record<string, string> = {
 };
 
 const AGENT_LABELS: Record<string, string> = {
-  codegen: "Codegen",
-  visual_qa: "Visual QA",
-  playtester: "Playtester",
+  codegen: "코드젠",
+  visual_qa: "비주얼 QA",
+  playtester: "플레이테스터",
 };
 
 const ACTION_LABELS: Record<string, string> = {
@@ -57,17 +57,17 @@ const ACTION_LABELS: Record<string, string> = {
   evaluate: "평가",
   test: "테스트",
   refine: "개선",
-  run: "run",
-  audit: "audit",
+  run: "실행",
+  audit: "감사",
 };
 
 const RUN_LABELS: Record<RunStatus, string> = {
   idle: "대기",
-  queued: "queued",
-  running: "running",
-  succeeded: "succeeded",
-  failed: "failed",
-  cancelled: "cancelled",
+  queued: "대기열",
+  running: "실행 중",
+  succeeded: "완료",
+  failed: "실패",
+  cancelled: "취소됨",
 };
 
 function deltaLabel(activity: AgentActivity): string | null {
@@ -114,28 +114,28 @@ export function AgentLogPanel({
 
       <div className="editor-agent-list">
         <div className="editor-agent-intro">
-          <strong>🕹 멀티에이전트 타임라인</strong>
-          <p>Loop: Codegen → Visual QA → Playtester</p>
-          {runId ? <p>run_id: {runId}</p> : null}
+          <strong>🧠 에이전트 타임라인</strong>
+          <p>루프 순서: Codegen → Visual QA → Playtester</p>
+          {runId ? <p>실행 ID: {runId}</p> : null}
           {activeAgents.length > 0 ? <p>활동: {activeAgents.join(" · ")}</p> : null}
-          {runError ? <p className="editor-agent-error">error: {runError}</p> : null}
+          {runError ? <p className="editor-agent-error">오류: {runError}</p> : null}
         </div>
 
         <div className="editor-agent-actions">
           <button type="button" onClick={onRetryLast} disabled={isBusy || !onRetryLast}>
-            재시도
+            마지막 요청 재실행
           </button>
           <button type="button" onClick={onRerunQa} disabled={isBusy || !onRerunQa}>
-            QA 재실행
+            QA만 다시 실행
           </button>
           <button type="button" onClick={onRestorePrevious} disabled={isBusy || !onRestorePrevious}>
-            직전 복원
+            직전 결과 복원
           </button>
         </div>
 
         <div className="editor-agent-actions">
           <button type="button" onClick={onCancelRun} disabled={!onCancelRun || runStatus !== "running"}>
-            Run 취소
+            실행 취소
           </button>
           <button type="button" onClick={onProposeFix} disabled={Boolean(issueBusy) || !canProposeFix || !onProposeFix}>
             수정안 생성
@@ -153,19 +153,19 @@ export function AgentLogPanel({
             onChange={(event) => onIssueCategoryChange(event.target.value as IssueCategory)}
             disabled={Boolean(issueBusy)}
           >
-            <option value="gameplay">gameplay / physics</option>
-            <option value="visual">visual / readability</option>
-            <option value="runtime">runtime / bug</option>
+            <option value="gameplay">게임플레이 / 물리감</option>
+            <option value="visual">비주얼 / 가독성</option>
+            <option value="runtime">런타임 / 버그</option>
           </select>
           <textarea
             value={issueDraft}
             onChange={(event) => onIssueDraftChange(event.target.value)}
-            placeholder="예: 코너링 감각이 이상해. 차량 조향을 안정적으로 조정해줘."
+            placeholder="예: 코너링이 너무 미끄러워요. 차량 조향을 더 안정적으로 조정해줘."
             rows={3}
             disabled={Boolean(issueBusy)}
           />
           <button type="button" onClick={onReportIssue} disabled={Boolean(issueBusy) || !issueDraft.trim() || !onReportIssue}>
-            사람 피드백 등록
+            피드백 등록
           </button>
         </div>
 
@@ -182,13 +182,13 @@ export function AgentLogPanel({
                 {deltaLabel(act) && <span className="editor-agent-score">{deltaLabel(act)}</span>}
               </div>
               {act.summary && <p className="editor-agent-summary">{act.summary}</p>}
-              {act.input_signal ? <p className="editor-agent-summary">input: {act.input_signal}</p> : null}
-              {act.decision_reason ? <p className="editor-agent-summary">why: {act.decision_reason}</p> : null}
-              {act.change_impact ? <p className="editor-agent-summary">impact: {act.change_impact}</p> : null}
+              {act.input_signal ? <p className="editor-agent-summary">입력 신호: {act.input_signal}</p> : null}
+              {act.decision_reason ? <p className="editor-agent-summary">판단 근거: {act.decision_reason}</p> : null}
+              {act.change_impact ? <p className="editor-agent-summary">변경 영향: {act.change_impact}</p> : null}
               {typeof act.confidence === "number" ? (
-                <p className="editor-agent-summary">confidence: {act.confidence.toFixed(2)}</p>
+                <p className="editor-agent-summary">신뢰도: {act.confidence.toFixed(2)}</p>
               ) : null}
-              {act.error_code ? <p className="editor-agent-summary">error_code: {act.error_code}</p> : null}
+              {act.error_code ? <p className="editor-agent-summary">오류 코드: {act.error_code}</p> : null}
             </div>
           ))
         )}

@@ -767,24 +767,25 @@
   position: relative;
   overflow: hidden;
   display: grid;
-  gap: 10px;
+  gap: 12px;
   background:
-    radial-gradient(circle at 88% 14%, rgba(168, 85, 247, 0.32), transparent 42%),
-    radial-gradient(circle at 14% 90%, rgba(34, 197, 94, 0.18), transparent 38%),
-    linear-gradient(145deg, rgba(2, 6, 23, 0.96), rgba(9, 14, 28, 0.96));
-  border: 1px solid rgba(244, 114, 182, 0.28);
-  box-shadow: inset 0 0 0 1px rgba(244, 114, 182, 0.14), 0 18px 42px rgba(0, 0, 0, 0.35);
+    radial-gradient(circle at 88% 14%, rgba(56, 189, 248, 0.34), transparent 44%),
+    radial-gradient(circle at 12% 90%, rgba(236, 72, 153, 0.24), transparent 40%),
+    linear-gradient(145deg, rgba(4, 8, 24, 0.96), rgba(17, 15, 45, 0.96));
+  border: 1px solid rgba(96, 165, 250, 0.3);
+  box-shadow: inset 0 0 0 1px rgba(96, 165, 250, 0.18), 0 18px 42px rgba(0, 0, 0, 0.35);
 }
 
 .observatory-title {
   margin: 0;
-  color: #fdf2f8;
-  letter-spacing: 0.04em;
+  color: #e0f2fe;
+  letter-spacing: 0.03em;
+  text-shadow: 0 0 14px rgba(56, 189, 248, 0.35);
 }
 
 .observatory-subtitle {
   margin: 0;
-  color: #c4b5fd;
+  color: #cbd5e1;
 }
 
 .observatory-chips {
@@ -796,10 +797,10 @@
 .observatory-chip {
   padding: 5px 10px;
   border-radius: 8px;
-  border: 1px solid rgba(244, 114, 182, 0.32);
-  background: rgba(76, 29, 149, 0.3);
+  border: 1px solid rgba(125, 211, 252, 0.35);
+  background: rgba(12, 74, 110, 0.32);
   font-size: 12px;
-  color: #f5d0fe;
+  color: #e0f2fe;
 }
 
 .observatory-error {
@@ -808,7 +809,6 @@
   background: rgba(127, 29, 29, 0.18);
 }
 
-.observatory-kpi-shell,
 .observatory-shell {
   display: grid;
   gap: 12px;
@@ -862,14 +862,14 @@
 .observatory-main-grid {
   display: grid;
   gap: 12px;
-  grid-template-columns: minmax(240px, 320px) 1fr;
+  grid-template-columns: minmax(260px, 340px) 1fr;
 }
 
 .observatory-session-list,
 .observatory-event-list {
   display: grid;
   gap: 8px;
-  max-height: 520px;
+  max-height: 580px;
   overflow: auto;
 }
 
@@ -878,15 +878,19 @@
   display: grid;
   gap: 4px;
   border: 1px solid rgba(148, 163, 184, 0.2);
-  background: linear-gradient(170deg, rgba(17, 24, 39, 0.85), rgba(49, 17, 83, 0.45));
+  background:
+    radial-gradient(circle at 92% 0%, rgba(129, 140, 248, 0.16), transparent 35%),
+    linear-gradient(170deg, rgba(17, 24, 39, 0.85), rgba(49, 17, 83, 0.45));
 }
 
 .observatory-event-card strong {
-  color: #e2e8f0;
+  color: #f1f5f9;
+  font-size: 14px;
 }
 
 .observatory-event-card small {
   color: #93c5fd;
+  font-size: 12px;
 }
 
 .observatory-event-card p {

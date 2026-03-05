@@ -129,9 +129,12 @@ a {
 }
 
 .nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
   border: 1px solid transparent;
   border-radius: 999px;
-  padding: 7px 11px;
+  padding: 7px 12px;
   color: #dbe7ff;
   font-size: 13px;
   transition: 140ms ease;
@@ -140,6 +143,23 @@ a {
 .nav-link:hover {
   border-color: var(--line);
   background: rgba(255, 255, 255, 0.03);
+}
+
+.nav-link-icon {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(129, 140, 248, 0.2);
+  font-size: 12px;
+  line-height: 1;
+}
+
+.nav-link-text {
+  font-weight: 600;
+  letter-spacing: 0.01em;
 }
 
 .main-shell {
