@@ -8,20 +8,20 @@ export async function POST(
   return runAdminWriteRoute(request, async () => {
     const { sessionId } = await context.params;
     const body = (await request.json()) as {
-      prompt?: string;
-      auto_qa?: boolean;
-      stream?: boolean;
+      title?: string;
+      details?: string;
+      category?: string;
     };
 
     return forwardToCoreEngine({
-      path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/prompt`,
+      path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/issues`,
       method: "POST",
-      timeoutMs: 20000,
-      retries: 0,
+      timeoutMs: 15000,
+      retries: 1,
       body: {
-        prompt: body.prompt ?? "",
-        auto_qa: body.auto_qa !== false,
-        stream: false,
+        title: body.title ?? "",
+        details: body.details ?? "",
+        category: body.category ?? "gameplay",
       },
     });
   });

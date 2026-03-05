@@ -9,22 +9,42 @@
   flex-direction: column;
   height: calc(100vh - 60px);
   overflow: hidden;
+  background:
+    radial-gradient(circle at 15% 20%, rgba(217, 70, 239, 0.14), transparent 30%),
+    radial-gradient(circle at 82% 78%, rgba(45, 212, 191, 0.12), transparent 34%),
+    linear-gradient(145deg, #060b1a 0%, #101a33 45%, #24103f 100%);
+  position: relative;
+}
+
+.editor-layout::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0.08;
+  background-image: linear-gradient(rgba(255, 255, 255, 0.18) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.18) 1px, transparent 1px);
+  background-size: 6px 6px;
 }
 
 .editor-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0.75rem 1.25rem;
-  background: var(--surface-bg, #0f172a);
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
+  padding: 0.72rem 1.25rem;
+  background: linear-gradient(120deg, rgba(5, 11, 31, 0.92), rgba(23, 15, 56, 0.85));
+  border-bottom: 1px solid rgba(168, 85, 247, 0.28);
+  position: relative;
+  z-index: 1;
 }
 
 .editor-header h2 {
   margin: 0;
-  font-size: 1.1rem;
+  font-size: 1rem;
   font-weight: 700;
-  color: var(--text-primary, #e2e8f0);
+  color: #f9d4ff;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .editor-header-actions {
@@ -36,19 +56,19 @@
 }
 
 .editor-loop-badge {
-  font-size: 0.72rem;
+  font-size: 0.68rem;
   line-height: 1;
-  letter-spacing: 0.02em;
-  padding: 0.35rem 0.55rem;
-  border-radius: 999px;
-  border: 1px solid rgba(96, 165, 250, 0.35);
-  background: rgba(96, 165, 250, 0.12);
-  color: #93c5fd;
+  letter-spacing: 0.05em;
+  padding: 0.35rem 0.6rem;
+  border-radius: 0.45rem;
+  border: 1px solid rgba(168, 85, 247, 0.45);
+  background: rgba(168, 85, 247, 0.15);
+  color: #f5d0fe;
 }
 
 .editor-score {
   font-size: 0.85rem;
-  color: var(--accent, #60a5fa);
+  color: #34d399;
   font-weight: 600;
 }
 
@@ -73,8 +93,10 @@
 .editor-workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(320px, 380px) 8px minmax(0, 1fr) 8px minmax(320px, 360px);
+  grid-template-columns: minmax(320px, 420px) 8px minmax(0, 1fr) 8px minmax(320px, 420px);
   overflow: hidden;
+  position: relative;
+  z-index: 1;
 }
 
 .editor-resizer {
@@ -330,10 +352,10 @@ body.editor-resizing {
 
 /* ---- Agent Log Panel ---- */
 .editor-agent-panel {
-  width: 60px;
-  background: var(--surface-bg, #0f172a);
-  border-left: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  transition: width 0.2s ease;
+  width: 100%;
+  min-width: 0;
+  background: linear-gradient(180deg, rgba(7, 13, 34, 0.97), rgba(15, 17, 45, 0.97));
+  border-left: 1px solid rgba(96, 165, 250, 0.2);
   overflow: hidden;
   display: flex;
   flex-direction: column;
@@ -347,40 +369,55 @@ body.editor-resizing {
   align-items: center;
   gap: 0.35rem;
   width: 100%;
-  min-height: 42px;
-  padding: 0.65rem 0.5rem;
+  min-height: 44px;
+  padding: 0.68rem 0.56rem;
   background: none;
   border: none;
-  border-bottom: 1px solid var(--border, rgba(255, 255, 255, 0.08));
-  color: var(--text-muted, #94a3b8);
+  border-bottom: 1px solid rgba(148, 163, 184, 0.2);
+  color: #cbd5f5;
   font-size: 0.8rem;
-  cursor: pointer;
-  text-align: left;
-}
-.editor-agent-toggle:hover {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.editor-agent-toggle--locked {
   cursor: default;
-}
-
-.editor-agent-toggle--locked:hover {
-  background: transparent;
+  text-align: left;
 }
 
 .editor-agent-toggle-icon {
-  font-size: 0.78rem;
+  font-size: 0.84rem;
 }
 
 .editor-agent-toggle-label {
   font-weight: 600;
+  letter-spacing: 0.03em;
 }
 
-.editor-agent-toggle-count {
+.editor-run-status {
   margin-left: auto;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  padding: 0.16rem 0.45rem;
+  border-radius: 0.35rem;
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  color: #e2e8f0;
+}
+
+.editor-run-status--queued {
+  color: #f9a8d4;
+  border-color: rgba(249, 168, 212, 0.5);
+}
+
+.editor-run-status--running {
   color: #93c5fd;
+  border-color: rgba(147, 197, 253, 0.6);
+}
+
+.editor-run-status--succeeded {
+  color: #86efac;
+  border-color: rgba(134, 239, 172, 0.6);
+}
+
+.editor-run-status--failed,
+.editor-run-status--cancelled {
+  color: #fca5a5;
+  border-color: rgba(252, 165, 165, 0.6);
 }
 
 .editor-agent-list {
@@ -413,6 +450,10 @@ body.editor-resizing {
   line-height: 1.4;
 }
 
+.editor-agent-error {
+  color: #fca5a5 !important;
+}
+
 .editor-agent-actions {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -436,6 +477,48 @@ body.editor-resizing {
 }
 
 .editor-agent-actions button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.editor-agent-issue-box {
+  display: grid;
+  gap: 0.38rem;
+  border: 1px solid rgba(168, 85, 247, 0.24);
+  border-radius: 0.5rem;
+  padding: 0.55rem;
+  background: rgba(30, 27, 75, 0.36);
+}
+
+.editor-agent-issue-box label {
+  font-size: 0.72rem;
+  color: #c4b5fd;
+}
+
+.editor-agent-issue-box select,
+.editor-agent-issue-box textarea {
+  width: 100%;
+  border-radius: 0.38rem;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: rgba(2, 6, 23, 0.7);
+  color: #e2e8f0;
+  font-size: 0.74rem;
+  padding: 0.38rem 0.45rem;
+  resize: vertical;
+}
+
+.editor-agent-issue-box button {
+  min-height: 30px;
+  border-radius: 0.38rem;
+  border: 1px solid rgba(52, 211, 153, 0.4);
+  background: rgba(6, 78, 59, 0.26);
+  color: #a7f3d0;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-agent-issue-box button:disabled {
   opacity: 0.5;
   cursor: not-allowed;
 }

@@ -29,12 +29,12 @@ type SessionEvent = {
   change_impact?: string;
   confidence?: number | null;
   error_code?: string | null;
+  metadata?: Record<string, unknown>;
   created_at: string;
 };
 
 type SessionEventsResponse = {
   events: SessionEvent[];
-  next_cursor?: string | null;
 };
 
 type SessionListResponse = {
@@ -47,6 +47,10 @@ type SessionMetric = {
   qaTotal: number;
   modelErrorCount: number;
   eventCount: number;
+  runTotal: number;
+  runFailCount: number;
+  engineAuditCount: number;
+  engineDriftCount: number;
 };
 
 async function fetchJson<T>(url: string): Promise<T> {
@@ -59,6 +63,29 @@ async function fetchJson<T>(url: string): Promise<T> {
   return payload as T;
 }
 
+function isEngineDrift(event: SessionEvent): boolean {
+  if (event.event_type !== "engine_audit") return false;
+  const metadata = event.metadata ?? {};
+  const compliance = metadata.compliance;
+  if (compliance === false) return true;
+  const detected = typeof metadata.detected_engine === "string" ? metadata.detected_engine : "";
+  return detected === "unknown";
+}
+
+function latestRunStatus(events: SessionEvent[]): string {
+  const runEvent = events.find((event) =>
+    ["prompt_run_failed", "prompt_run_succeeded", "prompt_run_cancelled", "prompt_run_started", "prompt_run_queued"].includes(
+      event.event_type,
+    ),
+  );
+  if (!runEvent) return "idle";
+  if (runEvent.event_type === "prompt_run_failed") return "failed";
+  if (runEvent.event_type === "prompt_run_succeeded") return "succeeded";
+  if (runEvent.event_type === "prompt_run_cancelled") return "cancelled";
+  if (runEvent.event_type === "prompt_run_started") return "running";
+  return "queued";
+}
+
 function buildMetrics(events: SessionEvent[]): SessionMetric {
   const refineCount = events.filter((event) => event.action === "refine").length;
   const qaEvents = events.filter((event) => event.agent === "visual_qa" || event.agent === "playtester");
@@ -67,12 +94,21 @@ function buildMetrics(events: SessionEvent[]): SessionMetric {
     return impact.includes("issue") || impact.includes("failed") || impact.includes("below");
   }).length;
   const modelErrorCount = events.filter((event) => Boolean(event.error_code)).length;
+  const runTotal = events.filter((event) => event.event_type.startsWith("prompt_run_")).length;
+  const runFailCount = events.filter((event) => event.event_type === "prompt_run_failed").length;
+  const engineAuditCount = events.filter((event) => event.event_type === "engine_audit").length;
+  const engineDriftCount = events.filter((event) => isEngineDrift(event)).length;
+
   return {
     refineCount,
     qaFailCount,
     qaTotal: qaEvents.length,
     modelErrorCount,
     eventCount: events.length,
+    runTotal,
+    runFailCount,
+    engineAuditCount,
+    engineDriftCount,
   };
 }
 
@@ -85,6 +121,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
   const [selectedSessionId, setSelectedSessionId] = useState<string>("");
   const [events, setEvents] = useState<SessionEvent[]>([]);
   const [metricsBySession, setMetricsBySession] = useState<Record<string, SessionMetric>>({});
+  const [eventsBySession, setEventsBySession] = useState<Record<string, SessionEvent[]>>({});
   const [error, setError] = useState<string>("");
 
   const [statusFilter, setStatusFilter] = useState<string>("");
@@ -107,12 +144,13 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
       if (!selectedSessionId && previewRows.length > 0) {
         setSelectedSessionId(previewRows[0].session_id);
       }
-      const previewMetrics = Object.fromEntries(
-        previewRows.map((row) => {
-          const items = PREVIEW_SESSION_EVENTS[row.session_id] ?? [];
-          return [row.session_id, buildMetrics(items as SessionEvent[])];
-        }),
+      const previewEventMap = Object.fromEntries(
+        previewRows.map((row) => [row.session_id, (PREVIEW_SESSION_EVENTS[row.session_id] ?? []) as SessionEvent[]]),
       );
+      const previewMetrics = Object.fromEntries(
+        previewRows.map((row) => [row.session_id, buildMetrics((PREVIEW_SESSION_EVENTS[row.session_id] ?? []) as SessionEvent[])]),
+      );
+      setEventsBySession(previewEventMap);
       setMetricsBySession(previewMetrics);
       return;
     }
@@ -120,26 +158,32 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
     const payload = await fetchJson<SessionListResponse>("/api/sessions?limit=50");
     const rows = Array.isArray(payload.sessions) ? payload.sessions : [];
     setSessions(rows);
-
     if (!selectedSessionId && rows.length > 0) {
       setSelectedSessionId(rows[0].session_id);
     }
 
     const metricEntries = await Promise.all(
-      rows.slice(0, 20).map(async (session) => {
+      rows.slice(0, 30).map(async (session) => {
         try {
           const eventPayload = await fetchJson<SessionEventsResponse>(
-            `/api/sessions/${encodeURIComponent(session.session_id)}/events?limit=100`,
+            `/api/sessions/${encodeURIComponent(session.session_id)}/events?limit=140`,
           );
-          const metric = buildMetrics(Array.isArray(eventPayload.events) ? eventPayload.events : []);
-          return [session.session_id, metric] as const;
+          const rows = Array.isArray(eventPayload.events) ? eventPayload.events : [];
+          return [session.session_id, rows, buildMetrics(rows)] as const;
         } catch {
-          return [session.session_id, { refineCount: 0, qaFailCount: 0, qaTotal: 0, modelErrorCount: 0, eventCount: 0 }] as const;
+          return [session.session_id, [], buildMetrics([])] as const;
         }
       }),
     );
 
-    setMetricsBySession(Object.fromEntries(metricEntries));
+    const nextMetrics: Record<string, SessionMetric> = {};
+    const nextEventsMap: Record<string, SessionEvent[]> = {};
+    metricEntries.forEach(([sessionId, items, metric]) => {
+      nextMetrics[sessionId] = metric;
+      nextEventsMap[sessionId] = [...items];
+    });
+    setMetricsBySession(nextMetrics);
+    setEventsBySession(nextEventsMap);
   }, [previewMode, selectedSessionId]);
 
   const loadSelectedEvents = useCallback(async () => {
@@ -152,7 +196,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
       return;
     }
     const payload = await fetchJson<SessionEventsResponse>(
-      `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=120`,
+      `/api/sessions/${encodeURIComponent(selectedSessionId)}/events?limit=180`,
     );
     setEvents(Array.isArray(payload.events) ? payload.events : []);
   }, [previewMode, selectedSessionId]);
@@ -201,7 +245,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
       ? null
       : window.setInterval(() => {
           void run();
-        }, 3000);
+        }, 2600);
 
     return () => {
       cancelled = true;
@@ -233,45 +277,86 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
     const qaFail = metrics.reduce((acc, row) => acc + row.qaFailCount, 0);
     const modelErr = metrics.reduce((acc, row) => acc + row.modelErrorCount, 0);
     const eventTotal = metrics.reduce((acc, row) => acc + row.eventCount, 0);
+    const runTotal = metrics.reduce((acc, row) => acc + row.runTotal, 0);
+    const runFail = metrics.reduce((acc, row) => acc + row.runFailCount, 0);
+    const engineAuditTotal = metrics.reduce((acc, row) => acc + row.engineAuditCount, 0);
+    const engineDrift = metrics.reduce((acc, row) => acc + row.engineDriftCount, 0);
 
     return {
       avgRefine: totalSessions ? refineTotal / totalSessions : 0,
       qaFailureRate: qaTotal ? (qaFail / qaTotal) * 100 : 0,
       publishSuccessRate: totalSessions ? (published / totalSessions) * 100 : 0,
       modelErrorRate: eventTotal ? (modelErr / eventTotal) * 100 : 0,
+      runFailureRate: runTotal ? (runFail / runTotal) * 100 : 0,
+      engineDriftRate: engineAuditTotal ? (engineDrift / engineAuditTotal) * 100 : 0,
     };
   }, [metricsBySession, sessions]);
+
+  const runBoard = useMemo(() => {
+    return visibleSessions.map((session) => {
+      const items = eventsBySession[session.session_id] ?? [];
+      return {
+        ...session,
+        runStatus: latestRunStatus(items),
+        latestError: items.find((item) => item.error_code)?.error_code ?? null,
+      };
+    });
+  }, [eventsBySession, visibleSessions]);
+
+  const issueQueue = useMemo(() => {
+    return filteredEvents.filter((event) => ["issue_reported", "fix_proposed", "fix_applied"].includes(event.event_type)).slice(0, 12);
+  }, [filteredEvents]);
+
+  const approvalQueue = useMemo(() => {
+    return filteredEvents
+      .filter((event) => ["publish_blocked_unapproved", "publish_approved", "publish_success"].includes(event.event_type))
+      .slice(0, 12);
+  }, [filteredEvents]);
 
   const selectedSession = sessions.find((session) => session.session_id === selectedSessionId) ?? null;
 
   return (
     <section className="console-page observatory-page">
       <section className="surface console-hero observatory-hero">
-        <h1 className="hero-title observatory-title">Session Observatory</h1>
-        <p className="muted-text observatory-subtitle">
-          Session-first 멀티에이전트 이벤트 관제실
-        </p>
+        <h1 className="hero-title observatory-title">🎛 Session Observatory // Retro Ops</h1>
+        <p className="muted-text observatory-subtitle">run 보드 · 승인 큐 · 엔진 드리프트 감시</p>
         <div className="observatory-chips">
           <span className="observatory-chip">🧠 Codegen</span>
           <span className="observatory-chip">👁️ Visual QA</span>
           <span className="observatory-chip">🎮 Playtester</span>
-          <span className="observatory-chip">⚡ Session Loop</span>
+          <span className="observatory-chip">🛡 Human Approval Gate</span>
         </div>
       </section>
 
-      {error ? (
-        <section className="surface observatory-error">
-          {error}
-        </section>
-      ) : null}
+      {error ? <section className="surface observatory-error">{error}</section> : null}
 
       <section className="surface observatory-kpi-shell">
         <h2 style={{ margin: 0 }}>KPI</h2>
         <div className="observatory-kpi-grid">
-          <div className="card observatory-kpi-card"><strong>{kpi.avgRefine.toFixed(2)}</strong><p>세션당 평균 refine 횟수</p></div>
-          <div className="card observatory-kpi-card"><strong>{kpi.qaFailureRate.toFixed(1)}%</strong><p>QA 실패율</p></div>
-          <div className="card observatory-kpi-card"><strong>{kpi.publishSuccessRate.toFixed(1)}%</strong><p>Publish 성공률</p></div>
-          <div className="card observatory-kpi-card"><strong>{kpi.modelErrorRate.toFixed(1)}%</strong><p>모델 오류율</p></div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.avgRefine.toFixed(2)}</strong>
+            <p>세션당 평균 refine 횟수</p>
+          </div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.qaFailureRate.toFixed(1)}%</strong>
+            <p>QA 실패율</p>
+          </div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.publishSuccessRate.toFixed(1)}%</strong>
+            <p>Publish 성공률</p>
+          </div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.modelErrorRate.toFixed(1)}%</strong>
+            <p>모델 오류율</p>
+          </div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.runFailureRate.toFixed(1)}%</strong>
+            <p>Run 실패율</p>
+          </div>
+          <div className="card observatory-kpi-card">
+            <strong>{kpi.engineDriftRate.toFixed(1)}%</strong>
+            <p>엔진 드리프트율</p>
+          </div>
         </div>
       </section>
 
@@ -304,6 +389,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
               <option value="evaluate">evaluate</option>
               <option value="test">test</option>
               <option value="refine">refine</option>
+              <option value="run">run</option>
               <option value="publish">publish</option>
             </select>
           </label>
@@ -319,7 +405,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
 
         <div className="observatory-main-grid">
           <div className="observatory-session-list">
-            {visibleSessions.map((session) => (
+            {runBoard.map((session) => (
               <button
                 key={session.session_id}
                 type="button"
@@ -328,21 +414,24 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 aria-pressed={selectedSessionId === session.session_id}
                 style={{
                   textAlign: "left",
-                  borderColor: selectedSessionId === session.session_id ? "#60a5fa" : "transparent",
+                  borderColor: selectedSessionId === session.session_id ? "#f472b6" : "transparent",
                 }}
               >
                 <strong>{session.title}</strong>
-                <p style={{ margin: "4px 0 0" }}>{session.status} · score {session.score}</p>
-                <small>{session.session_id}</small>
+                <p style={{ margin: "4px 0 0" }}>
+                  {session.status} · score {session.score}
+                </p>
+                <small>
+                  run={session.runStatus}
+                  {session.latestError ? ` · err=${session.latestError}` : ""}
+                </small>
               </button>
             ))}
-            {visibleSessions.length === 0 ? <p className="observatory-empty">세션이 없습니다.</p> : null}
+            {runBoard.length === 0 ? <p className="observatory-empty">세션이 없습니다.</p> : null}
           </div>
 
           <div className="observatory-event-list">
-            <h3 style={{ margin: 0 }}>
-              Event Timeline {selectedSession ? `· ${selectedSession.title}` : ""}
-            </h3>
+            <h3 style={{ margin: 0 }}>Event Timeline {selectedSession ? `· ${selectedSession.title}` : ""}</h3>
             {filteredEvents.map((event) => (
               <article key={event.id} className="card observatory-event-card">
                 <strong>
@@ -364,6 +453,33 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
             ))}
             {filteredEvents.length === 0 ? <p className="observatory-empty">표시할 이벤트가 없습니다.</p> : null}
           </div>
+        </div>
+
+        <div className="observatory-queue-grid">
+          <section className="card observatory-queue-card">
+            <h4>🧩 Issue Queue</h4>
+            {issueQueue.length === 0 ? (
+              <p className="observatory-empty">등록된 이슈 이벤트가 없습니다.</p>
+            ) : (
+              issueQueue.map((event) => (
+                <p key={event.id}>
+                  [{event.event_type}] {event.summary}
+                </p>
+              ))
+            )}
+          </section>
+          <section className="card observatory-queue-card">
+            <h4>✅ Publish Approval Queue</h4>
+            {approvalQueue.length === 0 ? (
+              <p className="observatory-empty">승인/퍼블리시 이벤트가 없습니다.</p>
+            ) : (
+              approvalQueue.map((event) => (
+                <p key={event.id}>
+                  [{event.event_type}] {event.summary}
+                </p>
+              ))
+            )}
+          </section>
         </div>
       </section>
     </section>

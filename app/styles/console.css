@@ -772,15 +772,19 @@
     radial-gradient(circle at 88% 14%, rgba(168, 85, 247, 0.32), transparent 42%),
     radial-gradient(circle at 14% 90%, rgba(34, 197, 94, 0.18), transparent 38%),
     linear-gradient(145deg, rgba(2, 6, 23, 0.96), rgba(9, 14, 28, 0.96));
-  border: 1px solid rgba(148, 163, 184, 0.18);
+  border: 1px solid rgba(244, 114, 182, 0.28);
+  box-shadow: inset 0 0 0 1px rgba(244, 114, 182, 0.14), 0 18px 42px rgba(0, 0, 0, 0.35);
 }
 
 .observatory-title {
   margin: 0;
+  color: #fdf2f8;
+  letter-spacing: 0.04em;
 }
 
 .observatory-subtitle {
   margin: 0;
+  color: #c4b5fd;
 }
 
 .observatory-chips {
@@ -791,11 +795,11 @@
 
 .observatory-chip {
   padding: 5px 10px;
-  border-radius: 999px;
-  border: 1px solid rgba(148, 163, 184, 0.25);
-  background: rgba(15, 23, 42, 0.62);
+  border-radius: 8px;
+  border: 1px solid rgba(244, 114, 182, 0.32);
+  background: rgba(76, 29, 149, 0.3);
   font-size: 12px;
-  color: #dbeafe;
+  color: #f5d0fe;
 }
 
 .observatory-error {
@@ -817,10 +821,10 @@
 }
 
 .observatory-kpi-card {
-  border: 1px solid rgba(148, 163, 184, 0.16);
+  border: 1px solid rgba(167, 139, 250, 0.25);
   background:
-    radial-gradient(circle at 18% 10%, rgba(59, 130, 246, 0.16), transparent 46%),
-    rgba(15, 23, 42, 0.66);
+    radial-gradient(circle at 18% 10%, rgba(217, 70, 239, 0.24), transparent 46%),
+    rgba(15, 23, 42, 0.72);
 }
 
 .observatory-kpi-card strong {
@@ -873,8 +877,8 @@
 .observatory-event-card {
   display: grid;
   gap: 4px;
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  background: linear-gradient(170deg, rgba(15, 23, 42, 0.75), rgba(2, 6, 23, 0.66));
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  background: linear-gradient(170deg, rgba(17, 24, 39, 0.85), rgba(49, 17, 83, 0.45));
 }
 
 .observatory-event-card strong {
@@ -895,8 +899,36 @@
   font-size: 14px;
 }
 
+.observatory-queue-grid {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.observatory-queue-card {
+  display: grid;
+  gap: 8px;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(3, 7, 18, 0.72);
+}
+
+.observatory-queue-card h4 {
+  margin: 0;
+  color: #e9d5ff;
+}
+
+.observatory-queue-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #cbd5e1;
+}
+
 @media (max-width: 920px) {
   .observatory-main-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .observatory-queue-grid {
     grid-template-columns: 1fr;
   }
 }

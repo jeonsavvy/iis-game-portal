@@ -7,21 +7,15 @@ export async function POST(
 ) {
   return runAdminWriteRoute(request, async () => {
     const { sessionId } = await context.params;
-    const body = (await request.json()) as {
-      prompt?: string;
-      auto_qa?: boolean;
-      stream?: boolean;
-    };
+    const body = (await request.json()) as { note?: string };
 
     return forwardToCoreEngine({
-      path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/prompt`,
+      path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/approve-publish`,
       method: "POST",
-      timeoutMs: 20000,
-      retries: 0,
+      timeoutMs: 15000,
+      retries: 1,
       body: {
-        prompt: body.prompt ?? "",
-        auto_qa: body.auto_qa !== false,
-        stream: false,
+        note: body.note ?? "",
       },
     });
   });

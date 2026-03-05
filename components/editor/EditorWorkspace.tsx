@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 
-import { AgentLogPanel, type AgentActivity } from "@/components/editor/AgentLogPanel";
+import {
+  AgentLogPanel,
+  type AgentActivity,
+  type IssueCategory,
+  type RunStatus,
+} from "@/components/editor/AgentLogPanel";
 import { ChatPanel, type ChatMessage } from "@/components/editor/ChatPanel";
 import { GamePreview } from "@/components/editor/GamePreview";
 
@@ -32,11 +37,44 @@ type SessionEvent = {
   created_at?: string;
 };
 
+type RunResponse = {
+  run_id: string;
+  status: RunStatus;
+  error_code?: string | null;
+  error_detail?: string;
+  final_score?: number;
+  current_html?: string;
+  activities?: AgentActivity[];
+};
+
+type SessionFetchResponse = {
+  session_id: string;
+  status: string;
+  current_html: string;
+  score?: number;
+};
+
+type IssueCreateResponse = {
+  issue_id: string;
+};
+
+type ProposalResponse = {
+  issue_id: string;
+  proposal_id: string;
+  preview_html: string;
+};
+
+type ApplyFixResponse = {
+  html: string;
+  status: string;
+};
+
 const API_BASE = "/api/sessions";
 const CHAT_MIN_WIDTH = 300;
-const CHAT_MAX_WIDTH = 520;
-const LOG_MIN_WIDTH = 300;
-const LOG_MAX_WIDTH = 520;
+const CHAT_MAX_WIDTH = 560;
+const LOG_MIN_WIDTH = 320;
+const LOG_MAX_WIDTH = 560;
+const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
 
 let msgCounter = 0;
 function makeId() {
@@ -79,21 +117,6 @@ function normalizeActivityFromEvent(event: SessionEvent): AgentActivity | null {
   };
 }
 
-function summarizeFailure(event: SessionEvent | null): string {
-  if (!event) {
-    return "코어 엔진 요청이 실패했습니다. 잠시 후 다시 시도하거나 QA 재실행을 눌러주세요.";
-  }
-  const chunks = [
-    event.summary?.trim() || "",
-    event.error_code?.trim() ? `code=${event.error_code}` : "",
-    event.decision_reason?.trim() ? `why=${event.decision_reason}` : "",
-  ].filter(Boolean);
-  if (chunks.length === 0) {
-    return "코어 엔진 요청이 실패했습니다. 이벤트 상세를 확인해주세요.";
-  }
-  return chunks.join(" · ");
-}
-
 function normalizeError(payload: unknown): string {
   if (!payload || typeof payload !== "object") {
     return "요청 처리 중 오류가 발생했습니다";
@@ -115,8 +138,8 @@ function normalizeError(payload: unknown): string {
 
   if (typeof row.error === "string" && row.error.trim()) {
     const code = typeof row.code === "string" ? row.code.trim() : "";
-    const detail = typeof row.detail === "string" ? row.detail.trim() : "";
-    if (code && detail) return `${row.error} (${code}) · ${detail}`;
+    const nested = typeof row.detail === "string" ? row.detail.trim() : "";
+    if (code && nested) return `${row.error} (${code}) · ${nested}`;
     if (code) return `${row.error} (${code})`;
     return row.error;
   }
@@ -124,15 +147,31 @@ function normalizeError(payload: unknown): string {
   return "요청 처리 중 오류가 발생했습니다";
 }
 
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    window.setTimeout(resolve, ms);
+  });
+}
+
 export function EditorWorkspace() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isIssueBusy, setIsIssueBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
   const [chatWidth, setChatWidth] = useState(360);
-  const [logWidth, setLogWidth] = useState(340);
+  const [logWidth, setLogWidth] = useState(360);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [runStatus, setRunStatus] = useState<RunStatus>("idle");
+  const [runId, setRunId] = useState<string | null>(null);
+  const [runError, setRunError] = useState<string | null>(null);
+  const [issueDraft, setIssueDraft] = useState("");
+  const [issueCategory, setIssueCategory] = useState<IssueCategory>("gameplay");
+  const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
+  const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
+  const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
+
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const dragStateRef = useRef<{
     mode: "chat" | "log";
@@ -165,14 +204,106 @@ export function EditorWorkspace() {
     return newId;
   }, [session]);
 
+  const loadRecentEvents = useCallback(async (sessionId: string): Promise<SessionEvent[]> => {
+    const res = await fetch(`${API_BASE}/${sessionId}/events?limit=40`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const payload = (await res.json().catch(() => ({}))) as { events?: SessionEvent[] };
+    if (!Array.isArray(payload.events)) return [];
+    return payload.events.slice().reverse();
+  }, []);
+
+  const refreshActivitiesFromEvents = useCallback(
+    async (sessionId: string) => {
+      const events = await loadRecentEvents(sessionId);
+      const nextActivities = events
+        .map((event) => normalizeActivityFromEvent(event))
+        .filter((row): row is AgentActivity => Boolean(row));
+      setSession((prev) => (prev ? { ...prev, activities: nextActivities } : prev));
+    },
+    [loadRecentEvents],
+  );
+
+  const fetchSessionSnapshot = useCallback(async (sessionId: string): Promise<SessionFetchResponse | null> => {
+    const res = await fetch(`${API_BASE}/${sessionId}`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json().catch(() => null)) as SessionFetchResponse | null;
+  }, []);
+
+  const pollRun = useCallback(
+    async (sessionId: string, queuedRunId: string): Promise<RunResponse> => {
+      let attempt = 0;
+      while (attempt < 180) {
+        attempt += 1;
+        const response = await fetch(`${API_BASE}/${sessionId}/runs/${queuedRunId}`, {
+          method: "GET",
+          cache: "no-store",
+        });
+        const payload = (await response.json().catch(() => ({}))) as RunResponse;
+        if (!response.ok) {
+          throw new Error(normalizeError(payload));
+        }
+
+        const nextStatus = (payload.status || "queued") as RunStatus;
+        setRunStatus(nextStatus);
+        setRunError(
+          payload.error_code
+            ? `${payload.error_code}${payload.error_detail ? ` · ${payload.error_detail}` : ""}`
+            : payload.error_detail || null,
+        );
+
+        if (Array.isArray(payload.activities)) {
+          setSession((prev) => (prev ? { ...prev, activities: payload.activities ?? prev.activities } : prev));
+        }
+
+        if (nextStatus === "succeeded" || nextStatus === "failed" || nextStatus === "cancelled") {
+          return payload;
+        }
+
+        await wait(1200);
+      }
+
+      throw new Error("run_poll_timeout");
+    },
+    [],
+  );
+
   useEffect(() => {
     const syncViewport = () => {
-      setIsDesktop(window.innerWidth >= 1100);
+      setIsDesktop(window.innerWidth >= 1180);
     };
     syncViewport();
     window.addEventListener("resize", syncViewport);
     return () => window.removeEventListener("resize", syncViewport);
   }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    try {
+      const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { chatWidth?: number; logWidth?: number };
+      if (typeof parsed.chatWidth === "number") {
+        setChatWidth(clamp(parsed.chatWidth, CHAT_MIN_WIDTH, CHAT_MAX_WIDTH));
+      }
+      if (typeof parsed.logWidth === "number") {
+        setLogWidth(clamp(parsed.logWidth, LOG_MIN_WIDTH, LOG_MAX_WIDTH));
+      }
+    } catch {
+      // noop
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !isDesktop) return;
+    const payload = JSON.stringify({ chatWidth, logWidth });
+    localStorage.setItem(LAYOUT_STORAGE_KEY, payload);
+  }, [chatWidth, isDesktop, logWidth]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -183,7 +314,7 @@ export function EditorWorkspace() {
         const target = event.clientX - drag.rectLeft;
         const maxChat = Math.max(
           CHAT_MIN_WIDTH,
-          Math.min(CHAT_MAX_WIDTH, drag.rectRight - drag.rectLeft - LOG_MIN_WIDTH - 460),
+          Math.min(CHAT_MAX_WIDTH, drag.rectRight - drag.rectLeft - LOG_MIN_WIDTH - 500),
         );
         setChatWidth(clamp(target, CHAT_MIN_WIDTH, maxChat));
         return;
@@ -192,7 +323,7 @@ export function EditorWorkspace() {
       const fromRight = drag.rectRight - event.clientX;
       const maxLog = Math.max(
         LOG_MIN_WIDTH,
-        Math.min(LOG_MAX_WIDTH, drag.rectRight - drag.rectLeft - CHAT_MIN_WIDTH - 460),
+        Math.min(LOG_MAX_WIDTH, drag.rectRight - drag.rectLeft - CHAT_MIN_WIDTH - 500),
       );
       setLogWidth(clamp(fromRight, LOG_MIN_WIDTH, maxLog));
     };
@@ -226,22 +357,16 @@ export function EditorWorkspace() {
     [isDesktop],
   );
 
-  const loadRecentEvents = useCallback(async (sessionId: string): Promise<SessionEvent[]> => {
-    const res = await fetch(`${API_BASE}/${sessionId}/events?limit=12`, {
-      method: "GET",
-      cache: "no-store",
-    });
-    if (!res.ok) return [];
-    const payload = (await res.json().catch(() => ({}))) as { events?: SessionEvent[] };
-    if (!Array.isArray(payload.events)) return [];
-    return payload.events.slice().reverse();
-  }, []);
-
   const handleSend = useCallback(
     async (prompt: string) => {
       setIsGenerating(true);
       setError(null);
       setLastPrompt(prompt);
+      setRunStatus("queued");
+      setRunError(null);
+      setActiveIssueId(null);
+      setActiveProposalId(null);
+      setPreviewHtmlOverride(null);
       let activeSessionId: string | null = null;
 
       try {
@@ -255,10 +380,37 @@ export function EditorWorkspace() {
           timestamp: Date.now(),
         };
 
-        setSession((prev) => {
-          if (!prev) return prev;
-          return { ...prev, messages: [...prev.messages, userMsg] };
+        setSession((prev) => (prev ? { ...prev, messages: [...prev.messages, userMsg] } : prev));
+
+        const planRes = await fetch(`${API_BASE}/${sessionId}/plan-draft`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ prompt }),
         });
+        if (planRes.ok) {
+          const planPayload = (await planRes.json().catch(() => null)) as
+            | { mode?: string; summary?: string; checklist?: string[] }
+            | null;
+          if (planPayload?.summary) {
+            const checklist = Array.isArray(planPayload.checklist) ? planPayload.checklist.join(" / ") : "";
+            setSession((prev) =>
+              prev
+                ? {
+                    ...prev,
+                    messages: [
+                      ...prev.messages,
+                      {
+                        id: makeId(),
+                        role: "system",
+                        content: `🗺️ plan-draft(${planPayload.mode ?? "unknown"}): ${planPayload.summary}${checklist ? ` · ${checklist}` : ""}`,
+                        timestamp: Date.now(),
+                      },
+                    ],
+                  }
+                : prev,
+            );
+          }
+        }
 
         const res = await fetch(`${API_BASE}/${sessionId}/prompt`, {
           method: "POST",
@@ -266,69 +418,113 @@ export function EditorWorkspace() {
           body: JSON.stringify({ prompt, auto_qa: true, stream: false }),
         });
 
-        const result = await res.json().catch(() => ({}));
+        const queuedPayload = (await res.json().catch(() => ({}))) as { run_id?: string; status?: RunStatus };
         if (!res.ok) {
-          throw new Error(normalizeError(result));
+          throw new Error(normalizeError(queuedPayload));
+        }
+        const queuedRunId = String(queuedPayload.run_id || "");
+        if (!queuedRunId) {
+          throw new Error("run_id_missing");
         }
 
-        const nextHtml = typeof result.html === "string" ? result.html : "";
-        const nextScore = typeof result.score === "number" ? result.score : 0;
-        const nextActivities = Array.isArray(result.activities)
-          ? (result.activities as AgentActivity[])
-          : [];
-        const activityMessages: ChatMessage[] = nextActivities.map((activity) => ({
-          id: makeId(),
-          role: activityRole(activity.agent),
-          content: summarizeActivity(activity),
-          timestamp: Date.now(),
-        }));
+        setRunId(queuedRunId);
+        setRunStatus((queuedPayload.status ?? "queued") as RunStatus);
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: [
+                  ...prev.messages,
+                  {
+                    id: makeId(),
+                    role: "system",
+                    content: `⏳ Run queued: ${queuedRunId}`,
+                    timestamp: Date.now(),
+                  },
+                ],
+              }
+            : prev,
+        );
 
-        const assistantMsg: ChatMessage = {
-          id: makeId(),
-          role: "assistant",
-          content: `✅ 멀티에이전트 루프 완료 (점수: ${nextScore}/100)`,
-          timestamp: Date.now(),
-        };
+        const runResult = await pollRun(sessionId, queuedRunId);
+        await refreshActivitiesFromEvents(sessionId);
 
-        setSession((prev) => {
-          if (!prev) return prev;
-          if (prev.html.trim() && prev.html !== nextHtml) {
-            setHtmlHistory((history) => [...history.slice(-9), prev.html]);
-          }
-          return {
-            ...prev,
-            html: nextHtml || prev.html,
-            score: nextScore,
-            status: "active",
-            messages: [...prev.messages, ...activityMessages, assistantMsg],
-            activities: nextActivities,
-          };
-        });
+        if (runResult.status === "succeeded") {
+          const snapshot = await fetchSessionSnapshot(sessionId);
+          setSession((prev) => {
+            if (!prev) return prev;
+            const nextHtml = snapshot?.current_html ?? runResult.current_html ?? prev.html;
+            if (prev.html.trim() && prev.html !== nextHtml) {
+              setHtmlHistory((history) => [...history.slice(-9), prev.html]);
+            }
+            const score = typeof snapshot?.score === "number" ? snapshot.score : runResult.final_score ?? prev.score;
+            const activityMessages: ChatMessage[] = (runResult.activities ?? []).map((activity) => ({
+              id: makeId(),
+              role: activityRole(activity.agent),
+              content: summarizeActivity(activity),
+              timestamp: Date.now(),
+            }));
+            return {
+              ...prev,
+              html: nextHtml,
+              score,
+              status: snapshot?.status ?? "active",
+              messages: [
+                ...prev.messages,
+                ...activityMessages,
+                {
+                  id: makeId(),
+                  role: "assistant",
+                  content: `✅ Run 완료 (점수: ${score}/100)`,
+                  timestamp: Date.now(),
+                },
+              ],
+              activities: runResult.activities ?? prev.activities,
+            };
+          });
+          setRunStatus("succeeded");
+          setRunError(null);
+          return;
+        }
+
+        const failure = runResult.error_code
+          ? `${runResult.error_code}${runResult.error_detail ? ` · ${runResult.error_detail}` : ""}`
+          : runResult.error_detail || "run_failed";
+        setRunError(failure);
+        setError(failure);
+        setSession((prev) =>
+          prev
+            ? {
+                ...prev,
+                messages: [
+                  ...prev.messages,
+                  {
+                    id: makeId(),
+                    role: "system",
+                    content: `⚠️ Run 실패: ${failure}`,
+                    timestamp: Date.now(),
+                  },
+                ],
+              }
+            : prev,
+        );
       } catch (err) {
         const msg = err instanceof Error ? err.message : "알 수 없는 오류";
+        setRunStatus("failed");
+        setRunError(msg);
         const diagnostics = activeSessionId ? await loadRecentEvents(activeSessionId) : [];
-        const failedEvent =
-          diagnostics
-            .slice()
-            .reverse()
-            .find((event) => event.event_type.includes("failed") || Boolean(event.error_code)) || null;
-        const failureSummary = summarizeFailure(failedEvent);
         const nextActivities = diagnostics
           .map((event) => normalizeActivityFromEvent(event))
           .filter((row): row is AgentActivity => Boolean(row));
-
-        const normalizedMessage = `${msg} · ${failureSummary}`;
-        setError(normalizedMessage);
+        setError(msg);
         setSession((prev) => {
           if (!prev) return prev;
-          const diagnosticMessages: ChatMessage[] = diagnostics
-            .slice(-4)
-            .map((event) => ({
-              id: makeId(),
-              role: activityRole(event.agent || "codegen"),
-              content: `🧾 ${event.event_type}: ${event.summary || event.error_code || "상세 없음"}`,
-              timestamp: Date.now(),
-            }));
+          const diagnosticMessages: ChatMessage[] = diagnostics.slice(-4).map((event) => ({
+            id: makeId(),
+            role: activityRole(event.agent || "codegen"),
+            content: `🧾 ${event.event_type}: ${event.summary || event.error_code || "상세 없음"}`,
+            timestamp: Date.now(),
+          }));
           return {
             ...prev,
             messages: [
@@ -337,7 +533,7 @@ export function EditorWorkspace() {
               {
                 id: makeId(),
                 role: "system",
-                content: `⚠️ ${normalizedMessage}`,
+                content: `⚠️ ${msg}`,
                 timestamp: Date.now(),
               },
             ],
@@ -348,8 +544,175 @@ export function EditorWorkspace() {
         setIsGenerating(false);
       }
     },
-    [ensureSession, loadRecentEvents],
+    [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents],
   );
+
+  const handleCancelRun = useCallback(async () => {
+    if (!session?.id || !runId || runStatus !== "running") return;
+    await fetch(`${API_BASE}/${session.id}/runs/${runId}/cancel`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    setRunStatus("cancelled");
+    setRunError("prompt_run_cancelled");
+  }, [runId, runStatus, session?.id]);
+
+  const handleReportIssue = useCallback(async () => {
+    if (!session?.id || !issueDraft.trim()) return;
+    setIsIssueBusy(true);
+    try {
+      const title = issueDraft.trim().slice(0, 80);
+      const response = await fetch(`${API_BASE}/${session.id}/issues`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title,
+          details: issueDraft.trim(),
+          category: issueCategory,
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as IssueCreateResponse;
+      if (!response.ok) throw new Error(normalizeError(payload));
+      setActiveIssueId(payload.issue_id);
+      setActiveProposalId(null);
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "system",
+                  content: `🧩 이슈 등록 완료 (${issueCategory}) · issue_id=${payload.issue_id}`,
+                  timestamp: Date.now(),
+                },
+              ],
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "issue_create_failed");
+    } finally {
+      setIsIssueBusy(false);
+    }
+  }, [issueCategory, issueDraft, session?.id]);
+
+  const handleProposeFix = useCallback(async () => {
+    if (!session?.id || !activeIssueId) return;
+    setIsIssueBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/${session.id}/issues/${activeIssueId}/propose-fix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instruction: issueDraft.trim(),
+        }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as ProposalResponse;
+      if (!response.ok) throw new Error(normalizeError(payload));
+      setActiveProposalId(payload.proposal_id);
+      setPreviewHtmlOverride(payload.preview_html);
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "assistant",
+                  content: `🛠 수정안 생성 완료 · proposal_id=${payload.proposal_id} (미리보기 반영)`,
+                  timestamp: Date.now(),
+                },
+              ],
+            }
+          : prev,
+      );
+      await refreshActivitiesFromEvents(session.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "fix_propose_failed");
+    } finally {
+      setIsIssueBusy(false);
+    }
+  }, [activeIssueId, issueDraft, refreshActivitiesFromEvents, session?.id]);
+
+  const handleApplyFix = useCallback(async () => {
+    if (!session?.id || !activeIssueId) return;
+    setIsIssueBusy(true);
+    try {
+      const response = await fetch(`${API_BASE}/${session.id}/issues/${activeIssueId}/apply-fix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ proposal_id: activeProposalId }),
+      });
+      const payload = (await response.json().catch(() => ({}))) as ApplyFixResponse;
+      if (!response.ok) throw new Error(normalizeError(payload));
+
+      setPreviewHtmlOverride(null);
+      setSession((prev) => {
+        if (!prev) return prev;
+        if (prev.html.trim() && prev.html !== payload.html) {
+          setHtmlHistory((history) => [...history.slice(-9), prev.html]);
+        }
+        return {
+          ...prev,
+          html: payload.html,
+          messages: [
+            ...prev.messages,
+            {
+              id: makeId(),
+              role: "system",
+              content: "✅ 수정안 적용 완료",
+              timestamp: Date.now(),
+            },
+          ],
+        };
+      });
+      await refreshActivitiesFromEvents(session.id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "fix_apply_failed");
+    } finally {
+      setIsIssueBusy(false);
+    }
+  }, [activeIssueId, activeProposalId, refreshActivitiesFromEvents, session?.id]);
+
+  const handleApprovePublish = useCallback(async () => {
+    if (!session?.id) return;
+    setIsGenerating(true);
+    try {
+      const res = await fetch(`${API_BASE}/${session.id}/approve-publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note: "editor 승인" }),
+      });
+      const payload = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        throw new Error(normalizeError(payload));
+      }
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "system",
+                  content: "✅ 퍼블리시 승인 완료",
+                  timestamp: Date.now(),
+                },
+              ],
+            }
+          : prev,
+      );
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "approve_publish_failed");
+    } finally {
+      setIsGenerating(false);
+    }
+  }, [session?.id]);
 
   const handlePublish = useCallback(async () => {
     if (!session?.id || !session.html.trim()) return;
@@ -367,24 +730,25 @@ export function EditorWorkspace() {
       }
 
       const gameUrl = typeof result.game_url === "string" ? result.game_url : "";
-      const msg: ChatMessage = {
-        id: makeId(),
-        role: "system",
-        content: `🎉 퍼블리시 성공 → ${gameUrl}`,
-        timestamp: Date.now(),
-      };
       setSession((prev) =>
         prev
           ? {
               ...prev,
               status: "published",
-              messages: [...prev.messages, msg],
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "system",
+                  content: `🎉 퍼블리시 성공 → ${gameUrl}`,
+                  timestamp: Date.now(),
+                },
+              ],
             }
           : prev,
       );
     } catch (err) {
-      const msg = err instanceof Error ? err.message : "퍼블리시 실패";
-      setError(msg);
+      setError(err instanceof Error ? err.message : "퍼블리시 실패");
     } finally {
       setIsGenerating(false);
     }
@@ -401,6 +765,7 @@ export function EditorWorkspace() {
   }, [handleSend, isGenerating, session?.id]);
 
   const handleRestorePrevious = useCallback(() => {
+    setPreviewHtmlOverride(null);
     setHtmlHistory((history) => {
       if (history.length === 0) return history;
       const restored = history[history.length - 1];
@@ -421,10 +786,13 @@ export function EditorWorkspace() {
   return (
     <div className="editor-layout">
       <header className="editor-header">
-        <h2>🛠️ Session Editor</h2>
+        <h2>🕹 Session Editor</h2>
         <div className="editor-header-actions">
           <span className="editor-loop-badge">Codegen · Visual QA · Playtester</span>
           {session?.score ? <span className="editor-score">점수: {session.score}/100</span> : null}
+          <button type="button" className="button button-ghost" disabled={!session?.id || isGenerating} onClick={handleApprovePublish}>
+            ✅ 승인
+          </button>
           <button
             type="button"
             className="button button-primary"
@@ -464,7 +832,7 @@ export function EditorWorkspace() {
             aria-label="채팅 패널 너비 조절"
           />
         ) : null}
-        <GamePreview html={session?.html ?? ""} />
+        <GamePreview html={previewHtmlOverride ?? session?.html ?? ""} />
         {isDesktop ? (
           <div
             className="editor-resizer editor-resizer--log"
@@ -476,12 +844,24 @@ export function EditorWorkspace() {
         ) : null}
         <AgentLogPanel
           activities={session?.activities ?? []}
-          isOpen
-          lockOpen
+          runStatus={runStatus}
+          runId={runId}
+          runError={runError}
+          isBusy={isGenerating}
+          onCancelRun={handleCancelRun}
           onRetryLast={handleRetryLast}
           onRerunQa={handleRerunQa}
           onRestorePrevious={handleRestorePrevious}
-          isBusy={isGenerating}
+          issueDraft={issueDraft}
+          issueCategory={issueCategory}
+          onIssueDraftChange={setIssueDraft}
+          onIssueCategoryChange={setIssueCategory}
+          onReportIssue={handleReportIssue}
+          onProposeFix={handleProposeFix}
+          onApplyFix={handleApplyFix}
+          issueBusy={isIssueBusy}
+          canProposeFix={Boolean(activeIssueId)}
+          canApplyFix={Boolean(activeIssueId && activeProposalId)}
         />
       </div>
     </div>
