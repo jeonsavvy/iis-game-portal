@@ -39,6 +39,7 @@ export function compactMessage(message?: string | null): string {
   const normalized = message.replace(/\s+/g, " ").trim();
   const friendly = normalized
     .replace(/\b2-agent mode\b/gi, "에이전트 듀오")
+    .replace(/\b2-agent 모드\b/gi, "에이전트 듀오")
     .replace(/\bdual_agent_synth\b/gi, "듀오 합성")
     .replace(/\bA 생성기\b/g, "에이전트A")
     .replace(/\bB 검증·출시\b/g, "에이전트B");

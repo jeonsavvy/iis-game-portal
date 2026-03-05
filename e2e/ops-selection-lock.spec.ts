@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test("운영실은 에이전트 듀오 대화 구조를 렌더링한다", async ({ page }) => {
   await page.goto("/admin");
-  await expect(page.getByText("에이전트 듀오 스테이지").first()).toBeVisible();
+  await expect(page.getByText("협업 현황").first()).toBeVisible();
   await expect(page.getByText("에이전트A").first()).toBeVisible();
   await expect(page.getByText("에이전트B").first()).toBeVisible();
   await expect(page.getByText("자동 제작")).toHaveCount(0);

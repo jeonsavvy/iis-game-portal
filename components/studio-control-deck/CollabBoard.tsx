@@ -142,8 +142,7 @@ export function CollabBoard({
           <header className="ops-collab-v2-header">
             <div className="section-head compact">
               <div>
-                <h3 className="section-title">에이전트 듀오 스테이지</h3>
-                <p className="muted-text">에이전트A와 에이전트B가 게임 완성도를 함께 끌어올리고 있어요.</p>
+                <h3 className="section-title">협업 현황</h3>
               </div>
               <div className="ops-counters">
                 <span>

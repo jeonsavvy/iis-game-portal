@@ -25,8 +25,7 @@ export function AgentCollabRoom({ thread, selectedStage, onSelectStage }: AgentC
   return (
     <section className="surface ops-collab-v2-room">
       <header className="ops-collab-v2-head">
-        <h3 className="section-title">에이전트 듀오 대화</h3>
-        <span className="muted-text">함께 작업중</span>
+        <h3 className="section-title">대화 흐름</h3>
       </header>
 
       <div className="ops-collab-v2-lanes">

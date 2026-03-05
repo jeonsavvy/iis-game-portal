@@ -28,8 +28,8 @@ test("운영실이 에이전트/상세/로그 구조를 노출한다", async ({ 
   await page.goto("/admin");
 
   await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "에이전트 듀오 작업대" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "에이전트 듀오 스테이지" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "파이프라인 제어" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "협업 현황" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "로그" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "실행", exact: true })).toBeVisible();
   await expect(page.getByText("자동 제작")).toHaveCount(0);

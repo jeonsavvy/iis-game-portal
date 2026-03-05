@@ -69,8 +69,7 @@ export function CommandHead({
     <section className="surface ops-command-head">
       <div className="section-head compact">
         <div>
-          <h3 className="section-title">에이전트 듀오 작업대</h3>
-          <p className="muted-text">에이전트A와 에이전트B가 함께 작업중</p>
+          <h3 className="section-title">파이프라인 제어</h3>
         </div>
         <Image src="/assets/admin/stage-queue.svg" width={28} height={28} alt="" aria-hidden="true" />
         <div className="ops-status-strip">
