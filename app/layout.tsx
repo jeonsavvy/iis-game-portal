@@ -23,8 +23,8 @@ function resolveMetadataBase(rawUrl: string | undefined): URL | undefined {
 
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(process.env.NEXT_PUBLIC_SITE_URL),
-  title: "IIS Arcade",
-  description: "Infinite Indie Studio 게임 포털",
+  title: "IIS Game Studio",
+  description: "AI 게임 에디터 & 아케이드",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -39,6 +39,9 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <div className="nav-links">
             <Link className="nav-link" href="/">
               홈
+            </Link>
+            <Link className="nav-link" href="/editor">
+              🛠️ 에디터
             </Link>
             <Link className="nav-link" href="/admin">
               운영실
