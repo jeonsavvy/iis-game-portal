@@ -12,7 +12,7 @@ const mockedWithAdminGuard = vi.mocked(withAdminGuard);
 
 describe("runAdminWriteRoute", () => {
   it("passes through guard response", async () => {
-    const request = new Request("https://portal.example.com/api/pipelines/trigger", {
+    const request = new Request("https://portal.example.com/api/sessions", {
       method: "POST",
       headers: { origin: "https://portal.example.com" },
     });
@@ -28,7 +28,7 @@ describe("runAdminWriteRoute", () => {
   });
 
   it("runs handler when guard succeeds", async () => {
-    const request = new Request("https://portal.example.com/api/pipelines/trigger", {
+    const request = new Request("https://portal.example.com/api/sessions", {
       method: "POST",
       headers: { origin: "https://portal.example.com" },
     });
@@ -45,7 +45,7 @@ describe("runAdminWriteRoute", () => {
   });
 
   it("normalizes unexpected exceptions to 502", async () => {
-    const request = new Request("https://portal.example.com/api/pipelines/trigger", {
+    const request = new Request("https://portal.example.com/api/sessions", {
       method: "POST",
       headers: { origin: "https://portal.example.com" },
     });
@@ -63,7 +63,7 @@ describe("runAdminWriteRoute", () => {
   });
 
   it("maps invalid JSON syntax to 400", async () => {
-    const request = new Request("https://portal.example.com/api/pipelines/trigger", {
+    const request = new Request("https://portal.example.com/api/sessions", {
       method: "POST",
       headers: { origin: "https://portal.example.com" },
     });
@@ -82,7 +82,7 @@ describe("runAdminWriteRoute", () => {
   });
 
   it("preserves explicit cache header from handler response", async () => {
-    const request = new Request("https://portal.example.com/api/pipelines/trigger", {
+    const request = new Request("https://portal.example.com/api/sessions", {
       method: "POST",
       headers: { origin: "https://portal.example.com" },
     });

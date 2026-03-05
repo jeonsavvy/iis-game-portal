@@ -1,14 +1,13 @@
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { cache } from "react";
 
 import { PlayEmbedFrame } from "@/components/PlayEmbedFrame";
 import { PlayInfoTabs } from "@/components/PlayInfoTabs";
-import { PREVIEW_GAMES, getPreviewGameById } from "@/lib/demo/preview-data";
+import { PREVIEW_GAMES, getPreviewGameById, getPreviewGameBySlug } from "@/lib/demo/preview-data";
 import { parseLegacySandboxAllowlist, resolveGameIframeSandboxPolicy } from "@/lib/games/sandbox-policy";
-import { createSupabaseAdminClient } from "@/lib/supabase/admin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
 
@@ -17,6 +16,7 @@ type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
 type GameLookupResult = {
   game: GameRow | null;
   errorMessage: string | null;
+  resolvedById: boolean;
 };
 
 type ArtifactHealthSignal = {
@@ -24,142 +24,54 @@ type ArtifactHealthSignal = {
   message: string;
 };
 
-const getGameById = cache(async (id: string): Promise<GameLookupResult> => {
+const UUID_LIKE = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+const getGameBySlug = cache(async (slugOrId: string): Promise<GameLookupResult> => {
   try {
     const supabase = await createSupabaseServerClient();
-    const { data: game, error } = await supabase.from("games_metadata").select("*").eq("id", id).maybeSingle();
-    if (error || !game) {
-      return { game: null, errorMessage: null };
+    const { data: gameBySlug, error: slugError } = await supabase
+      .from("games_metadata")
+      .select("*")
+      .eq("slug", slugOrId)
+      .maybeSingle();
+
+    if (slugError) {
+      return { game: null, errorMessage: slugError.message, resolvedById: false };
     }
-    return { game, errorMessage: null };
+
+    if (gameBySlug) {
+      return { game: gameBySlug, errorMessage: null, resolvedById: false };
+    }
+
+    if (UUID_LIKE.test(slugOrId)) {
+      const { data: gameById, error: idError } = await supabase
+        .from("games_metadata")
+        .select("*")
+        .eq("id", slugOrId)
+        .maybeSingle();
+      if (idError) {
+        return { game: null, errorMessage: idError.message, resolvedById: false };
+      }
+      if (gameById) {
+        return { game: gameById, errorMessage: null, resolvedById: true };
+      }
+    }
+    return { game: null, errorMessage: null, resolvedById: false };
   } catch (error) {
     return {
       game: null,
       errorMessage: error instanceof Error ? error.message : "unknown_error",
+      resolvedById: false,
     };
   }
 });
-
-function pickReviewFromMetadata(metadata: unknown, slug: string): string | null {
-  if (!metadata || typeof metadata !== "object") return null;
-  const row = metadata as Record<string, unknown>;
-  const metadataSlug = row.slug;
-  const metadataReview = row.ai_review_text;
-  if (typeof metadataSlug !== "string" || metadataSlug !== slug) return null;
-  if (typeof metadataReview !== "string") return null;
-  const normalized = metadataReview.trim();
-  return normalized || null;
-}
 
 const resolveAiReviewFallback = cache(async (slug: string, aiReview: string | null): Promise<string | null> => {
-  if (aiReview && aiReview.trim()) {
-    return aiReview.trim();
-  }
-
-  let adminClient;
-  try {
-    adminClient = createSupabaseAdminClient();
-  } catch {
-    return null;
-  }
-
-  const { data: logs } = await adminClient
-    .from("pipeline_logs")
-    .select("metadata,created_at")
-    .eq("stage", "report")
-    .order("created_at", { ascending: false })
-    .limit(120);
-
-  const typedLogs = (logs ?? []) as Array<Pick<Database["public"]["Tables"]["pipeline_logs"]["Row"], "metadata" | "created_at">>;
-  if (typedLogs.length === 0) return null;
-
-  for (const log of typedLogs) {
-    const review = pickReviewFromMetadata(log.metadata, slug);
-    if (review) return review;
-  }
-  return null;
+  const _ = slug;
+  return aiReview && aiReview.trim() ? aiReview.trim() : null;
 });
 
-function matchesLogTarget(metadata: unknown, slug: string, gameId: string): boolean {
-  if (!metadata || typeof metadata !== "object") return false;
-  const row = metadata as Record<string, unknown>;
-  const gameSlug = typeof row.game_slug === "string" ? row.game_slug : null;
-  if (gameSlug && gameSlug === slug) return true;
-  const artifactPath = typeof row.artifact === "string" ? row.artifact : null;
-  if (artifactPath && artifactPath.includes(`/games/${slug}/`)) return true;
-  const pipelineId = typeof row.pipeline_id === "string" ? row.pipeline_id : null;
-  if (pipelineId && pipelineId === gameId) return true;
-  return false;
-}
-
-function resolveArtifactSignalFromMetadata(metadata: unknown): ArtifactHealthSignal | null {
-  if (!metadata || typeof metadata !== "object") return null;
-  const row = metadata as Record<string, unknown>;
-  const selfcheckResult = row.selfcheck_result;
-  if (selfcheckResult && typeof selfcheckResult === "object") {
-    const selfcheck = selfcheckResult as Record<string, unknown>;
-    if (selfcheck.passed === false) {
-      return {
-        level: "warn",
-        message: "생성 코어 자체검증 실패 아티팩트입니다. 재생성을 권장합니다.",
-      };
-    }
-  }
-
-  if (row.rqc_passed === false) {
-    return {
-      level: "warn",
-      message: "RQC-1 계약 미충족 아티팩트입니다. 품질 보장을 위해 재생성하세요.",
-    };
-  }
-
-  const playabilityPassed = row.playability_passed;
-  if (playabilityPassed === false) {
-    return {
-      level: "warn",
-      message: "플레이 가능성 검증 경고가 감지되었습니다. 운영실에서 재시도를 권장합니다.",
-    };
-  }
-
-  if (row.final_smoke_ok === false) {
-    return {
-      level: "warn",
-      message: "런타임 스모크 실패 기록이 있어 실행 안정성이 보장되지 않습니다.",
-    };
-  }
-
-  return null;
-}
-
-const resolveArtifactHealthSignal = cache(async (game: GameRow): Promise<ArtifactHealthSignal | null> => {
-  let adminClient;
-  try {
-    adminClient = createSupabaseAdminClient();
-  } catch {
-    return null;
-  }
-  const { data: logs } = await adminClient
-    .from("pipeline_logs")
-    .select("stage,status,metadata,created_at")
-    .in("stage", ["build", "report"])
-    .order("created_at", { ascending: false })
-    .limit(160);
-  const rows = Array.isArray(logs) ? logs : [];
-  for (const row of rows) {
-    if (!row || typeof row !== "object") continue;
-    const entry = row as Record<string, unknown>;
-    if (!matchesLogTarget(entry.metadata, game.slug, game.id)) continue;
-    const signal = resolveArtifactSignalFromMetadata(entry.metadata);
-    if (signal) return signal;
-    if (entry.status === "error") {
-      return {
-        level: "warn",
-        message: "최근 생성 로그에서 오류가 감지되었습니다. 운영실에서 상태를 확인하세요.",
-      };
-    }
-  }
-  return null;
-});
+const resolveArtifactHealthSignal = cache(async (_game: GameRow): Promise<ArtifactHealthSignal | null> => null);
 
 function resolvePlayFlavor(game: GameRow): "racing" | "flight" | "fps" | "brawler" | "default" {
   const normalized = `${game.name} ${game.slug} ${game.genre}`.toLowerCase();
@@ -256,11 +168,11 @@ function overviewByGame(game: GameRow): string[] {
   return lines;
 }
 
-export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
-  const { id } = await params;
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const { slug: slugParam } = await params;
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
-    const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
+    const previewGame = getPreviewGameBySlug(slugParam) ?? getPreviewGameById(slugParam) ?? PREVIEW_GAMES[0];
     const ogImage = previewGame.screenshot_url || previewGame.thumbnail_url || undefined;
     const description = previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
     return {
@@ -281,7 +193,7 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
     };
   }
 
-  const { game, errorMessage } = await getGameById(id);
+  const { game, errorMessage } = await getGameBySlug(slugParam);
 
   if (errorMessage) {
     return { title: "IIS Arcade" };
@@ -312,15 +224,15 @@ export async function generateMetadata({ params }: { params: Promise<{ id: strin
   };
 }
 
-export default async function PlayPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
+export default async function PlayPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug: slugParam } = await params;
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
-    const previewGame = getPreviewGameById(id) ?? PREVIEW_GAMES[0];
+    const previewGame = getPreviewGameBySlug(slugParam) ?? getPreviewGameById(slugParam) ?? PREVIEW_GAMES[0];
     return renderPlayPage(previewGame, true);
   }
 
-  const { game, errorMessage } = await getGameById(id);
+  const { game, errorMessage, resolvedById } = await getGameBySlug(slugParam);
 
   if (errorMessage) {
     return (
@@ -334,6 +246,10 @@ export default async function PlayPage({ params }: { params: Promise<{ id: strin
 
   if (!game) {
     notFound();
+  }
+
+  if (resolvedById && game.slug !== slugParam) {
+    redirect(`/play/${game.slug}`);
   }
 
   return renderPlayPage(game, false);

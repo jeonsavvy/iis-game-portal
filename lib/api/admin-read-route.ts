@@ -15,7 +15,7 @@ export async function runAdminReadRoute(
   options: AdminReadRouteOptions = {},
 ): Promise<NextResponse> {
   try {
-    const auth = await withAdminGuard("pipeline:read", { errorHeaders: options.errorHeaders });
+    const auth = await withAdminGuard("session:read", { errorHeaders: options.errorHeaders });
     if (auth instanceof NextResponse) {
       return ensureNoStoreHeaders(auth);
     }

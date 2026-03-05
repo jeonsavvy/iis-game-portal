@@ -48,7 +48,7 @@ describe("POST /api/games/delete", () => {
     const response = await POST(request);
 
     expect(response.status).toBe(404);
-    expect(mockedWithAdminGuard).toHaveBeenCalledWith("pipeline:write", { request });
+    expect(mockedWithAdminGuard).toHaveBeenCalledWith("session:write", { request });
     await expect(response.json()).resolves.toMatchObject({
       code: "game_not_found",
     });

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { canInsertAdminConfig, canReadPipelineLogs } from "@/lib/auth/rbac";
+import { canReadSessions, canWriteSessions } from "@/lib/auth/rbac";
 import { jsonError } from "@/lib/api/error-response";
 import { validateTrustedWriteOrigin } from "@/lib/api/request-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 
-type AdminPermission = "pipeline:write" | "pipeline:read";
+type AdminPermission = "session:write" | "session:read";
 
 export type AdminGuardContext = {
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -24,25 +24,25 @@ type AdminGuardWriteOptions = {
 };
 
 function canAccess(permission: AdminPermission, role: AppRole | null): boolean {
-  if (permission === "pipeline:write") {
-    return canInsertAdminConfig(role);
+  if (permission === "session:write") {
+    return canWriteSessions(role);
   }
-  return canReadPipelineLogs(role);
+  return canReadSessions(role);
 }
 
 export async function withAdminGuard(
-  permission: "pipeline:write",
+  permission: "session:write",
   options: AdminGuardWriteOptions,
 ): Promise<AdminGuardContext | NextResponse>;
 export async function withAdminGuard(
-  permission: "pipeline:read",
+  permission: "session:read",
   options?: AdminGuardReadOptions,
 ): Promise<AdminGuardContext | NextResponse>;
 export async function withAdminGuard(
   permission: AdminPermission,
   options?: AdminGuardReadOptions | AdminGuardWriteOptions,
 ): Promise<AdminGuardContext | NextResponse> {
-  if (permission === "pipeline:write") {
+  if (permission === "session:write") {
     const request = (options as AdminGuardWriteOptions | undefined)?.request;
     if (!request) {
       return jsonError({

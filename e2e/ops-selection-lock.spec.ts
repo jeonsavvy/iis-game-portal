@@ -1,39 +1,28 @@
 import { expect, test } from "@playwright/test";
 
-test("운영실은 에이전트 듀오 대화 구조를 렌더링한다", async ({ page }) => {
+test("운영실은 Session Observatory 구조를 렌더링한다", async ({ page }) => {
   await page.goto("/admin");
-  await expect(page.getByText("협업 현황").first()).toBeVisible();
-  await expect(page.getByText("에이전트A").first()).toBeVisible();
-  await expect(page.getByText("에이전트B").first()).toBeVisible();
+
+  await expect(page.getByRole("heading", { name: "Session Observatory" })).toBeVisible();
+  await expect(page.getByText("세션당 평균 refine 횟수")).toBeVisible();
+  await expect(page.getByText("QA 실패율")).toBeVisible();
+  await expect(page.getByText("Publish 성공률")).toBeVisible();
+  await expect(page.getByText("Event Timeline")).toBeVisible();
   await expect(page.getByText("자동 제작")).toHaveCount(0);
   await expect(page.getByText("A/B 협업실")).toHaveCount(0);
 });
 
-test("운영실에서 선택한 에이전트 카드가 자동으로 원복되지 않는다", async ({ page }) => {
+test("운영실에서 수동 선택한 세션이 폴링으로 원복되지 않는다", async ({ page }) => {
   await page.goto("/admin");
 
-  const developerCard = page.locator(".ops-collab-v2-bubble", { hasText: "개발" }).first();
-  await developerCard.click();
-  await expect(developerCard).toHaveClass(/is-selected/);
+  const cards = page.locator("button.card[aria-pressed]");
+  const cardCount = await cards.count();
+  test.skip(cardCount < 2, "세션 카드가 2개 이상일 때만 검증합니다.");
+
+  const targetCard = cards.nth(1);
+  await targetCard.click();
+  await expect(targetCard).toHaveAttribute("aria-pressed", "true");
 
   await page.waitForTimeout(4500);
-  await expect(developerCard).toHaveClass(/is-selected/);
-});
-
-test("운영실에서 수동 선택한 파이프라인이 폴링으로 덮어써지지 않는다", async ({ page }) => {
-  await page.goto("/admin");
-
-  const select = page.locator(".ops-command-grid select.input").first();
-  const optionCount = await select.locator("option").count();
-  test.skip(optionCount < 2, "프리뷰 데이터에 파이프라인 옵션이 2개 이상일 때만 검증합니다.");
-
-  const secondValue = await select.locator("option").nth(1).getAttribute("value");
-  if (!secondValue) {
-    test.skip(true, "선택 가능한 두 번째 파이프라인이 없습니다.");
-  }
-
-  await select.selectOption(secondValue ?? "");
-  await expect(select).toHaveValue(secondValue ?? "");
-  await page.waitForTimeout(4500);
-  await expect(select).toHaveValue(secondValue ?? "");
+  await expect(targetCard).toHaveAttribute("aria-pressed", "true");
 });

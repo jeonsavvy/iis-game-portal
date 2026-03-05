@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { validateTrustedWriteOrigin } from "./request-origin";
 
-function buildRequest(origin: string | null, target = "https://portal.example.com/api/pipelines/trigger"): Request {
+function buildRequest(origin: string | null, target = "https://portal.example.com/api/sessions"): Request {
   const headers = new Headers();
   if (origin !== null) {
     headers.set("origin", origin);

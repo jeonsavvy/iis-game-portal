@@ -1,8 +1,8 @@
 import { describe, expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("@/lib/auth/rbac", () => ({
-  canInsertAdminConfig: vi.fn(),
-  canReadPipelineLogs: vi.fn(),
+  canWriteSessions: vi.fn(),
+  canReadSessions: vi.fn(),
 }));
 
 vi.mock("@/lib/supabase/server", () => ({
@@ -10,14 +10,14 @@ vi.mock("@/lib/supabase/server", () => ({
 }));
 
 import { withAdminGuard } from "./admin-guard";
-import { canInsertAdminConfig, canReadPipelineLogs } from "@/lib/auth/rbac";
+import { canReadSessions, canWriteSessions } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
-const mockedCanInsertAdminConfig = vi.mocked(canInsertAdminConfig);
-const mockedCanReadPipelineLogs = vi.mocked(canReadPipelineLogs);
+const mockedCanWriteSessions = vi.mocked(canWriteSessions);
+const mockedCanReadSessions = vi.mocked(canReadSessions);
 const mockedCreateSupabaseServerClient = vi.mocked(createSupabaseServerClient);
 
-function createWriteRequest(origin: string | null, url = "https://portal.example.com/api/pipelines/trigger"): Request {
+function createWriteRequest(origin: string | null, url = "https://portal.example.com/api/sessions"): Request {
   const headers = new Headers();
   if (origin !== null) {
     headers.set("origin", origin);
@@ -56,7 +56,7 @@ describe("withAdminGuard", () => {
   });
 
   it("returns 400 when write guard request context is missing", async () => {
-    const response = await withAdminGuard("pipeline:write", {} as never);
+    const response = await withAdminGuard("session:write", {} as never);
 
     expect(response).toBeInstanceOf(Response);
     const json = await (response as Response).json();
@@ -65,7 +65,7 @@ describe("withAdminGuard", () => {
   });
 
   it("returns 403 when write origin is cross-origin", async () => {
-    const response = await withAdminGuard("pipeline:write", {
+    const response = await withAdminGuard("session:write", {
       request: createWriteRequest("https://evil.example.com"),
     });
 
@@ -77,7 +77,7 @@ describe("withAdminGuard", () => {
   });
 
   it("returns 403 when write origin is null", async () => {
-    const response = await withAdminGuard("pipeline:write", {
+    const response = await withAdminGuard("session:write", {
       request: createWriteRequest("null"),
     });
 
@@ -89,7 +89,7 @@ describe("withAdminGuard", () => {
   });
 
   it("returns 403 when write origin header is missing", async () => {
-    const response = await withAdminGuard("pipeline:write", {
+    const response = await withAdminGuard("session:write", {
       request: createWriteRequest(null),
     });
 
@@ -101,7 +101,7 @@ describe("withAdminGuard", () => {
   });
 
   it("returns 403 when write origin is malformed", async () => {
-    const response = await withAdminGuard("pipeline:write", {
+    const response = await withAdminGuard("session:write", {
       request: createWriteRequest("not-a-valid-origin"),
     });
 
@@ -116,9 +116,9 @@ describe("withAdminGuard", () => {
     mockedCreateSupabaseServerClient.mockResolvedValueOnce(
       createSupabaseMock({ userId: null, role: null }) as never,
     );
-    mockedCanReadPipelineLogs.mockReturnValueOnce(true);
+    mockedCanReadSessions.mockReturnValueOnce(true);
 
-    const response = await withAdminGuard("pipeline:read");
+    const response = await withAdminGuard("session:read");
 
     expect(response).toBeInstanceOf(Response);
     const json = await (response as Response).json();
@@ -130,9 +130,9 @@ describe("withAdminGuard", () => {
     mockedCreateSupabaseServerClient.mockResolvedValueOnce(
       createSupabaseMock({ userId: "user-1", role: "master_admin" }) as never,
     );
-    mockedCanInsertAdminConfig.mockReturnValueOnce(true);
+    mockedCanWriteSessions.mockReturnValueOnce(true);
 
-    const result = await withAdminGuard("pipeline:write", {
+    const result = await withAdminGuard("session:write", {
       request: createWriteRequest("https://portal.example.com"),
     });
 

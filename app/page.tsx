@@ -108,7 +108,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 샘플 데이터로 화면을 검수 중입니다.</p> : null}
           <div className="arcade-hero-actions">
             {heroGame ? (
-              <Link className="button button-primary" href={`/play/${heroGame.id}`}>
+              <Link className="button button-primary" href={`/play/${heroGame.slug}`}>
                 지금 플레이
               </Link>
             ) : (

@@ -24,19 +24,15 @@ test("플레이 화면이 우선 플레이영역 + 탭 구조를 제공한다", 
   await expect(page.getByText("AI 디자이너 코멘트 / 생성 히스토리")).toHaveCount(0);
 });
 
-test("운영실이 에이전트/보고서/직접제어 구조를 노출한다", async ({ page }) => {
+test("운영실이 Session Observatory 구조를 노출한다", async ({ page }) => {
   await page.goto("/admin");
 
-  await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "파이프라인 제어" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "협업 현황" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "대화 흐름" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "제작 보고서" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "직접 제어", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Session Observatory" })).toBeVisible();
+  await expect(page.getByText("세션당 평균 refine 횟수")).toBeVisible();
+  await expect(page.getByText("QA 실패율")).toBeVisible();
+  await expect(page.getByText("Publish 성공률")).toBeVisible();
+  await expect(page.getByText("모델 오류율")).toBeVisible();
+  await expect(page.getByText("Event Timeline")).toBeVisible();
   await expect(page.getByText("자동 제작")).toHaveCount(0);
   await expect(page.getByText("A/B 협업실")).toHaveCount(0);
-  await expect(page.getByText("Dual On")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "게임 완전 삭제 (DB · 스토리지 · 아카이브)" })).toBeVisible();
-  await expect(page.getByText("프리뷰 모드: 이 화면은 위험 액션 UX 점검용이며 실제 삭제 요청은 차단됩니다.")).toBeVisible();
-  await expect(page.getByRole("button", { name: "완전 삭제 실행" })).toBeDisabled();
 });

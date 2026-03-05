@@ -8,7 +8,7 @@ type AdminWriteHandler = (auth: AdminGuardContext) => Promise<NextResponse>;
 
 export async function runAdminWriteRoute(request: Request, handler: AdminWriteHandler): Promise<NextResponse> {
   try {
-    const auth = await withAdminGuard("pipeline:write", { request });
+    const auth = await withAdminGuard("session:write", { request });
     if (auth instanceof NextResponse) {
       return ensureNoStoreHeaders(auth);
     }
