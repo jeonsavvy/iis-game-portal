@@ -22,6 +22,21 @@ function makeId() {
   return `msg-${Date.now()}-${++msgCounter}`;
 }
 
+function activityRole(agent: string): ChatMessage["role"] {
+  if (agent === "visual_qa") return "visual_qa";
+  if (agent === "playtester") return "playtester";
+  return "assistant";
+}
+
+function summarizeActivity(activity: AgentActivity): string {
+  const score = activity.score > 0 ? ` (${activity.score}점)` : "";
+  const delta =
+    typeof activity.before_score === "number" && typeof activity.after_score === "number"
+      ? ` [${activity.before_score}→${activity.after_score}]`
+      : "";
+  return `${activity.agent}/${activity.action}${score}${delta} · ${activity.summary || "처리 완료"}`;
+}
+
 function normalizeError(payload: unknown): string {
   if (!payload || typeof payload !== "object") {
     return "요청 처리 중 오류가 발생했습니다";
@@ -49,7 +64,7 @@ function normalizeError(payload: unknown): string {
 export function EditorWorkspace() {
   const [session, setSession] = useState<SessionState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [agentPanelOpen, setAgentPanelOpen] = useState(false);
+  const [agentPanelOpen, setAgentPanelOpen] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
@@ -116,11 +131,17 @@ export function EditorWorkspace() {
         const nextActivities = Array.isArray(result.activities)
           ? (result.activities as AgentActivity[])
           : [];
+        const activityMessages: ChatMessage[] = nextActivities.map((activity) => ({
+          id: makeId(),
+          role: activityRole(activity.agent),
+          content: summarizeActivity(activity),
+          timestamp: Date.now(),
+        }));
 
         const assistantMsg: ChatMessage = {
           id: makeId(),
           role: "assistant",
-          content: `✅ 생성 완료 (점수: ${nextScore}/100)`,
+          content: `✅ 멀티에이전트 루프 완료 (점수: ${nextScore}/100)`,
           timestamp: Date.now(),
         };
 
@@ -134,7 +155,7 @@ export function EditorWorkspace() {
             html: nextHtml || prev.html,
             score: nextScore,
             status: "active",
-            messages: [...prev.messages, assistantMsg],
+            messages: [...prev.messages, ...activityMessages, assistantMsg],
             activities: nextActivities,
           };
         });
@@ -235,6 +256,7 @@ export function EditorWorkspace() {
       <header className="editor-header">
         <h2>🛠️ Session Editor</h2>
         <div className="editor-header-actions">
+          <span className="editor-loop-badge">Codegen · Visual QA · Playtester</span>
           {session?.score ? <span className="editor-score">점수: {session.score}/100</span> : null}
           <button
             type="button"

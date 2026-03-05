@@ -17,7 +17,7 @@ type ChatPanelProps = {
 
 const ROLE_LABELS: Record<ChatMessage["role"], string> = {
     user: "나",
-    assistant: "AI",
+    assistant: "Codegen",
     visual_qa: "시각 QA",
     playtester: "플레이테스터",
     system: "시스템",
@@ -64,14 +64,14 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
     return (
         <div className="editor-chat-panel">
             <div className="editor-chat-header">
-                <h3>💬 게임 에디터</h3>
+                <h3>💬 멀티에이전트 에디터</h3>
             </div>
 
             <div className="editor-chat-messages" ref={scrollRef}>
                 {messages.length === 0 ? (
                     <div className="editor-chat-welcome">
                         <h4>🚀 시작하기</h4>
-                        <p>만들고 싶은 게임을 설명해보세요!</p>
+                        <p>프롬프트 1개로 Codegen · Visual QA · Playtester 루프를 실행합니다.</p>
                         <div className="editor-chat-suggestions">
                             <button type="button" onClick={() => onSend("우주 슈팅 게임 만들어줘")} disabled={isGenerating}>
                                 🚀 우주 슈팅 게임
