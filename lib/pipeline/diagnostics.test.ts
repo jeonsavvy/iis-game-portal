@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { buildPipelineDiagnostics } from "@/lib/pipeline/diagnostics";
+import { applyFailureSnapshotFallback, buildPipelineDiagnostics } from "@/lib/pipeline/diagnostics";
 import type { PipelineLog } from "@/types/pipeline";
 
 function buildLog(partial: Partial<PipelineLog>): PipelineLog {
@@ -128,5 +128,24 @@ describe("pipeline diagnostics", () => {
       expect.arrayContaining(["checklist:input_reaction"]),
     );
     expect(report.secondary_reasons_human ?? []).toEqual(expect.arrayContaining(["시각 대비 체크 미통과"]));
+  });
+
+  it("applies persisted failure snapshot when logs are sparse", () => {
+    const report = buildPipelineDiagnostics({
+      resolvedPipelineId: "p-3",
+      status: "error",
+      errorReason: null,
+      logs: [],
+    });
+    const hydrated = applyFailureSnapshotFallback(report, {
+      primary_failure_reason: "builder_quality_floor_unmet",
+      secondary_reasons: ["visual_contrast"],
+      failure_reason_groups: { visual: ["visual_contrast"] },
+      stage_failure_map: { build: ["builder_quality_floor_unmet"] },
+    });
+
+    expect(hydrated.primary_failure_reason).toBe("builder_quality_floor_unmet");
+    expect(hydrated.secondary_reasons).toEqual(expect.arrayContaining(["visual_contrast"]));
+    expect(hydrated.stage_failure_map.build).toEqual(expect.arrayContaining(["builder_quality_floor_unmet"]));
   });
 });

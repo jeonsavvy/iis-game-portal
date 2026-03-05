@@ -214,6 +214,16 @@ export type PipelineSummary = {
   execution_mode: "auto";
   pipeline_version: string;
   error_reason: string | null;
+  failure_snapshot?: {
+    generated_at?: string;
+    status?: string;
+    primary_failure_reason?: string | null;
+    secondary_reasons?: string[];
+    failure_reason_groups?: Record<string, string[]>;
+    stage_failure_map?: Record<string, string[]>;
+    latest_error_stage?: string | null;
+    latest_error_message?: string | null;
+  } | null;
   created_at: string;
   updated_at: string;
 };

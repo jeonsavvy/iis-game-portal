@@ -34,7 +34,7 @@ function buildSupabaseMock(options: {
       };
     }
 
-    if (columns === "id,status,error_reason") {
+    if (columns === "id,status,error_reason,payload") {
       return {
         eq: vi.fn(() => ({
           limit: vi.fn(() => options.queueById),
@@ -108,7 +108,12 @@ describe("GET /api/pipelines/diagnostics", () => {
       queueRecent: resolved([{ id: "bb06d86e-398f-4f13-9b9a-8c6ec98bd0fd", updated_at: "2026-03-04T10:00:00Z" }]),
       logsRecent: resolved([]),
       queueById: resolved([
-        { id: "bb06d86e-398f-4f13-9b9a-8c6ec98bd0fd", status: "error", error_reason: "builder_quality_floor_unmet" },
+        {
+          id: "bb06d86e-398f-4f13-9b9a-8c6ec98bd0fd",
+          status: "error",
+          error_reason: "builder_quality_floor_unmet",
+          payload: {},
+        },
       ]),
       logsByPipeline: resolved([
         {

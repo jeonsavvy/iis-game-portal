@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
 import { jsonError } from "@/lib/api/error-response";
-import { buildPipelineDiagnostics } from "@/lib/pipeline/diagnostics";
+import { applyFailureSnapshotFallback, buildPipelineDiagnostics } from "@/lib/pipeline/diagnostics";
 import type { Database } from "@/types/database";
 import type { PipelineLog, PipelineStatus } from "@/types/pipeline";
 
@@ -12,7 +12,7 @@ export const revalidate = 0;
 const NO_STORE_HEADERS = { "Cache-Control": "no-store, max-age=0" } as const;
 const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
-type QueueLookup = Pick<Database["public"]["Tables"]["admin_config"]["Row"], "id" | "status" | "error_reason" | "updated_at">;
+type QueueLookup = Pick<Database["public"]["Tables"]["admin_config"]["Row"], "id" | "status" | "error_reason" | "updated_at" | "payload">;
 type LogLookup = Pick<
   Database["public"]["Tables"]["pipeline_logs"]["Row"],
   "id" | "pipeline_id" | "stage" | "status" | "agent_name" | "message" | "reason" | "attempt" | "metadata" | "created_at"
@@ -124,7 +124,7 @@ export async function GET(request: Request) {
       const pipelineId = resolved.pipelineId;
       const { data: queueRows, error: queueError } = await auth.supabase
         .from("admin_config")
-        .select("id,status,error_reason")
+        .select("id,status,error_reason,payload")
         .eq("id", pipelineId)
         .limit(1);
       if (queueError) {
@@ -137,7 +137,7 @@ export async function GET(request: Request) {
         });
       }
 
-      const queueRow = (queueRows ?? [])[0] as Pick<QueueLookup, "id" | "status" | "error_reason"> | undefined;
+      const queueRow = (queueRows ?? [])[0] as Pick<QueueLookup, "id" | "status" | "error_reason" | "payload"> | undefined;
       if (!queueRow) {
         return jsonError({
           status: 404,
@@ -166,12 +166,14 @@ export async function GET(request: Request) {
       }
 
       const typedLogs = ((logs ?? []) as LogLookup[]).map(toPipelineLog);
-      const diagnostics = buildPipelineDiagnostics({
+      const diagnosticsBase = buildPipelineDiagnostics({
         resolvedPipelineId: pipelineId,
         status: queueRow.status as PipelineStatus,
         errorReason: queueRow.error_reason,
         logs: typedLogs,
       });
+      const payload = queueRow.payload && typeof queueRow.payload === "object" ? (queueRow.payload as Record<string, unknown>) : {};
+      const diagnostics = applyFailureSnapshotFallback(diagnosticsBase, payload.failure_snapshot);
       return NextResponse.json(diagnostics, { headers: NO_STORE_HEADERS });
     },
     { errorHeaders: NO_STORE_HEADERS },

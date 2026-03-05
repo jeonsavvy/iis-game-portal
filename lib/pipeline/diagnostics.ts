@@ -405,3 +405,55 @@ export function buildPipelineDiagnostics(args: {
     handoff_events: buildHandoffEvents(sortedLogs),
   };
 }
+
+export function applyFailureSnapshotFallback(
+  diagnostics: PipelineDiagnosticsResponse,
+  snapshot: unknown,
+): PipelineDiagnosticsResponse {
+  if (!snapshot || typeof snapshot !== "object") return diagnostics;
+  const raw = snapshot as Record<string, unknown>;
+  const snapshotPrimary = normalizeReason(raw.primary_failure_reason);
+  const snapshotSecondary =
+    Array.isArray(raw.secondary_reasons) ? raw.secondary_reasons.map((item) => normalizeReason(item)).filter((item): item is string => Boolean(item)) : [];
+  const stageFailureMapRaw = raw.stage_failure_map;
+  const stageFailureMap =
+    stageFailureMapRaw && typeof stageFailureMapRaw === "object"
+      ? (stageFailureMapRaw as Partial<Record<PipelineStage | "done", string[]>>)
+      : undefined;
+  const reasonGroupsRaw = raw.failure_reason_groups;
+  const reasonGroups =
+    reasonGroupsRaw && typeof reasonGroupsRaw === "object"
+      ? Object.entries(reasonGroupsRaw as Record<string, unknown>).map(([category, reasons]) => ({
+          category: category as FailureReasonGroup["category"],
+          reasons: Array.isArray(reasons)
+            ? reasons.map((item) => normalizeReason(item)).filter((item): item is string => Boolean(item))
+            : [],
+        }))
+      : [];
+
+  if (!snapshotPrimary && snapshotSecondary.length === 0 && reasonGroups.length === 0) {
+    return diagnostics;
+  }
+
+  const nextPrimary = diagnostics.primary_failure_reason ?? (snapshotPrimary ? canonicalReason(snapshotPrimary) : null);
+  const nextSecondary =
+    diagnostics.secondary_reasons.length > 0
+      ? diagnostics.secondary_reasons
+      : dedupeReasons(snapshotSecondary.map((row) => canonicalReason(row))).filter((row) => row !== nextPrimary);
+  const nextGroups = diagnostics.failure_reason_groups.length > 0 ? diagnostics.failure_reason_groups : reasonGroups;
+  const nextStageMap = Object.keys(diagnostics.stage_failure_map).length > 0 ? diagnostics.stage_failure_map : stageFailureMap ?? {};
+
+  return {
+    ...diagnostics,
+    primary_failure_reason: nextPrimary,
+    primary_failure_reason_human: nextPrimary ? humanizeReason(nextPrimary) : diagnostics.primary_failure_reason_human ?? null,
+    secondary_reasons: nextSecondary,
+    secondary_reasons_human: nextSecondary.map((reason) => humanizeReason(reason)),
+    failure_reason_groups: nextGroups,
+    failure_reason_groups_human: nextGroups.map((group) => ({
+      category: group.category,
+      reasons: group.reasons.map((reason) => humanizeReason(reason)),
+    })),
+    stage_failure_map: nextStageMap,
+  };
+}
