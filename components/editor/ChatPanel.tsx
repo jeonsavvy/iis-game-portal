@@ -124,7 +124,7 @@ export function ChatPanel({ messages, onSend, isGenerating, actions = [] }: Chat
                             <button type="button" onClick={() => onSend({ prompt: "따뜻한 일몰 조명과 Flat Shading 로우폴리 스타일로, 섬과 바다 위를 프로펠러 비행기로 돌아다니며 빛나는 링을 통과하는 풀 3D 플라이트 게임 만들어줘. 기수/주날개/꼬리날개/프로펠러를 분리해 조립하고, 안개와 링 파티클, Web Audio 효과음까지 넣어줘." })} disabled={isGenerating}>
                                 ✈️ 플라이트 게임
                             </button>
-                            <button type="button" onClick={() => onSend({ prompt: "검은 배경 위 형광 시안/마젠타 네온 도형이 빛나는 Geometry Wars 스타일 탑뷰 탄막 슈팅 게임 만들어줘. 트윈스틱 이동/에임, 대시, 웨이브 시스템, 타이틀 메뉴, 킬 카운트 UI, 스크린 쉐이크, 폭발 파티클, 게임오버/재시작 상태 관리까지 완성해줘." })} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "로우폴리 탑뷰 슈팅 게임 만들어줘. 읽히는 아레나, 커버 구조물, 적 탄 압박, 대시, 타이틀 메뉴, 웨이브 시스템, 히트/머즐/폭발 피드백, 게임오버/재시작 상태까지 완성해줘." })} disabled={isGenerating}>
                                 🔫 탑뷰 슈팅 게임
                             </button>
                         </div>
