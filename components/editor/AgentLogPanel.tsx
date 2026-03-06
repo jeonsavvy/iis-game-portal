@@ -15,7 +15,7 @@ export type AgentActivity = {
   metadata?: Record<string, unknown>;
 };
 
-export type RunStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
+export type RunStatus = "idle" | "queued" | "retrying" | "running" | "succeeded" | "failed" | "cancelled";
 
 type AgentLogPanelProps = {
   activities: AgentActivity[];
@@ -61,6 +61,7 @@ const ACTION_LABELS: Record<string, string> = {
 const RUN_LABELS: Record<RunStatus, string> = {
   idle: "대기",
   queued: "대기열",
+  retrying: "재시도 예정",
   running: "실행 중",
   succeeded: "완료",
   failed: "실패",

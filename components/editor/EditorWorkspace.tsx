@@ -40,6 +40,11 @@ type RunResponse = {
   status: RunStatus;
   error_code?: string | null;
   error_detail?: string;
+  attempt_count?: number;
+  retry_after_seconds?: number | null;
+  model_name?: string | null;
+  model_location?: string | null;
+  fallback_used?: boolean;
   final_score?: number;
   current_html?: string;
   activities?: AgentActivity[];
@@ -188,6 +193,10 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
     "scaffold_materialized",
     "prompt_run_queued",
     "prompt_run_started",
+    "prompt_run_model_selected",
+    "prompt_run_capacity_fallback",
+    "prompt_run_capacity_exhausted",
+    "prompt_run_retry_scheduled",
     "prompt_run_succeeded",
     "prompt_run_failed",
     "fix_proposed",
@@ -431,9 +440,11 @@ export function EditorWorkspace() {
           const nextStatus = (payload.status || "queued") as RunStatus;
           setRunStatus(nextStatus);
           setRunError(
-            payload.error_code
-              ? `${payload.error_code}${payload.error_detail ? ` · ${payload.error_detail}` : ""}`
-              : payload.error_detail || null,
+            nextStatus === "retrying"
+              ? `재시도 예정${typeof payload.retry_after_seconds === "number" ? ` · ${payload.retry_after_seconds}초 후` : ""}`
+              : payload.error_code
+                ? `${payload.error_code}${payload.error_detail ? ` · ${payload.error_detail}` : ""}`
+                : payload.error_detail || null,
           );
 
           if (Array.isArray(payload.activities)) {
