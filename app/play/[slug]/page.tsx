@@ -96,6 +96,9 @@ function resolvePlayFlavor(game: GameRow): "racing" | "flight" | "fps" | "brawle
 }
 
 function controlsByGame(game: GameRow): string[] {
+  if (Array.isArray(game.controls_guide) && game.controls_guide.length > 0) {
+    return game.controls_guide.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
   const flavor = resolvePlayFlavor(game);
   if (flavor === "racing") {
     return [
@@ -135,6 +138,9 @@ function controlsByGame(game: GameRow): string[] {
 }
 
 function overviewByGame(game: GameRow): string[] {
+  if (Array.isArray(game.play_overview) && game.play_overview.length > 0) {
+    return game.play_overview.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+  }
   const flavor = resolvePlayFlavor(game);
   const lines: string[] = [];
   lines.push("목표를 빠르게 파악하고 즉시 플레이하세요.");
@@ -174,7 +180,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (previewMode) {
     const previewGame = getPreviewGameBySlug(slugParam) ?? getPreviewGameById(slugParam) ?? PREVIEW_GAMES[0];
     const ogImage = previewGame.screenshot_url || previewGame.thumbnail_url || undefined;
-    const description = previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+    const description =
+      previewGame.marketing_summary || previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
     return {
       title: `${previewGame.name} - IIS Arcade`,
       description,
@@ -204,7 +211,7 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const resolvedAiReview = await resolveAiReviewFallback(game.slug, game.ai_review);
 
   const ogImage = game.screenshot_url || game.thumbnail_url || undefined;
-  const defaultDescription = `${game.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+  const defaultDescription = game.marketing_summary || `${game.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
 
   return {
     title: `${game.name} - IIS Arcade`,
@@ -282,7 +289,9 @@ async function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
         <div>
           <p className="eyebrow">게임 플레이</p>
           <h1 className="hero-title">{typedGame.name}</h1>
-          <p className="section-subtitle">바로 플레이하고 목표를 달성하세요.</p>
+          <p className="section-subtitle">
+            {typedGame.marketing_summary?.trim() || typedGame.ai_review?.trim() || "바로 플레이하고 목표를 달성하세요."}
+          </p>
         </div>
         <div className="play-redesign-actions">
           <Link className="button button-ghost" href="/">홈으로</Link>
@@ -320,7 +329,7 @@ async function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
       </section>
 
       <PlayInfoTabs
-        controlsHint={previewMode ? controlsByGame(typedGame) : []}
+        controlsHint={controlsByGame(typedGame)}
         overview={overviewByGame(typedGame)}
       />
     </section>

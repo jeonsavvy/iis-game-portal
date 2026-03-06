@@ -73,17 +73,14 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                         <h4>🚀 무엇을 만들까요?</h4>
                         <p>요청을 보내면 Codegen · Visual QA · Playtester가 순서대로 결과를 다듬습니다.</p>
                         <div className="editor-chat-suggestions">
-                            <button type="button" onClick={() => onSend("우주 슈팅 게임 만들어줘")} disabled={isGenerating}>
-                                🚀 우주 슈팅 게임
+                            <button type="button" onClick={() => onSend("오픈휠 레이스카로 서킷을 주행하며 랩타임을 기록하는 풀 3D 레이싱 게임 만들어줘")} disabled={isGenerating}>
+                                🏎️ 레이싱 게임
                             </button>
-                            <button type="button" onClick={() => onSend("3D 레이싱 게임 만들어줘")} disabled={isGenerating}>
-                                🏎️ 3D 레이싱
+                            <button type="button" onClick={() => onSend("우주 도그파이트에 초점을 맞춘 풀 3D 플라이트 슈팅 게임 만들어줘")} disabled={isGenerating}>
+                                🚀 플라이트 슈팅 게임
                             </button>
-                            <button type="button" onClick={() => onSend("좀비 서바이벌 게임 만들어줘")} disabled={isGenerating}>
-                                🧟 좀비 서바이벌
-                            </button>
-                            <button type="button" onClick={() => onSend("퍼즐 플랫포머 게임 만들어줘")} disabled={isGenerating}>
-                                🧩 퍼즐 플랫포머
+                            <button type="button" onClick={() => onSend("트윈스틱 이동과 에임, 대시, 웨이브 전투가 있는 탑뷰 슈팅 게임 만들어줘")} disabled={isGenerating}>
+                                🔫 탑뷰 슈팅 게임
                             </button>
                         </div>
                     </div>

@@ -36,6 +36,10 @@ export type Database = {
           url: string;
           thumbnail_url: string | null;
           ai_review: string | null;
+          marketing_summary: string | null;
+          play_overview: string[] | null;
+          controls_guide: string[] | null;
+          publish_copy_version: string | null;
           screenshot_url: string | null;
           status: GameStatus;
           created_by: string | null;
@@ -50,6 +54,10 @@ export type Database = {
           url: string;
           thumbnail_url?: string | null;
           ai_review?: string | null;
+          marketing_summary?: string | null;
+          play_overview?: string[] | null;
+          controls_guide?: string[] | null;
+          publish_copy_version?: string | null;
           screenshot_url?: string | null;
           status?: GameStatus;
           created_by?: string | null;
@@ -63,6 +71,10 @@ export type Database = {
           url?: string;
           thumbnail_url?: string | null;
           ai_review?: string | null;
+          marketing_summary?: string | null;
+          play_overview?: string[] | null;
+          controls_guide?: string[] | null;
+          publish_copy_version?: string | null;
           screenshot_url?: string | null;
           status?: GameStatus;
           updated_at?: string;

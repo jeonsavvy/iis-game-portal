@@ -11,6 +11,7 @@ type GameCardVariant = "default" | "featured" | "compact";
 export function GameCard({ game, variant = "default" }: { game: Game; variant?: GameCardVariant }) {
   const imageUrl = game.thumbnail_url ?? game.screenshot_url;
   const playPath = `/play/${game.slug}`;
+  const summary = game.marketing_summary?.trim() || "브라우저에서 즉시 실행";
 
   return (
     <article className={`arcade-game-card variant-${variant}`}>
@@ -34,7 +35,7 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
 
       <div className="arcade-game-card-body">
         <h4>{game.name}</h4>
-        <p>브라우저에서 즉시 실행</p>
+        <p>{summary}</p>
 
         <div className="arcade-game-card-foot">
           <Link className="button button-primary" href={playPath}>

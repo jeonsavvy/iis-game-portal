@@ -131,7 +131,7 @@ export function AgentLogPanel({
             실행 취소
           </button>
           <button type="button" onClick={onProposeFix} disabled={Boolean(issueBusy) || !canProposeFix || !onProposeFix}>
-            수정안 생성
+            수정안 다시 생성
           </button>
           <button type="button" onClick={onApplyFix} disabled={Boolean(issueBusy) || !canApplyFix || !onApplyFix}>
             수정안 적용
@@ -160,7 +160,7 @@ export function AgentLogPanel({
             disabled={Boolean(issueBusy)}
           />
           <button type="button" onClick={onReportIssue} disabled={Boolean(issueBusy) || !issueDraft.trim() || !onReportIssue}>
-            피드백 등록
+            피드백 보내고 수정안 받기
           </button>
         </div>
 

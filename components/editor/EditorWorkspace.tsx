@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
 import {
   AgentLogPanel,
@@ -53,6 +54,11 @@ type SessionFetchResponse = {
   status: string;
   current_html: string;
   score?: number;
+  current_run_id?: string | null;
+  current_run_status?: string | null;
+  last_issue_id?: string | null;
+  last_proposal_id?: string | null;
+  last_preview_html?: string | null;
 };
 
 type IssueCreateResponse = {
@@ -63,6 +69,28 @@ type ProposalResponse = {
   issue_id: string;
   proposal_id: string;
   preview_html: string;
+};
+
+type ConversationFetchResponse = {
+  messages?: Array<{
+    role?: string;
+    content?: string;
+    created_at?: string;
+    metadata?: Record<string, unknown>;
+  }>;
+};
+
+type LatestIssueFetchResponse = {
+  issue?: {
+    issue_id?: string;
+    status?: string;
+    category?: string;
+    details?: string;
+  } | null;
+  proposal_id?: string | null;
+  proposal_status?: string | null;
+  preview_html?: string | null;
+  routed_agents?: string[];
 };
 
 type ApplyFixResponse = {
@@ -77,6 +105,7 @@ const LOG_MIN_WIDTH = 360;
 const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
+const LAST_SESSION_STORAGE_KEY = "iis-editor-last-session-v1";
 const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
   fatal_runtime: "실행 불가",
   gameplay_bug: "게임플레이",
@@ -121,6 +150,14 @@ function normalizeActivityFromEvent(event: SessionEvent): AgentActivity | null {
   };
 }
 
+function normalizeChatRole(role: string | undefined): ChatMessage["role"] {
+  if (role === "visual_qa") return "visual_qa";
+  if (role === "playtester") return "playtester";
+  if (role === "system") return "system";
+  if (role === "assistant") return "assistant";
+  return "user";
+}
+
 function normalizeError(payload: unknown): string {
   if (!payload || typeof payload !== "object") {
     return "요청 처리 중 오류가 발생했습니다";
@@ -158,6 +195,8 @@ function wait(ms: number): Promise<void> {
 }
 
 export function EditorWorkspace() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const [session, setSession] = useState<SessionState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isIssueBusy, setIsIssueBusy] = useState(false);
@@ -175,13 +214,32 @@ export function EditorWorkspace() {
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
   const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
   const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
+  const [isRestoring, setIsRestoring] = useState(false);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
+  const restoredSessionRef = useRef<string | null>(null);
   const dragStateRef = useRef<{
     mode: "chat" | "log";
     rectLeft: number;
     rectRight: number;
   } | null>(null);
+
+  const syncEditorUrl = useCallback(
+    (sessionId: string, nextRunId?: string | null) => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.set("session", sessionId);
+      if (nextRunId && nextRunId.trim()) {
+        params.set("run", nextRunId);
+      } else {
+        params.delete("run");
+      }
+      router.replace(`/editor?${params.toString()}`);
+      if (typeof window !== "undefined") {
+        localStorage.setItem(LAST_SESSION_STORAGE_KEY, sessionId);
+      }
+    },
+    [router, searchParams],
+  );
 
   const ensureSession = useCallback(async (): Promise<string> => {
     if (session?.id) return session.id;
@@ -205,8 +263,9 @@ export function EditorWorkspace() {
       messages: [],
       activities: [],
     });
+    syncEditorUrl(newId, null);
     return newId;
-  }, [session]);
+  }, [session, syncEditorUrl]);
 
   const loadRecentEvents = useCallback(async (sessionId: string): Promise<SessionEvent[]> => {
     const res = await fetch(`${API_BASE}/${sessionId}/events?limit=40`, {
@@ -237,6 +296,31 @@ export function EditorWorkspace() {
     });
     if (!res.ok) return null;
     return (await res.json().catch(() => null)) as SessionFetchResponse | null;
+  }, []);
+
+  const fetchConversation = useCallback(async (sessionId: string): Promise<ChatMessage[]> => {
+    const res = await fetch(`${API_BASE}/${sessionId}/conversation?limit=80`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return [];
+    const payload = (await res.json().catch(() => ({}))) as ConversationFetchResponse;
+    if (!Array.isArray(payload.messages)) return [];
+    return payload.messages.map((message, index) => ({
+      id: `restore-${sessionId}-${index}-${message.created_at ?? "ts"}`,
+      role: normalizeChatRole(message.role),
+      content: String(message.content ?? ""),
+      timestamp: Date.parse(String(message.created_at ?? "")) || Date.now() + index,
+    }));
+  }, []);
+
+  const fetchLatestIssueSnapshot = useCallback(async (sessionId: string): Promise<LatestIssueFetchResponse | null> => {
+    const res = await fetch(`${API_BASE}/${sessionId}/issues/latest`, {
+      method: "GET",
+      cache: "no-store",
+    });
+    if (!res.ok) return null;
+    return (await res.json().catch(() => null)) as LatestIssueFetchResponse | null;
   }, []);
 
   const pollRun = useCallback(
@@ -335,6 +419,84 @@ export function EditorWorkspace() {
     const payload = JSON.stringify({ chatWidth, logWidth });
     localStorage.setItem(LAYOUT_STORAGE_KEY, payload);
   }, [chatWidth, isDesktop, logWidth]);
+
+  useEffect(() => {
+    if (typeof window === "undefined" || !session?.id) return;
+    localStorage.setItem(LAST_SESSION_STORAGE_KEY, session.id);
+  }, [session?.id]);
+
+  useEffect(() => {
+    const sessionParam = searchParams?.get("session")?.trim();
+    const runParam = searchParams?.get("run")?.trim();
+    if (!sessionParam) return;
+
+    const restoreKey = `${sessionParam}:${runParam ?? ""}`;
+    if (restoredSessionRef.current === restoreKey) return;
+    restoredSessionRef.current = restoreKey;
+
+    let cancelled = false;
+    const restore = async () => {
+      setIsRestoring(true);
+      try {
+        const [snapshot, messages, events, latestIssue] = await Promise.all([
+          fetchSessionSnapshot(sessionParam),
+          fetchConversation(sessionParam),
+          loadRecentEvents(sessionParam),
+          fetchLatestIssueSnapshot(sessionParam),
+        ]);
+        if (!snapshot) {
+          throw new Error("session_restore_failed");
+        }
+        if (cancelled) return;
+
+        const nextActivities = events
+          .map((event) => normalizeActivityFromEvent(event))
+          .filter((row): row is AgentActivity => Boolean(row));
+        const restoredRunId = runParam || snapshot.current_run_id || null;
+        const inferredRunId = restoredRunId || null;
+
+        setSession({
+          id: snapshot.session_id,
+          html: snapshot.current_html ?? "",
+          score: typeof snapshot.score === "number" ? snapshot.score : 0,
+          status: snapshot.status ?? "active",
+          messages,
+          activities: nextActivities,
+        });
+        setActiveIssueId(latestIssue?.issue?.issue_id ?? null);
+        setActiveProposalId(latestIssue?.proposal_id ?? null);
+        setPreviewHtmlOverride(latestIssue?.preview_html ?? snapshot.last_preview_html ?? null);
+        setIssueDraft(typeof latestIssue?.issue?.details === "string" ? latestIssue.issue.details : "");
+        setIssueCategory(
+          (typeof latestIssue?.issue?.category === "string" ? latestIssue.issue.category : "gameplay_bug") as IssueCategory,
+        );
+        setRunId(inferredRunId);
+        setRunStatus(
+          (snapshot.current_run_status &&
+          ["idle", "queued", "running", "succeeded", "failed", "cancelled"].includes(snapshot.current_run_status)
+            ? snapshot.current_run_status
+            : "idle") as RunStatus,
+        );
+
+        if (restoredRunId && (snapshot.current_run_status === "queued" || snapshot.current_run_status === "running")) {
+          void pollRun(sessionParam, restoredRunId);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setError(err instanceof Error ? err.message : "session_restore_failed");
+        }
+      } finally {
+        if (!cancelled) {
+          setIsRestoring(false);
+        }
+      }
+    };
+
+    void restore();
+    return () => {
+      cancelled = true;
+    };
+  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshot, loadRecentEvents, pollRun, searchParams]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -459,6 +621,7 @@ export function EditorWorkspace() {
         }
 
         setRunId(queuedRunId);
+        syncEditorUrl(sessionId, queuedRunId);
         setRunStatus((queuedPayload.status ?? "queued") as RunStatus);
         setSession((prev) =>
           prev
@@ -574,7 +737,7 @@ export function EditorWorkspace() {
         setIsGenerating(false);
       }
     },
-    [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents],
+    [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents, syncEditorUrl],
   );
 
   const handleCancelRun = useCallback(async () => {
@@ -593,6 +756,22 @@ export function EditorWorkspace() {
     setIsIssueBusy(true);
     try {
       const title = issueDraft.trim().slice(0, 80);
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "system",
+                  content: "🧩 피드백 접수 중...",
+                  timestamp: Date.now(),
+                },
+              ],
+            }
+          : prev,
+      );
       const response = await fetch(`${API_BASE}/${session.id}/issues`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -615,19 +794,48 @@ export function EditorWorkspace() {
                 {
                   id: makeId(),
                   role: "system",
-                  content: `🧩 이슈 등록 완료 (${ISSUE_CATEGORY_LABELS[issueCategory]}) · issue_id=${payload.issue_id}`,
+                  content: `🧩 이슈 등록 완료 (${ISSUE_CATEGORY_LABELS[issueCategory]}) · 수정안 생성 중...`,
                   timestamp: Date.now(),
                 },
               ],
             }
           : prev,
       );
+
+      const proposeResponse = await fetch(`${API_BASE}/${session.id}/issues/${payload.issue_id}/propose-fix`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          instruction: issueDraft.trim(),
+        }),
+      });
+      const proposePayload = (await proposeResponse.json().catch(() => ({}))) as ProposalResponse;
+      if (!proposeResponse.ok) throw new Error(normalizeError(proposePayload));
+      setActiveProposalId(proposePayload.proposal_id);
+      setPreviewHtmlOverride(proposePayload.preview_html);
+      setSession((prev) =>
+        prev
+          ? {
+              ...prev,
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "assistant",
+                  content: `🛠 수정안 생성 완료 · proposal_id=${proposePayload.proposal_id} (중앙 프리뷰 반영)`,
+                  timestamp: Date.now(),
+                },
+              ],
+            }
+          : prev,
+      );
+      await refreshActivitiesFromEvents(session.id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "issue_create_failed");
     } finally {
       setIsIssueBusy(false);
     }
-  }, [issueCategory, issueDraft, session?.id]);
+  }, [issueCategory, issueDraft, refreshActivitiesFromEvents, session?.id]);
 
   const handleProposeFix = useCallback(async () => {
     if (!session?.id || !activeIssueId) return;
@@ -839,6 +1047,12 @@ export function EditorWorkspace() {
           <button type="button" onClick={() => setError(null)}>
             닫기
           </button>
+        </div>
+      )}
+
+      {isRestoring && (
+        <div className="editor-error" style={{ background: "rgba(59, 130, 246, 0.15)", color: "#bfdbfe" }}>
+          <p>세션 상태를 복원하는 중입니다...</p>
         </div>
       )}
 
