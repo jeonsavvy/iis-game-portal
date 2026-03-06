@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 export type ChatAttachment = {
@@ -129,9 +130,12 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                             <div className="editor-chat-msg-body">{msg.content}</div>
                             {msg.attachment ? (
                                 msg.attachment.data_url ? (
-                                    <img
+                                    <Image
                                         src={msg.attachment.data_url}
                                         alt={msg.attachment.name}
+                                        width={92}
+                                        height={68}
+                                        unoptimized
                                         className="editor-chat-attachment-preview"
                                     />
                                 ) : (
@@ -200,7 +204,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
             </form>
             {attachment ? (
                 <div className="editor-chat-attachment-draft">
-                    {attachment.data_url ? <img src={attachment.data_url} alt={attachment.name} className="editor-chat-attachment-preview" /> : null}
+                    {attachment.data_url ? <Image src={attachment.data_url} alt={attachment.name} width={92} height={68} unoptimized className="editor-chat-attachment-preview" /> : null}
                     <span>첨부 예정: {attachment.name}</span>
                 </div>
             ) : null}

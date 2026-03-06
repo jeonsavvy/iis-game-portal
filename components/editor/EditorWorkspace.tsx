@@ -101,8 +101,6 @@ type ApplyFixResponse = {
 const API_BASE = "/api/sessions";
 const CHAT_MIN_WIDTH = 320;
 const CHAT_MAX_WIDTH = 560;
-const LOG_MIN_WIDTH = 360;
-const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
 const LAST_SESSION_STORAGE_KEY = "iis-editor-last-session-v1";
@@ -119,7 +117,15 @@ function activityRole(agent: string): ChatMessage["role"] {
 }
 
 function summarizeActivity(activity: AgentActivity): string {
-  return `${activity.agent}/${activity.action} · ${activity.summary || "처리 완료"}`;
+  const lines = [
+    `${activity.agent}/${activity.action}`,
+    activity.summary || "처리 완료",
+    activity.decision_reason ? `판단 근거: ${activity.decision_reason}` : "",
+    activity.change_impact ? `변경 영향: ${activity.change_impact}` : "",
+    typeof activity.metadata?.scaffold_key === "string" ? `기반 scaffold: ${activity.metadata.scaffold_key}` : "",
+    typeof activity.metadata?.generation_mode === "string" ? `생성 모드: ${activity.metadata.generation_mode}` : "",
+  ].filter(Boolean);
+  return lines.join("\n");
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -150,6 +156,53 @@ function normalizeChatRole(role: string | undefined): ChatMessage["role"] {
   if (role === "system") return "system";
   if (role === "assistant") return "assistant";
   return "user";
+}
+
+function mergeMessages(existing: ChatMessage[], incoming: ChatMessage[]): ChatMessage[] {
+  const byId = new Map<string, ChatMessage>();
+  [...existing, ...incoming].forEach((message) => {
+    byId.set(message.id, message);
+  });
+  return [...byId.values()].sort((left, right) => left.timestamp - right.timestamp);
+}
+
+function eventToChatMessage(event: SessionEvent): ChatMessage | null {
+  const timestamp = Date.parse(String(event.created_at ?? "")) || Date.now();
+  const scaffoldKey = typeof event.metadata?.scaffold_key === "string" ? event.metadata.scaffold_key : "";
+  const generationMode = typeof event.metadata?.generation_mode === "string" ? event.metadata.generation_mode : "";
+
+  if (event.event_type === "agent_activity" && event.agent) {
+    const lines = [
+      event.summary || `${event.agent} 작업`,
+      event.decision_reason ? `판단 근거: ${event.decision_reason}` : "",
+      event.change_impact ? `변경 영향: ${event.change_impact}` : "",
+      scaffoldKey ? `기반 scaffold: ${scaffoldKey}` : "",
+      generationMode ? `생성 모드: ${generationMode}` : "",
+    ].filter(Boolean);
+    return {
+      id: `event-${event.id}`,
+      role: activityRole(event.agent),
+      content: lines.join("\n"),
+      timestamp,
+    };
+  }
+
+  if (["prompt_run_queued", "prompt_run_started", "prompt_run_succeeded", "prompt_run_failed", "fix_proposed", "fix_applied", "issue_reported", "publish_success", "publish_blocked_runtime"].includes(event.event_type)) {
+    const lines = [
+      event.summary || event.event_type,
+      event.error_code ? `오류 코드: ${event.error_code}` : "",
+      scaffoldKey ? `기반 scaffold: ${scaffoldKey}` : "",
+      generationMode ? `생성 모드: ${generationMode}` : "",
+    ].filter(Boolean);
+    return {
+      id: `event-${event.id}`,
+      role: "system",
+      content: lines.join("\n"),
+      timestamp,
+    };
+  }
+
+  return null;
 }
 
 function normalizeAttachmentMetadata(metadata: Record<string, unknown> | undefined): ChatAttachment | null {
@@ -212,8 +265,8 @@ export function EditorWorkspace() {
   const [lastPrompt, setLastPrompt] = useState<string>("");
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
   const [chatWidth, setChatWidth] = useState(360);
-  const [logWidth, setLogWidth] = useState(390);
   const [isDesktop, setIsDesktop] = useState(false);
+  const [isDebugRailOpen, setIsDebugRailOpen] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
@@ -225,7 +278,7 @@ export function EditorWorkspace() {
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const restoredSessionRef = useRef<string | null>(null);
   const dragStateRef = useRef<{
-    mode: "chat" | "log";
+    mode: "chat";
     rectLeft: number;
     rectRight: number;
   } | null>(null);
@@ -303,6 +356,15 @@ export function EditorWorkspace() {
     if (!res.ok) return null;
     return (await res.json().catch(() => null)) as SessionFetchResponse | null;
   }, []);
+
+  const fetchSessionSnapshotWithRetry = useCallback(async (sessionId: string): Promise<SessionFetchResponse | null> => {
+    for (let attempt = 0; attempt < 3; attempt += 1) {
+      const snapshot = await fetchSessionSnapshot(sessionId);
+      if (snapshot) return snapshot;
+      await wait(500 * (attempt + 1));
+    }
+    return null;
+  }, [fetchSessionSnapshot]);
 
   const fetchConversation = useCallback(async (sessionId: string): Promise<ChatMessage[]> => {
     const res = await fetch(`${API_BASE}/${sessionId}/conversation?limit=80`, {
@@ -409,12 +471,9 @@ export function EditorWorkspace() {
     try {
       const raw = localStorage.getItem(LAYOUT_STORAGE_KEY);
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { chatWidth?: number; logWidth?: number };
+      const parsed = JSON.parse(raw) as { chatWidth?: number };
       if (typeof parsed.chatWidth === "number") {
         setChatWidth(clamp(parsed.chatWidth, CHAT_MIN_WIDTH, CHAT_MAX_WIDTH));
-      }
-      if (typeof parsed.logWidth === "number") {
-        setLogWidth(clamp(parsed.logWidth, LOG_MIN_WIDTH, LOG_MAX_WIDTH));
       }
     } catch {
       // noop
@@ -423,9 +482,9 @@ export function EditorWorkspace() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !isDesktop) return;
-    const payload = JSON.stringify({ chatWidth, logWidth });
+    const payload = JSON.stringify({ chatWidth });
     localStorage.setItem(LAYOUT_STORAGE_KEY, payload);
-  }, [chatWidth, isDesktop, logWidth]);
+  }, [chatWidth, isDesktop]);
 
   useEffect(() => {
     if (typeof window === "undefined" || !session?.id) return;
@@ -437,6 +496,13 @@ export function EditorWorkspace() {
     const runParam = searchParams?.get("run")?.trim();
     if (!sessionParam) return;
 
+    if (session?.id === sessionParam && session.messages.length > 0) {
+      if (runParam && runParam !== runId) {
+        setRunId(runParam);
+      }
+      return;
+    }
+
     const restoreKey = `${sessionParam}:${runParam ?? ""}`;
     if (restoredSessionRef.current === restoreKey) return;
     restoredSessionRef.current = restoreKey;
@@ -445,20 +511,29 @@ export function EditorWorkspace() {
     const restore = async () => {
       setIsRestoring(true);
       try {
-        const [snapshot, messages, events, latestIssue] = await Promise.all([
-          fetchSessionSnapshot(sessionParam),
+        const snapshot = await fetchSessionSnapshotWithRetry(sessionParam);
+        if (!snapshot) {
+          if (session?.id === sessionParam) return;
+          throw new Error("세션 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
+        }
+        if (cancelled) return;
+
+        const [messagesResult, eventsResult, latestIssueResult] = await Promise.allSettled([
           fetchConversation(sessionParam),
           loadRecentEvents(sessionParam),
           fetchLatestIssueSnapshot(sessionParam),
         ]);
-        if (!snapshot) {
-          throw new Error("session_restore_failed");
-        }
-        if (cancelled) return;
+
+        const messages = messagesResult.status === "fulfilled" ? messagesResult.value : [];
+        const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
+        const latestIssue = latestIssueResult.status === "fulfilled" ? latestIssueResult.value : null;
 
         const nextActivities = events
           .map((event) => normalizeActivityFromEvent(event))
           .filter((row): row is AgentActivity => Boolean(row));
+        const eventMessages = events
+          .map((event) => eventToChatMessage(event))
+          .filter((row): row is ChatMessage => Boolean(row));
         const restoredRunId = runParam || snapshot.current_run_id || null;
         const inferredRunId = restoredRunId || null;
 
@@ -467,7 +542,7 @@ export function EditorWorkspace() {
           html: snapshot.current_html ?? "",
           score: typeof snapshot.score === "number" ? snapshot.score : 0,
           status: snapshot.status ?? "active",
-          messages,
+          messages: mergeMessages(messages, eventMessages),
           activities: nextActivities,
         });
         setActiveIssueId(latestIssue?.issue?.issue_id ?? null);
@@ -485,8 +560,8 @@ export function EditorWorkspace() {
           void pollRun(sessionParam, restoredRunId);
         }
       } catch (err) {
-        if (!cancelled) {
-          setError(err instanceof Error ? err.message : "session_restore_failed");
+        if (!cancelled && session?.id !== sessionParam) {
+          setError(err instanceof Error ? err.message : "세션 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (!cancelled) {
@@ -499,7 +574,7 @@ export function EditorWorkspace() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshot, loadRecentEvents, pollRun, searchParams]);
+  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshotWithRetry, loadRecentEvents, pollRun, runId, searchParams, session]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -508,20 +583,10 @@ export function EditorWorkspace() {
 
       if (drag.mode === "chat") {
         const target = event.clientX - drag.rectLeft;
-        const maxChat = Math.max(
-          CHAT_MIN_WIDTH,
-          Math.min(CHAT_MAX_WIDTH, drag.rectRight - drag.rectLeft - LOG_MIN_WIDTH - 500),
-        );
+        const maxChat = Math.max(CHAT_MIN_WIDTH, Math.min(CHAT_MAX_WIDTH, drag.rectRight - drag.rectLeft - 500));
         setChatWidth(clamp(target, CHAT_MIN_WIDTH, maxChat));
         return;
       }
-
-      const fromRight = drag.rectRight - event.clientX;
-      const maxLog = Math.max(
-        LOG_MIN_WIDTH,
-        Math.min(LOG_MAX_WIDTH, drag.rectRight - drag.rectLeft - CHAT_MIN_WIDTH - 500),
-      );
-      setLogWidth(clamp(fromRight, LOG_MIN_WIDTH, maxLog));
     };
 
     const handleMouseUp = () => {
@@ -538,12 +603,12 @@ export function EditorWorkspace() {
   }, []);
 
   const startResize = useCallback(
-    (mode: "chat" | "log") => (event: ReactMouseEvent<HTMLDivElement>) => {
+    () => (event: ReactMouseEvent<HTMLDivElement>) => {
       if (!isDesktop) return;
       const rect = workspaceRef.current?.getBoundingClientRect();
       if (!rect) return;
       dragStateRef.current = {
-        mode,
+        mode: "chat",
         rectLeft: rect.left,
         rectRight: rect.right,
       };
@@ -624,7 +689,7 @@ export function EditorWorkspace() {
         pushMessage({
           id: makeId(),
           role: "assistant",
-          content: "🛠 수정안 준비 완료 · 중앙 프리뷰에서 바로 확인하고, 마음에 들면 우측에서 적용하세요.",
+          content: "🛠 수정안 준비 완료 · 중앙 프리뷰에서 바로 확인하고, 마음에 들면 진단 레일에서 적용하세요.",
           timestamp: Date.now(),
         });
         await refreshActivitiesFromEvents(sessionId);
@@ -1097,7 +1162,7 @@ export function EditorWorkspace() {
         ref={workspaceRef}
         style={
           isDesktop
-            ? { gridTemplateColumns: `${chatWidth}px 8px minmax(0,1fr) 8px ${logWidth}px` }
+            ? { gridTemplateColumns: `${chatWidth}px 8px minmax(0,1fr)` }
             : undefined
         }
       >
@@ -1105,38 +1170,33 @@ export function EditorWorkspace() {
         {isDesktop ? (
           <div
             className="editor-resizer editor-resizer--chat"
-            onMouseDown={startResize("chat")}
+            onMouseDown={startResize()}
             role="separator"
             aria-orientation="vertical"
             aria-label="채팅 패널 너비 조절"
           />
         ) : null}
-        <GamePreview html={previewHtmlOverride ?? session?.html ?? ""} />
-        {isDesktop ? (
-          <div
-            className="editor-resizer editor-resizer--log"
-            onMouseDown={startResize("log")}
-            role="separator"
-            aria-orientation="vertical"
-            aria-label="에이전트 로그 너비 조절"
+        <div className="editor-stage">
+          <GamePreview html={previewHtmlOverride ?? session?.html ?? ""} />
+          <AgentLogPanel
+            activities={session?.activities ?? []}
+            runStatus={runStatus}
+            runId={runId}
+            runError={runError}
+            isOpen={isDebugRailOpen}
+            onToggle={() => setIsDebugRailOpen((prev) => !prev)}
+            isBusy={isGenerating}
+            onCancelRun={handleCancelRun}
+            onRetryLast={handleRetryLast}
+            onRerunQa={handleRerunQa}
+            onRestorePrevious={handleRestorePrevious}
+            onProposeFix={handleProposeFix}
+            onApplyFix={handleApplyFix}
+            issueBusy={isIssueBusy}
+            canProposeFix={Boolean(activeIssueId)}
+            canApplyFix={Boolean(activeIssueId && activeProposalId)}
           />
-        ) : null}
-        <AgentLogPanel
-          activities={session?.activities ?? []}
-          runStatus={runStatus}
-          runId={runId}
-          runError={runError}
-          isBusy={isGenerating}
-          onCancelRun={handleCancelRun}
-          onRetryLast={handleRetryLast}
-          onRerunQa={handleRerunQa}
-          onRestorePrevious={handleRestorePrevious}
-          onProposeFix={handleProposeFix}
-          onApplyFix={handleApplyFix}
-          issueBusy={isIssueBusy}
-          canProposeFix={Boolean(activeIssueId)}
-          canApplyFix={Boolean(activeIssueId && activeProposalId)}
-        />
+        </div>
       </div>
     </div>
   );

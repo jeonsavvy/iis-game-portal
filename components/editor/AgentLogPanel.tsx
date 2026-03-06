@@ -22,6 +22,8 @@ type AgentLogPanelProps = {
   runStatus: RunStatus;
   runId?: string | null;
   runError?: string | null;
+  isOpen: boolean;
+  onToggle: () => void;
   isBusy?: boolean;
   onCancelRun?: () => void;
   onRetryLast?: () => void;
@@ -74,6 +76,8 @@ export function AgentLogPanel({
   runStatus,
   runId,
   runError,
+  isOpen,
+  onToggle,
   isBusy,
   onCancelRun,
   onRetryLast,
@@ -88,17 +92,17 @@ export function AgentLogPanel({
   const activeAgents = uniqueAgents(activities);
 
   return (
-    <aside className="editor-agent-panel editor-agent-panel--open">
-      <div className="editor-agent-toggle editor-agent-toggle--locked">
+    <aside className={`editor-agent-panel ${isOpen ? "editor-agent-panel--open" : "editor-agent-panel--collapsed"}`}>
+      <button type="button" className="editor-agent-toggle" onClick={onToggle} aria-expanded={isOpen}>
         <span className="editor-agent-toggle-icon">🧠</span>
-        <span className="editor-agent-toggle-label">에이전트 로그</span>
+        {isOpen ? <span className="editor-agent-toggle-label">에이전트 로그</span> : null}
         <span className={`editor-run-status editor-run-status--${runStatus}`}>{RUN_LABELS[runStatus]}</span>
-      </div>
+      </button>
 
-      <div className="editor-agent-list">
+      {isOpen ? <div className="editor-agent-list">
         <div className="editor-agent-intro">
-          <strong>🧠 에이전트 타임라인</strong>
-          <p>채팅창 요청을 해석해 Codegen → Visual QA → Playtester 순서로 작업합니다.</p>
+          <strong>🧠 진단 레일</strong>
+          <p>실제 작업 흐름은 왼쪽 채팅 타임라인에 통합되고, 이 패널은 디버그/재시도용 상세 영역입니다.</p>
           {runId ? <p>실행 ID: {runId}</p> : null}
           {activeAgents.length > 0 ? <p>활동: {activeAgents.join(" · ")}</p> : null}
           {runError ? <p className="editor-agent-error">오류: {runError}</p> : null}
@@ -155,7 +159,7 @@ export function AgentLogPanel({
             </div>
           ))
         )}
-      </div>
+      </div> : null}
     </aside>
   );
 }

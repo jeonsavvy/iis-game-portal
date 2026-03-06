@@ -93,10 +93,16 @@
 .editor-workspace {
   flex: 1;
   display: grid;
-  grid-template-columns: minmax(320px, 420px) 8px minmax(0, 1fr) 8px minmax(320px, 420px);
+  grid-template-columns: minmax(320px, 420px) 8px minmax(0, 1fr);
   overflow: hidden;
   position: relative;
   z-index: 1;
+}
+
+.editor-stage {
+  position: relative;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .editor-resizer {
@@ -268,16 +274,22 @@ body.editor-resizing {
 
 /* -- Input -- */
 .editor-chat-input {
-  display: flex;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas:
+    "textarea textarea"
+    "actions send";
+  gap: 0.5rem 0.65rem;
   padding: 0.65rem 0.75rem;
   border-top: 1px solid var(--border, rgba(255, 255, 255, 0.08));
   background: rgba(0, 0, 0, 0.15);
 }
 .editor-chat-input-actions {
+  grid-area: actions;
   display: flex;
-  flex-direction: column;
+  flex-wrap: wrap;
   gap: 0.35rem;
+  min-width: 0;
 }
 .editor-chat-attach {
   border-radius: 0.4rem;
@@ -295,7 +307,8 @@ body.editor-resizing {
   border-color: rgba(244, 114, 182, 0.22);
 }
 .editor-chat-input textarea {
-  flex: 1;
+  grid-area: textarea;
+  min-width: 0;
   resize: none;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border, rgba(255, 255, 255, 0.08));
@@ -314,6 +327,7 @@ body.editor-resizing {
   opacity: 0.5;
 }
 .editor-chat-send {
+  grid-area: send;
   align-self: flex-end;
   padding: 0.45rem 0.8rem;
   border-radius: 0.4rem;
@@ -372,16 +386,35 @@ body.editor-resizing {
 
 /* ---- Agent Log Panel ---- */
 .editor-agent-panel {
-  width: 100%;
-  min-width: 0;
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  bottom: 12px;
+  width: min(360px, calc(100% - 24px));
   background: linear-gradient(180deg, rgba(7, 13, 34, 0.97), rgba(15, 17, 45, 0.97));
   border-left: 1px solid rgba(96, 165, 250, 0.2);
+  border: 1px solid rgba(96, 165, 250, 0.2);
+  border-radius: 16px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
+  box-shadow: 0 24px 48px rgba(2, 6, 23, 0.4);
+  transition: width 160ms ease, transform 160ms ease;
+  z-index: 3;
 }
 .editor-agent-panel--open {
-  width: 100%;
+  width: min(360px, calc(100% - 24px));
+}
+
+.editor-agent-panel--collapsed {
+  width: 70px;
+}
+
+.editor-agent-panel--collapsed .editor-agent-toggle {
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.7rem 0.4rem;
 }
 
 .editor-agent-toggle {
@@ -396,8 +429,9 @@ body.editor-resizing {
   border-bottom: 1px solid rgba(148, 163, 184, 0.2);
   color: #cbd5f5;
   font-size: 0.86rem;
-  cursor: default;
+  cursor: pointer;
   text-align: left;
+  background: rgba(5, 11, 31, 0.92);
 }
 
 .editor-agent-toggle-icon {
@@ -417,6 +451,11 @@ body.editor-resizing {
   border-radius: 0.35rem;
   border: 1px solid rgba(148, 163, 184, 0.3);
   color: #e2e8f0;
+}
+
+.editor-agent-panel--collapsed .editor-run-status {
+  margin-left: 0;
+  margin-top: 0.2rem;
 }
 
 .editor-run-status--queued {
@@ -621,7 +660,7 @@ body.editor-resizing {
 @media (max-width: 1099px) {
   .editor-workspace {
     grid-template-columns: 1fr;
-    grid-template-rows: minmax(320px, 48vh) minmax(320px, 1fr) minmax(280px, 40vh);
+    grid-template-rows: minmax(320px, 48vh) minmax(320px, 1fr);
   }
 
   .editor-resizer {
@@ -631,7 +670,17 @@ body.editor-resizing {
   .editor-chat-panel {
     max-height: none;
   }
-  .editor-agent-panel--open {
-    width: 100%;
+  .editor-stage {
+    min-height: 320px;
+  }
+
+  .editor-agent-panel,
+  .editor-agent-panel--open,
+  .editor-agent-panel--collapsed {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    bottom: 12px;
+    width: min(320px, calc(100% - 24px));
   }
 }
