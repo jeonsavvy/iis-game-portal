@@ -385,9 +385,7 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 }}
               >
                 <strong>{session.title}</strong>
-                <p style={{ margin: "4px 0 0" }}>
-                  {labelForStatus(session.status)} · 점수 {session.score}
-                </p>
+                <p style={{ margin: "4px 0 0" }}>{labelForStatus(session.status)}</p>
                 <small>
                   실행 상태: {labelForRunStatus(session.runStatus)}
                   {session.latestError ? ` · 최근 오류: ${session.latestError}` : ""}
@@ -411,11 +409,6 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 {event.input_signal ? <p style={{ margin: 0 }}>입력: {event.input_signal}</p> : null}
                 {event.decision_reason ? <p style={{ margin: 0 }}>판단 근거: {event.decision_reason}</p> : null}
                 {event.change_impact ? <p style={{ margin: 0 }}>영향: {event.change_impact}</p> : null}
-                {event.before_score !== null && event.after_score !== null ? (
-                  <p style={{ margin: 0 }}>
-                    점수 변화: {event.before_score} → {event.after_score}
-                  </p>
-                ) : null}
                 {typeof event.confidence === "number" ? <p style={{ margin: 0 }}>신뢰도: {event.confidence.toFixed(2)}</p> : null}
                 {event.error_code ? <p style={{ margin: 0, color: "#fca5a5" }}>오류 코드: {event.error_code}</p> : null}
               </article>

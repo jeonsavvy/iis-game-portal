@@ -15,7 +15,7 @@ export type AgentActivity = {
 };
 
 export type RunStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
-export type IssueCategory = "gameplay" | "visual" | "runtime";
+export type IssueCategory = "fatal_runtime" | "gameplay_bug" | "visual_polish" | "ux_copy" | "publish_blocker";
 
 type AgentLogPanelProps = {
   activities: AgentActivity[];
@@ -69,13 +69,6 @@ const RUN_LABELS: Record<RunStatus, string> = {
   failed: "실패",
   cancelled: "취소됨",
 };
-
-function deltaLabel(activity: AgentActivity): string | null {
-  if (typeof activity.before_score !== "number" || typeof activity.after_score !== "number") {
-    return null;
-  }
-  return `${activity.before_score} → ${activity.after_score}`;
-}
 
 function uniqueAgents(activities: AgentActivity[]): string[] {
   return Array.from(new Set(activities.map((act) => AGENT_LABELS[act.agent] ?? act.agent)));
@@ -153,9 +146,11 @@ export function AgentLogPanel({
             onChange={(event) => onIssueCategoryChange(event.target.value as IssueCategory)}
             disabled={Boolean(issueBusy)}
           >
-            <option value="gameplay">게임플레이 / 물리감</option>
-            <option value="visual">비주얼 / 가독성</option>
-            <option value="runtime">런타임 / 버그</option>
+            <option value="fatal_runtime">실행 불가 / 부팅 실패</option>
+            <option value="gameplay_bug">게임플레이 / 조작감</option>
+            <option value="visual_polish">비주얼 / 가독성</option>
+            <option value="ux_copy">문구 / 안내 흐름</option>
+            <option value="publish_blocker">퍼블리시 차단 이슈</option>
           </select>
           <textarea
             value={issueDraft}
@@ -178,8 +173,6 @@ export function AgentLogPanel({
                 <span>{AGENT_ICONS[act.agent] ?? "🔧"}</span>
                 <strong>{AGENT_LABELS[act.agent] ?? act.agent}</strong>
                 <span className="editor-agent-action">{ACTION_LABELS[act.action] ?? act.action}</span>
-                {act.score > 0 && <span className="editor-agent-score">{act.score}점</span>}
-                {deltaLabel(act) && <span className="editor-agent-score">{deltaLabel(act)}</span>}
               </div>
               {act.summary && <p className="editor-agent-summary">{act.summary}</p>}
               {act.input_signal ? <p className="editor-agent-summary">입력 신호: {act.input_signal}</p> : null}

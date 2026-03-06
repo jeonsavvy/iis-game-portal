@@ -21,7 +21,7 @@ export async function POST(
       body: {
         title: body.title ?? "",
         details: body.details ?? "",
-        category: body.category ?? "gameplay",
+        category: body.category ?? "gameplay_bug",
       },
     });
   });

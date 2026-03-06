@@ -78,9 +78,11 @@ const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
 const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
-  gameplay: "게임플레이",
-  visual: "비주얼",
-  runtime: "런타임",
+  fatal_runtime: "실행 불가",
+  gameplay_bug: "게임플레이",
+  visual_polish: "비주얼",
+  ux_copy: "문구/안내",
+  publish_blocker: "퍼블리시 차단",
 };
 
 let msgCounter = 0;
@@ -95,12 +97,7 @@ function activityRole(agent: string): ChatMessage["role"] {
 }
 
 function summarizeActivity(activity: AgentActivity): string {
-  const score = activity.score > 0 ? ` (${activity.score}점)` : "";
-  const delta =
-    typeof activity.before_score === "number" && typeof activity.after_score === "number"
-      ? ` [${activity.before_score}→${activity.after_score}]`
-      : "";
-  return `${activity.agent}/${activity.action}${score}${delta} · ${activity.summary || "처리 완료"}`;
+  return `${activity.agent}/${activity.action} · ${activity.summary || "처리 완료"}`;
 }
 
 function clamp(value: number, min: number, max: number): number {
@@ -174,7 +171,7 @@ export function EditorWorkspace() {
   const [runId, setRunId] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
   const [issueDraft, setIssueDraft] = useState("");
-  const [issueCategory, setIssueCategory] = useState<IssueCategory>("gameplay");
+  const [issueCategory, setIssueCategory] = useState<IssueCategory>("gameplay_bug");
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
   const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
   const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
@@ -491,7 +488,6 @@ export function EditorWorkspace() {
             if (prev.html.trim() && prev.html !== nextHtml) {
               setHtmlHistory((history) => [...history.slice(-9), prev.html]);
             }
-            const score = typeof snapshot?.score === "number" ? snapshot.score : runResult.final_score ?? prev.score;
             const activityMessages: ChatMessage[] = (runResult.activities ?? []).map((activity) => ({
               id: makeId(),
               role: activityRole(activity.agent),
@@ -501,18 +497,18 @@ export function EditorWorkspace() {
             return {
               ...prev,
               html: nextHtml,
-              score,
+              score: typeof snapshot?.score === "number" ? snapshot.score : prev.score,
               status: snapshot?.status ?? "active",
               messages: [
                 ...prev.messages,
                 ...activityMessages,
                 {
                   id: makeId(),
-                    role: "assistant",
-                    content: `✅ 실행 완료 (점수: ${score}/100)`,
-                    timestamp: Date.now(),
-                  },
-                ],
+                  role: "assistant",
+                  content: "✅ 실행 완료",
+                  timestamp: Date.now(),
+                },
+              ],
               activities: runResult.activities ?? prev.activities,
             };
           });
@@ -823,7 +819,6 @@ export function EditorWorkspace() {
         <h2>🕹 세션 에디터</h2>
         <div className="editor-header-actions">
           <span className="editor-loop-badge">Codegen · Visual QA · Playtester 루프</span>
-          {session?.score ? <span className="editor-score">품질 점수: {session.score}/100</span> : null}
           <button type="button" className="button button-ghost" disabled={!session?.id || isGenerating} onClick={handleApprovePublish}>
             ✅ 퍼블리시 승인
           </button>
