@@ -36,6 +36,7 @@ type SessionEvent = {
   error_code?: string | null;
   before_score?: number | null;
   after_score?: number | null;
+  metadata?: Record<string, unknown>;
   created_at?: string;
 };
 
@@ -147,6 +148,7 @@ function normalizeActivityFromEvent(event: SessionEvent): AgentActivity | null {
     error_code: event.error_code || null,
     before_score: typeof event.before_score === "number" ? event.before_score : null,
     after_score: typeof event.after_score === "number" ? event.after_score : null,
+    metadata: event.metadata,
   };
 }
 

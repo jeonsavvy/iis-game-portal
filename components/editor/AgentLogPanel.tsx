@@ -12,6 +12,7 @@ export type AgentActivity = {
   error_code?: string | null;
   before_score?: number | null;
   after_score?: number | null;
+  metadata?: Record<string, unknown>;
 };
 
 export type RunStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
@@ -178,6 +179,12 @@ export function AgentLogPanel({
               {act.input_signal ? <p className="editor-agent-summary">입력 신호: {act.input_signal}</p> : null}
               {act.decision_reason ? <p className="editor-agent-summary">판단 근거: {act.decision_reason}</p> : null}
               {act.change_impact ? <p className="editor-agent-summary">변경 영향: {act.change_impact}</p> : null}
+              {typeof act.metadata?.scaffold_key === "string" ? (
+                <p className="editor-agent-summary">기반 scaffold: {act.metadata.scaffold_key as string}</p>
+              ) : null}
+              {typeof act.metadata?.generation_mode === "string" ? (
+                <p className="editor-agent-summary">생성 모드: {act.metadata.generation_mode as string}</p>
+              ) : null}
               {typeof act.confidence === "number" ? (
                 <p className="editor-agent-summary">신뢰도: {act.confidence.toFixed(2)}</p>
               ) : null}

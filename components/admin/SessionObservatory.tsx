@@ -409,6 +409,12 @@ export function SessionObservatory({ previewMode = false }: SessionObservatoryPr
                 {event.input_signal ? <p style={{ margin: 0 }}>입력: {event.input_signal}</p> : null}
                 {event.decision_reason ? <p style={{ margin: 0 }}>판단 근거: {event.decision_reason}</p> : null}
                 {event.change_impact ? <p style={{ margin: 0 }}>영향: {event.change_impact}</p> : null}
+                {typeof event.metadata?.scaffold_key === "string" ? (
+                  <p style={{ margin: 0 }}>기반 scaffold: {event.metadata.scaffold_key}</p>
+                ) : null}
+                {typeof event.metadata?.generation_mode === "string" ? (
+                  <p style={{ margin: 0 }}>생성 모드: {event.metadata.generation_mode}</p>
+                ) : null}
                 {typeof event.confidence === "number" ? <p style={{ margin: 0 }}>신뢰도: {event.confidence.toFixed(2)}</p> : null}
                 {event.error_code ? <p style={{ margin: 0, color: "#fca5a5" }}>오류 코드: {event.error_code}</p> : null}
               </article>
