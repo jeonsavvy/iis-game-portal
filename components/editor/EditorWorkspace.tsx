@@ -274,6 +274,7 @@ export function EditorWorkspace() {
   const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
   const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [restoreWarning, setRestoreWarning] = useState<string | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const restoredSessionRef = useRef<string | null>(null);
@@ -527,6 +528,15 @@ export function EditorWorkspace() {
         const messages = messagesResult.status === "fulfilled" ? messagesResult.value : [];
         const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
         const latestIssue = latestIssueResult.status === "fulfilled" ? latestIssueResult.value : null;
+        if (messagesResult.status === "rejected" || eventsResult.status === "rejected" || latestIssueResult.status === "rejected") {
+          const warnings: string[] = [];
+          if (messagesResult.status === "rejected") warnings.push("대화 일부");
+          if (eventsResult.status === "rejected") warnings.push("이벤트 일부");
+          if (latestIssueResult.status === "rejected") warnings.push("수정안 일부");
+          setRestoreWarning(`${warnings.join(", ")} 복원에 실패했지만 작업은 계속할 수 있습니다.`);
+        } else {
+          setRestoreWarning(null);
+        }
 
         const nextActivities = events
           .map((event) => normalizeActivityFromEvent(event))
@@ -1115,6 +1125,7 @@ export function EditorWorkspace() {
     setPreviewHtmlOverride(null);
     setHtmlHistory([]);
     setError(null);
+    setRestoreWarning(null);
     restoredSessionRef.current = null;
     router.replace("/editor");
   }, [router]);
@@ -1156,6 +1167,15 @@ export function EditorWorkspace() {
           <p>세션 상태를 복원하는 중입니다...</p>
         </div>
       )}
+
+      {restoreWarning && !error ? (
+        <div className="editor-error" style={{ background: "rgba(250, 204, 21, 0.12)", color: "#fde68a" }}>
+          <p>{restoreWarning}</p>
+          <button type="button" onClick={() => setRestoreWarning(null)}>
+            닫기
+          </button>
+        </div>
+      ) : null}
 
       <div
         className="editor-workspace"

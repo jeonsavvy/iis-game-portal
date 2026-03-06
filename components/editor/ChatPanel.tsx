@@ -31,7 +31,7 @@ type ChatPanelProps = {
 
 const ROLE_LABELS: Record<ChatMessage["role"], string> = {
     user: "나",
-    assistant: "Codegen",
+    assistant: "코드젠",
     visual_qa: "시각 QA",
     playtester: "플레이테스터",
     system: "시스템",
@@ -107,7 +107,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                 {messages.length === 0 ? (
                     <div className="editor-chat-welcome">
                         <h4>🚀 무엇을 만들까요?</h4>
-                        <p>요청을 보내면 Codegen · Visual QA · Playtester가 순서대로 결과를 다듬습니다.</p>
+                        <p>왼쪽 채팅에서 요청하고, 오른쪽 프리뷰를 보며 바로 수정하세요. 진단 레일은 필요할 때만 열면 됩니다.</p>
                         <div className="editor-chat-suggestions">
                             <button type="button" onClick={() => onSend({ prompt: "오픈휠 레이스카로 서킷을 주행하며 랩타임을 기록하는 풀 3D 레이싱 게임 만들어줘" })} disabled={isGenerating}>
                                 🏎️ 레이싱 게임
