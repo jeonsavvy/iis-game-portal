@@ -23,10 +23,19 @@ export type ChatSendPayload = {
     mode?: "auto" | "generate" | "issue";
 };
 
+export type ChatAction = {
+    id: string;
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+    tone?: "default" | "primary";
+};
+
 type ChatPanelProps = {
     messages: ChatMessage[];
     onSend: (payload: ChatSendPayload) => void;
     isGenerating: boolean;
+    actions?: ChatAction[];
 };
 
 const ROLE_LABELS: Record<ChatMessage["role"], string> = {
@@ -45,7 +54,7 @@ const ROLE_ICONS: Record<ChatMessage["role"], string> = {
     system: "⚙️",
 };
 
-export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
+export function ChatPanel({ messages, onSend, isGenerating, actions = [] }: ChatPanelProps) {
     const [input, setInput] = useState("");
     const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
@@ -158,6 +167,22 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                     </div>
                 )}
             </div>
+
+            {actions.length > 0 ? (
+                <div className="editor-chat-quick-actions">
+                    {actions.map((action) => (
+                        <button
+                            key={action.id}
+                            type="button"
+                            className={`editor-chat-quick-action editor-chat-quick-action--${action.tone ?? "default"}`}
+                            onClick={action.onClick}
+                            disabled={Boolean(action.disabled) || isGenerating}
+                        >
+                            {action.label}
+                        </button>
+                    ))}
+                </div>
+            ) : null}
 
             <form className="editor-chat-input" onSubmit={handleSubmit}>
                 <input

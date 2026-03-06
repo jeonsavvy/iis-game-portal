@@ -3,12 +3,8 @@
 import { useCallback, useEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import {
-  AgentLogPanel,
-  type AgentActivity,
-  type RunStatus,
-} from "@/components/editor/AgentLogPanel";
-import { ChatPanel, type ChatAttachment, type ChatMessage, type ChatSendPayload } from "@/components/editor/ChatPanel";
+import { type AgentActivity, type RunStatus } from "@/components/editor/AgentLogPanel";
+import { ChatPanel, type ChatAttachment, type ChatMessage, type ChatSendPayload, type ChatAction } from "@/components/editor/ChatPanel";
 import { GamePreview } from "@/components/editor/GamePreview";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
@@ -279,7 +275,6 @@ export function EditorWorkspace() {
   const [htmlHistory, setHtmlHistory] = useState<string[]>([]);
   const [chatWidth, setChatWidth] = useState(360);
   const [isDesktop, setIsDesktop] = useState(false);
-  const [isDebugRailOpen, setIsDebugRailOpen] = useState(false);
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
@@ -945,17 +940,6 @@ export function EditorWorkspace() {
     [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents, session?.html, submitChatIssue, syncEditorUrl],
   );
 
-  const handleCancelRun = useCallback(async () => {
-    if (!session?.id || !runId || runStatus !== "running") return;
-    await fetch(`${API_BASE}/${session.id}/runs/${runId}/cancel`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({}),
-    });
-    setRunStatus("cancelled");
-    setRunError("prompt_run_cancelled");
-  }, [runId, runStatus, session?.id]);
-
   const handleProposeFix = useCallback(async () => {
     if (!session?.id || !activeIssueId) return;
     setIsIssueBusy(true);
@@ -1161,6 +1145,8 @@ export function EditorWorkspace() {
         <h2>🕹 세션 에디터</h2>
         <div className="editor-header-actions">
           <span className="editor-loop-badge">Codegen · Visual QA · Playtester 루프</span>
+          {runStatus !== "idle" ? <span className="editor-loop-badge">{runStatus}</span> : null}
+          {runError && !error ? <span className="editor-loop-badge">진단: {runError}</span> : null}
           <button type="button" className="button button-ghost" onClick={handleStartFreshSession} disabled={isGenerating || isIssueBusy}>
             🆕 새 세션
           </button>
@@ -1202,7 +1188,7 @@ export function EditorWorkspace() {
         </div>
       ) : null}
 
-      <div
+        <div
         className="editor-workspace"
         ref={workspaceRef}
         style={
@@ -1211,7 +1197,44 @@ export function EditorWorkspace() {
             : undefined
         }
       >
-        <ChatPanel messages={session?.messages ?? []} onSend={handleSend} isGenerating={isGenerating} />
+        <ChatPanel
+          messages={session?.messages ?? []}
+          onSend={handleSend}
+          isGenerating={isGenerating}
+          actions={[
+            {
+              id: "retry-last",
+              label: "마지막 요청 재실행",
+              onClick: handleRetryLast,
+              disabled: !lastPrompt.trim() || isGenerating,
+            },
+            {
+              id: "rerun-qa",
+              label: "QA 다시 실행",
+              onClick: handleRerunQa,
+              disabled: !session?.id || isGenerating,
+            },
+            {
+              id: "restore-previous",
+              label: "직전 결과 복원",
+              onClick: handleRestorePrevious,
+              disabled: htmlHistory.length === 0,
+            },
+            {
+              id: "propose-fix",
+              label: "수정안 다시 생성",
+              onClick: handleProposeFix,
+              disabled: !activeIssueId || isIssueBusy,
+            },
+            {
+              id: "apply-fix",
+              label: "수정안 적용",
+              onClick: handleApplyFix,
+              disabled: !activeIssueId || !activeProposalId || isIssueBusy,
+              tone: "primary",
+            },
+          ].filter(Boolean) as ChatAction[]}
+        />
         {isDesktop ? (
           <div
             className="editor-resizer editor-resizer--chat"
@@ -1223,24 +1246,6 @@ export function EditorWorkspace() {
         ) : null}
         <div className="editor-stage">
           <GamePreview html={previewHtmlOverride ?? session?.html ?? ""} />
-          <AgentLogPanel
-            activities={session?.activities ?? []}
-            runStatus={runStatus}
-            runId={runId}
-            runError={runError}
-            isOpen={isDebugRailOpen}
-            onToggle={() => setIsDebugRailOpen((prev) => !prev)}
-            isBusy={isGenerating}
-            onCancelRun={handleCancelRun}
-            onRetryLast={handleRetryLast}
-            onRerunQa={handleRerunQa}
-            onRestorePrevious={handleRestorePrevious}
-            onProposeFix={handleProposeFix}
-            onApplyFix={handleApplyFix}
-            issueBusy={isIssueBusy}
-            canProposeFix={Boolean(activeIssueId)}
-            canApplyFix={Boolean(activeIssueId && activeProposalId)}
-          />
         </div>
       </div>
     </div>
