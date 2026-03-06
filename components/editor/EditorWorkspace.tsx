@@ -187,7 +187,19 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
     };
   }
 
-  if (["prompt_run_queued", "prompt_run_started", "prompt_run_succeeded", "prompt_run_failed", "fix_proposed", "fix_applied", "issue_reported", "publish_success", "publish_blocked_runtime"].includes(event.event_type)) {
+  if ([
+    "plan_draft_created",
+    "prompt_run_queued",
+    "prompt_run_started",
+    "prompt_run_succeeded",
+    "prompt_run_failed",
+    "fix_proposed",
+    "fix_applied",
+    "issue_reported",
+    "publish_success",
+    "publish_blocked_runtime",
+    "scaffold_reverted_to_baseline",
+  ].includes(event.event_type)) {
     const lines = [
       event.summary || event.event_type,
       event.error_code ? `오류 코드: ${event.error_code}` : "",
@@ -514,8 +526,11 @@ export function EditorWorkspace() {
       try {
         const snapshot = await fetchSessionSnapshotWithRetry(sessionParam);
         if (!snapshot) {
-          if (session?.id === sessionParam) return;
-          throw new Error("세션 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          if (session?.id === sessionParam) {
+            setRestoreWarning("세션 스냅샷을 다시 불러오지 못했지만 현재 화면은 유지했습니다.");
+            return;
+          }
+          throw new Error("세션 스냅샷 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
         if (cancelled) return;
 
@@ -528,6 +543,15 @@ export function EditorWorkspace() {
         const messages = messagesResult.status === "fulfilled" ? messagesResult.value : [];
         const events = eventsResult.status === "fulfilled" ? eventsResult.value : [];
         const latestIssue = latestIssueResult.status === "fulfilled" ? latestIssueResult.value : null;
+        if (messagesResult.status === "rejected" || eventsResult.status === "rejected" || latestIssueResult.status === "rejected") {
+          const warnings: string[] = [];
+          if (messagesResult.status === "rejected") warnings.push("대화 일부");
+          if (eventsResult.status === "rejected") warnings.push("이벤트 일부");
+          if (latestIssueResult.status === "rejected") warnings.push("수정안 일부");
+          setRestoreWarning(`${warnings.join(", ")} 복원에 실패했지만 작업은 계속할 수 있습니다.`);
+        } else {
+          setRestoreWarning(null);
+        }
         if (messagesResult.status === "rejected" || eventsResult.status === "rejected" || latestIssueResult.status === "rejected") {
           const warnings: string[] = [];
           if (messagesResult.status === "rejected") warnings.push("대화 일부");
@@ -571,7 +595,7 @@ export function EditorWorkspace() {
         }
       } catch (err) {
         if (!cancelled && session?.id !== sessionParam) {
-          setError(err instanceof Error ? err.message : "세션 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          setError(err instanceof Error ? err.message : "세션 스냅샷 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
         }
       } finally {
         if (!cancelled) {

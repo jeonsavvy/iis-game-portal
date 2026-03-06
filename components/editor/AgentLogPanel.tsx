@@ -71,6 +71,10 @@ function uniqueAgents(activities: AgentActivity[]): string[] {
   return Array.from(new Set(activities.map((act) => AGENT_LABELS[act.agent] ?? act.agent)));
 }
 
+function latestActivity(activities: AgentActivity[]): AgentActivity | null {
+  return activities.length > 0 ? activities[activities.length - 1] : null;
+}
+
 export function AgentLogPanel({
   activities,
   runStatus,
@@ -90,6 +94,7 @@ export function AgentLogPanel({
   canApplyFix,
 }: AgentLogPanelProps) {
   const activeAgents = uniqueAgents(activities);
+  const latest = latestActivity(activities);
 
   return (
     <aside className={`editor-agent-panel ${isOpen ? "editor-agent-panel--open" : "editor-agent-panel--collapsed"}`}>
@@ -106,6 +111,8 @@ export function AgentLogPanel({
           {runId ? <p>실행 ID: {runId}</p> : null}
           {activeAgents.length > 0 ? <p>활동: {activeAgents.join(" · ")}</p> : null}
           {runError ? <p className="editor-agent-error">오류: {runError}</p> : null}
+          {typeof latest?.metadata?.scaffold_key === "string" ? <p>기반 scaffold: {latest.metadata.scaffold_key as string}</p> : null}
+          {typeof latest?.metadata?.generation_mode === "string" ? <p>생성 모드: {latest.metadata.generation_mode as string}</p> : null}
         </div>
 
         <div className="editor-agent-actions">
@@ -132,32 +139,24 @@ export function AgentLogPanel({
           </button>
         </div>
 
-        {activities.length === 0 ? (
-          <p className="editor-agent-empty">프롬프트를 보내면 에이전트 단계별 판단이 표시됩니다.</p>
-        ) : (
-          activities.map((act, idx) => (
-            <div key={idx} className="editor-agent-item">
-              <div className="editor-agent-item-head">
-                <span>{AGENT_ICONS[act.agent] ?? "🔧"}</span>
-                <strong>{AGENT_LABELS[act.agent] ?? act.agent}</strong>
-                <span className="editor-agent-action">{ACTION_LABELS[act.action] ?? act.action}</span>
-              </div>
-              {act.summary && <p className="editor-agent-summary">{act.summary}</p>}
-              {act.input_signal ? <p className="editor-agent-summary">입력 신호: {act.input_signal}</p> : null}
-              {act.decision_reason ? <p className="editor-agent-summary">판단 근거: {act.decision_reason}</p> : null}
-              {act.change_impact ? <p className="editor-agent-summary">변경 영향: {act.change_impact}</p> : null}
-              {typeof act.metadata?.scaffold_key === "string" ? (
-                <p className="editor-agent-summary">기반 scaffold: {act.metadata.scaffold_key as string}</p>
-              ) : null}
-              {typeof act.metadata?.generation_mode === "string" ? (
-                <p className="editor-agent-summary">생성 모드: {act.metadata.generation_mode as string}</p>
-              ) : null}
-              {typeof act.confidence === "number" ? (
-                <p className="editor-agent-summary">신뢰도: {act.confidence.toFixed(2)}</p>
-              ) : null}
-              {act.error_code ? <p className="editor-agent-summary">오류 코드: {act.error_code}</p> : null}
+        {latest ? (
+          <div className="editor-agent-item">
+            <div className="editor-agent-item-head">
+              <span>{AGENT_ICONS[latest.agent] ?? "🔧"}</span>
+              <strong>{AGENT_LABELS[latest.agent] ?? latest.agent}</strong>
+              <span className="editor-agent-action">{ACTION_LABELS[latest.action] ?? latest.action}</span>
             </div>
-          ))
+            {latest.summary ? <p className="editor-agent-summary">{latest.summary}</p> : null}
+            {latest.input_signal ? <p className="editor-agent-summary">입력 신호: {latest.input_signal}</p> : null}
+            {latest.decision_reason ? <p className="editor-agent-summary">판단 근거: {latest.decision_reason}</p> : null}
+            {latest.change_impact ? <p className="editor-agent-summary">변경 영향: {latest.change_impact}</p> : null}
+            {typeof latest.confidence === "number" ? (
+              <p className="editor-agent-summary">신뢰도: {latest.confidence.toFixed(2)}</p>
+            ) : null}
+            {latest.error_code ? <p className="editor-agent-summary">오류 코드: {latest.error_code}</p> : null}
+          </div>
+        ) : (
+          <p className="editor-agent-empty">프롬프트를 보내면 상세 진단이 여기에 표시됩니다.</p>
         )}
       </div> : null}
     </aside>
