@@ -189,6 +189,7 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
 
   if ([
     "plan_draft_created",
+    "scaffold_materialized",
     "prompt_run_queued",
     "prompt_run_started",
     "prompt_run_succeeded",
