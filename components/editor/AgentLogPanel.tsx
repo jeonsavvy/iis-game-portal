@@ -16,7 +16,6 @@ export type AgentActivity = {
 };
 
 export type RunStatus = "idle" | "queued" | "running" | "succeeded" | "failed" | "cancelled";
-export type IssueCategory = "fatal_runtime" | "gameplay_bug" | "visual_polish" | "ux_copy" | "publish_blocker";
 
 type AgentLogPanelProps = {
   activities: AgentActivity[];
@@ -28,11 +27,6 @@ type AgentLogPanelProps = {
   onRetryLast?: () => void;
   onRerunQa?: () => void;
   onRestorePrevious?: () => void;
-  issueDraft: string;
-  issueCategory: IssueCategory;
-  onIssueDraftChange: (value: string) => void;
-  onIssueCategoryChange: (value: IssueCategory) => void;
-  onReportIssue?: () => void;
   onProposeFix?: () => void;
   onApplyFix?: () => void;
   issueBusy?: boolean;
@@ -85,11 +79,6 @@ export function AgentLogPanel({
   onRetryLast,
   onRerunQa,
   onRestorePrevious,
-  issueDraft,
-  issueCategory,
-  onIssueDraftChange,
-  onIssueCategoryChange,
-  onReportIssue,
   onProposeFix,
   onApplyFix,
   issueBusy,
@@ -109,7 +98,7 @@ export function AgentLogPanel({
       <div className="editor-agent-list">
         <div className="editor-agent-intro">
           <strong>🧠 에이전트 타임라인</strong>
-          <p>루프 순서: Codegen → Visual QA → Playtester</p>
+          <p>채팅창 요청을 해석해 Codegen → Visual QA → Playtester 순서로 작업합니다.</p>
           {runId ? <p>실행 ID: {runId}</p> : null}
           {activeAgents.length > 0 ? <p>활동: {activeAgents.join(" · ")}</p> : null}
           {runError ? <p className="editor-agent-error">오류: {runError}</p> : null}
@@ -136,32 +125,6 @@ export function AgentLogPanel({
           </button>
           <button type="button" onClick={onApplyFix} disabled={Boolean(issueBusy) || !canApplyFix || !onApplyFix}>
             수정안 적용
-          </button>
-        </div>
-
-        <div className="editor-agent-issue-box">
-          <label htmlFor="issue-category">협업 수정 라우팅</label>
-          <select
-            id="issue-category"
-            value={issueCategory}
-            onChange={(event) => onIssueCategoryChange(event.target.value as IssueCategory)}
-            disabled={Boolean(issueBusy)}
-          >
-            <option value="fatal_runtime">실행 불가 / 부팅 실패</option>
-            <option value="gameplay_bug">게임플레이 / 조작감</option>
-            <option value="visual_polish">비주얼 / 가독성</option>
-            <option value="ux_copy">문구 / 안내 흐름</option>
-            <option value="publish_blocker">퍼블리시 차단 이슈</option>
-          </select>
-          <textarea
-            value={issueDraft}
-            onChange={(event) => onIssueDraftChange(event.target.value)}
-            placeholder="예: 코너링이 너무 미끄러워요. 차량 조향을 더 안정적으로 조정해줘."
-            rows={3}
-            disabled={Boolean(issueBusy)}
-          />
-          <button type="button" onClick={onReportIssue} disabled={Boolean(issueBusy) || !issueDraft.trim() || !onReportIssue}>
-            피드백 보내고 수정안 받기
           </button>
         </div>
 

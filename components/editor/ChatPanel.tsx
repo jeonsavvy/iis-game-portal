@@ -1,17 +1,30 @@
 "use client";
 
-import { useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+
+export type ChatAttachment = {
+    name: string;
+    mime_type: string;
+    data_url?: string;
+};
 
 export type ChatMessage = {
     id: string;
     role: "user" | "assistant" | "visual_qa" | "playtester" | "system";
     content: string;
     timestamp: number;
+    attachment?: ChatAttachment | null;
+};
+
+export type ChatSendPayload = {
+    prompt: string;
+    attachment?: ChatAttachment | null;
+    mode?: "auto" | "generate" | "issue";
 };
 
 type ChatPanelProps = {
     messages: ChatMessage[];
-    onSend: (prompt: string) => void;
+    onSend: (payload: ChatSendPayload) => void;
     isGenerating: boolean;
 };
 
@@ -33,15 +46,19 @@ const ROLE_ICONS: Record<ChatMessage["role"], string> = {
 
 export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
     const [input, setInput] = useState("");
+    const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
     const scrollRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLTextAreaElement>(null);
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const handleSubmit = (e: FormEvent) => {
         e.preventDefault();
         const trimmed = input.trim();
         if (!trimmed || isGenerating) return;
-        onSend(trimmed);
+        onSend({ prompt: trimmed, attachment });
         setInput("");
+        setAttachment(null);
+        if (fileInputRef.current) fileInputRef.current.value = "";
         inputRef.current?.focus();
     };
 
@@ -61,6 +78,24 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
         });
     }
 
+    const handlePickImage = async (event: ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+        if (!file.type.startsWith("image/")) return;
+        if (file.size > 1_500_000) return;
+
+        const reader = new FileReader();
+        reader.onload = () => {
+            if (typeof reader.result !== "string") return;
+            setAttachment({
+                name: file.name,
+                mime_type: file.type,
+                data_url: reader.result,
+            });
+        };
+        reader.readAsDataURL(file);
+    };
+
     return (
         <div className="editor-chat-panel">
             <div className="editor-chat-header">
@@ -73,13 +108,13 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                         <h4>🚀 무엇을 만들까요?</h4>
                         <p>요청을 보내면 Codegen · Visual QA · Playtester가 순서대로 결과를 다듬습니다.</p>
                         <div className="editor-chat-suggestions">
-                            <button type="button" onClick={() => onSend("오픈휠 레이스카로 서킷을 주행하며 랩타임을 기록하는 풀 3D 레이싱 게임 만들어줘")} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "오픈휠 레이스카로 서킷을 주행하며 랩타임을 기록하는 풀 3D 레이싱 게임 만들어줘" })} disabled={isGenerating}>
                                 🏎️ 레이싱 게임
                             </button>
-                            <button type="button" onClick={() => onSend("우주 도그파이트에 초점을 맞춘 풀 3D 플라이트 슈팅 게임 만들어줘")} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "우주 도그파이트에 초점을 맞춘 풀 3D 플라이트 슈팅 게임 만들어줘" })} disabled={isGenerating}>
                                 🚀 플라이트 슈팅 게임
                             </button>
-                            <button type="button" onClick={() => onSend("트윈스틱 이동과 에임, 대시, 웨이브 전투가 있는 탑뷰 슈팅 게임 만들어줘")} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "트윈스틱 이동과 에임, 대시, 웨이브 전투가 있는 탑뷰 슈팅 게임 만들어줘" })} disabled={isGenerating}>
                                 🔫 탑뷰 슈팅 게임
                             </button>
                         </div>
@@ -92,6 +127,17 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                                 <span className="editor-chat-msg-role">{ROLE_LABELS[msg.role]}</span>
                             </div>
                             <div className="editor-chat-msg-body">{msg.content}</div>
+                            {msg.attachment ? (
+                                msg.attachment.data_url ? (
+                                    <img
+                                        src={msg.attachment.data_url}
+                                        alt={msg.attachment.name}
+                                        className="editor-chat-attachment-preview"
+                                    />
+                                ) : (
+                                    <div className="editor-chat-attachment-pill">📎 {msg.attachment.name}</div>
+                                )
+                            ) : null}
                         </div>
                     ))
                 )}
@@ -110,6 +156,13 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
             </div>
 
             <form className="editor-chat-input" onSubmit={handleSubmit}>
+                <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/png,image/jpeg,image/webp"
+                    style={{ display: "none" }}
+                    onChange={handlePickImage}
+                />
                 <textarea
                     ref={inputRef}
                     value={input}
@@ -119,10 +172,38 @@ export function ChatPanel({ messages, onSend, isGenerating }: ChatPanelProps) {
                     disabled={isGenerating}
                     rows={2}
                 />
+                <div className="editor-chat-input-actions">
+                    <button
+                        type="button"
+                        className="editor-chat-attach"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isGenerating}
+                    >
+                        이미지
+                    </button>
+                    {attachment ? (
+                        <button
+                            type="button"
+                            className="editor-chat-attach editor-chat-attach--secondary"
+                            onClick={() => {
+                                setAttachment(null);
+                                if (fileInputRef.current) fileInputRef.current.value = "";
+                            }}
+                        >
+                            첨부 제거
+                        </button>
+                    ) : null}
+                </div>
                 <button type="submit" disabled={isGenerating || !input.trim()} className="editor-chat-send">
                     전송
                 </button>
             </form>
+            {attachment ? (
+                <div className="editor-chat-attachment-draft">
+                    {attachment.data_url ? <img src={attachment.data_url} alt={attachment.name} className="editor-chat-attachment-preview" /> : null}
+                    <span>첨부 예정: {attachment.name}</span>
+                </div>
+            ) : null}
         </div>
     );
 }

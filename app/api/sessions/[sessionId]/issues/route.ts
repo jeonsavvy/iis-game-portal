@@ -11,6 +11,11 @@ export async function POST(
       title?: string;
       details?: string;
       category?: string;
+      image_attachment?: {
+        name?: string;
+        mime_type?: string;
+        data_url?: string;
+      };
     };
 
     return forwardToCoreEngine({
@@ -21,7 +26,14 @@ export async function POST(
       body: {
         title: body.title ?? "",
         details: body.details ?? "",
-        category: body.category ?? "gameplay_bug",
+        category: body.category ?? "auto",
+        image_attachment: body.image_attachment
+          ? {
+              name: body.image_attachment.name ?? "",
+              mime_type: body.image_attachment.mime_type ?? "",
+              data_url: body.image_attachment.data_url ?? "",
+            }
+          : undefined,
       },
     });
   });

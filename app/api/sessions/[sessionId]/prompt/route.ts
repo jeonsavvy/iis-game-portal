@@ -11,6 +11,11 @@ export async function POST(
       prompt?: string;
       auto_qa?: boolean;
       stream?: boolean;
+      image_attachment?: {
+        name?: string;
+        mime_type?: string;
+        data_url?: string;
+      };
     };
 
     return forwardToCoreEngine({
@@ -22,6 +27,13 @@ export async function POST(
         prompt: body.prompt ?? "",
         auto_qa: body.auto_qa !== false,
         stream: false,
+        image_attachment: body.image_attachment
+          ? {
+              name: body.image_attachment.name ?? "",
+              mime_type: body.image_attachment.mime_type ?? "",
+              data_url: body.image_attachment.data_url ?? "",
+            }
+          : undefined,
       },
     });
   });

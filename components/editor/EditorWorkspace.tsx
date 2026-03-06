@@ -6,10 +6,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   AgentLogPanel,
   type AgentActivity,
-  type IssueCategory,
   type RunStatus,
 } from "@/components/editor/AgentLogPanel";
-import { ChatPanel, type ChatMessage } from "@/components/editor/ChatPanel";
+import { ChatPanel, type ChatAttachment, type ChatMessage, type ChatSendPayload } from "@/components/editor/ChatPanel";
 import { GamePreview } from "@/components/editor/GamePreview";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
@@ -107,13 +106,6 @@ const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
 const LAST_SESSION_STORAGE_KEY = "iis-editor-last-session-v1";
-const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
-  fatal_runtime: "실행 불가",
-  gameplay_bug: "게임플레이",
-  visual_polish: "비주얼",
-  ux_copy: "문구/안내",
-  publish_blocker: "퍼블리시 차단",
-};
 
 let msgCounter = 0;
 function makeId() {
@@ -158,6 +150,20 @@ function normalizeChatRole(role: string | undefined): ChatMessage["role"] {
   if (role === "system") return "system";
   if (role === "assistant") return "assistant";
   return "user";
+}
+
+function normalizeAttachmentMetadata(metadata: Record<string, unknown> | undefined): ChatAttachment | null {
+  const attachment = metadata?.attachment;
+  if (!attachment || typeof attachment !== "object") return null;
+  const row = attachment as Record<string, unknown>;
+  const name = typeof row.name === "string" ? row.name : "attachment";
+  const mimeType = typeof row.mime_type === "string" ? row.mime_type : "image/png";
+  const dataUrl = typeof row.data_url === "string" ? row.data_url : undefined;
+  return {
+    name,
+    mime_type: mimeType,
+    data_url: dataUrl,
+  };
 }
 
 function normalizeError(payload: unknown): string {
@@ -211,8 +217,6 @@ export function EditorWorkspace() {
   const [runStatus, setRunStatus] = useState<RunStatus>("idle");
   const [runId, setRunId] = useState<string | null>(null);
   const [runError, setRunError] = useState<string | null>(null);
-  const [issueDraft, setIssueDraft] = useState("");
-  const [issueCategory, setIssueCategory] = useState<IssueCategory>("gameplay_bug");
   const [activeIssueId, setActiveIssueId] = useState<string | null>(null);
   const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
   const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
@@ -313,6 +317,7 @@ export function EditorWorkspace() {
       role: normalizeChatRole(message.role),
       content: String(message.content ?? ""),
       timestamp: Date.parse(String(message.created_at ?? "")) || Date.now() + index,
+      attachment: normalizeAttachmentMetadata(message.metadata),
     }));
   }, []);
 
@@ -468,10 +473,6 @@ export function EditorWorkspace() {
         setActiveIssueId(latestIssue?.issue?.issue_id ?? null);
         setActiveProposalId(latestIssue?.proposal_id ?? null);
         setPreviewHtmlOverride(latestIssue?.preview_html ?? snapshot.last_preview_html ?? null);
-        setIssueDraft(typeof latestIssue?.issue?.details === "string" ? latestIssue.issue.details : "");
-        setIssueCategory(
-          (typeof latestIssue?.issue?.category === "string" ? latestIssue.issue.category : "gameplay_bug") as IssueCategory,
-        );
         setRunId(inferredRunId);
         setRunStatus(
           (snapshot.current_run_status &&
@@ -552,12 +553,93 @@ export function EditorWorkspace() {
     [isDesktop],
   );
 
+  const pushMessage = useCallback((message: ChatMessage) => {
+    setSession((prev) => (prev ? { ...prev, messages: [...prev.messages, message] } : prev));
+  }, []);
+
+  const submitChatIssue = useCallback(
+    async ({
+      sessionId,
+      prompt,
+      attachment,
+    }: {
+      sessionId: string;
+      prompt: string;
+      attachment?: ChatAttachment | null;
+    }) => {
+      setIsIssueBusy(true);
+      try {
+        pushMessage({
+          id: makeId(),
+          role: "system",
+          content: "🧩 피드백 접수됨 · 최적 에이전트가 수정 방향을 정리하는 중입니다.",
+          timestamp: Date.now(),
+        });
+
+        const issueResponse = await fetch(`${API_BASE}/${sessionId}/issues`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            title: prompt.trim().slice(0, 80),
+            details: prompt,
+            image_attachment: attachment
+              ? {
+                  name: attachment.name,
+                  mime_type: attachment.mime_type,
+                  data_url: attachment.data_url,
+                }
+              : undefined,
+          }),
+        });
+        const issuePayload = (await issueResponse.json().catch(() => ({}))) as IssueCreateResponse;
+        if (!issueResponse.ok) throw new Error(normalizeError(issuePayload));
+        setActiveIssueId(issuePayload.issue_id);
+        setActiveProposalId(null);
+
+        pushMessage({
+          id: makeId(),
+          role: "system",
+          content: "🛠 수정안 생성 중... 프리뷰를 갱신할 준비를 합니다.",
+          timestamp: Date.now(),
+        });
+
+        const proposeResponse = await fetch(`${API_BASE}/${sessionId}/issues/${issuePayload.issue_id}/propose-fix`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            instruction: prompt,
+            image_attachment: attachment
+              ? {
+                  name: attachment.name,
+                  mime_type: attachment.mime_type,
+                  data_url: attachment.data_url,
+                }
+              : undefined,
+          }),
+        });
+        const proposePayload = (await proposeResponse.json().catch(() => ({}))) as ProposalResponse;
+        if (!proposeResponse.ok) throw new Error(normalizeError(proposePayload));
+        setActiveProposalId(proposePayload.proposal_id);
+        setPreviewHtmlOverride(proposePayload.preview_html);
+        pushMessage({
+          id: makeId(),
+          role: "assistant",
+          content: "🛠 수정안 준비 완료 · 중앙 프리뷰에서 바로 확인하고, 마음에 들면 우측에서 적용하세요.",
+          timestamp: Date.now(),
+        });
+        await refreshActivitiesFromEvents(sessionId);
+      } finally {
+        setIsIssueBusy(false);
+      }
+    },
+    [pushMessage, refreshActivitiesFromEvents],
+  );
+
   const handleSend = useCallback(
-    async (prompt: string) => {
+    async ({ prompt, attachment, mode = "auto" }: ChatSendPayload) => {
       setIsGenerating(true);
       setError(null);
       setLastPrompt(prompt);
-      setRunStatus("queued");
       setRunError(null);
       setActiveIssueId(null);
       setActiveProposalId(null);
@@ -573,10 +655,20 @@ export function EditorWorkspace() {
           role: "user",
           content: prompt,
           timestamp: Date.now(),
+          attachment: attachment ?? null,
         };
 
         setSession((prev) => (prev ? { ...prev, messages: [...prev.messages, userMsg] } : prev));
 
+        const shouldUseIssueFlow =
+          mode === "issue" || (mode === "auto" && Boolean(session?.html.trim()));
+
+        if (shouldUseIssueFlow) {
+          await submitChatIssue({ sessionId, prompt, attachment });
+          return;
+        }
+
+        setRunStatus("queued");
         const planRes = await fetch(`${API_BASE}/${sessionId}/plan-draft`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -610,7 +702,18 @@ export function EditorWorkspace() {
         const res = await fetch(`${API_BASE}/${sessionId}/prompt`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ prompt, auto_qa: true, stream: false }),
+          body: JSON.stringify({
+            prompt,
+            auto_qa: true,
+            stream: false,
+            image_attachment: attachment
+              ? {
+                  name: attachment.name,
+                  mime_type: attachment.mime_type,
+                  data_url: attachment.data_url,
+                }
+              : undefined,
+          }),
         });
 
         const queuedPayload = (await res.json().catch(() => ({}))) as { run_id?: string; status?: RunStatus };
@@ -739,7 +842,7 @@ export function EditorWorkspace() {
         setIsGenerating(false);
       }
     },
-    [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents, syncEditorUrl],
+    [ensureSession, fetchSessionSnapshot, loadRecentEvents, pollRun, refreshActivitiesFromEvents, session?.html, submitChatIssue, syncEditorUrl],
   );
 
   const handleCancelRun = useCallback(async () => {
@@ -753,92 +856,6 @@ export function EditorWorkspace() {
     setRunError("prompt_run_cancelled");
   }, [runId, runStatus, session?.id]);
 
-  const handleReportIssue = useCallback(async () => {
-    if (!session?.id || !issueDraft.trim()) return;
-    setIsIssueBusy(true);
-    try {
-      const title = issueDraft.trim().slice(0, 80);
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              messages: [
-                ...prev.messages,
-                {
-                  id: makeId(),
-                  role: "system",
-                  content: "🧩 피드백 접수 중...",
-                  timestamp: Date.now(),
-                },
-              ],
-            }
-          : prev,
-      );
-      const response = await fetch(`${API_BASE}/${session.id}/issues`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title,
-          details: issueDraft.trim(),
-          category: issueCategory,
-        }),
-      });
-      const payload = (await response.json().catch(() => ({}))) as IssueCreateResponse;
-      if (!response.ok) throw new Error(normalizeError(payload));
-      setActiveIssueId(payload.issue_id);
-      setActiveProposalId(null);
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              messages: [
-                ...prev.messages,
-                {
-                  id: makeId(),
-                  role: "system",
-                  content: `🧩 이슈 등록 완료 (${ISSUE_CATEGORY_LABELS[issueCategory]}) · 수정안 생성 중...`,
-                  timestamp: Date.now(),
-                },
-              ],
-            }
-          : prev,
-      );
-
-      const proposeResponse = await fetch(`${API_BASE}/${session.id}/issues/${payload.issue_id}/propose-fix`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          instruction: issueDraft.trim(),
-        }),
-      });
-      const proposePayload = (await proposeResponse.json().catch(() => ({}))) as ProposalResponse;
-      if (!proposeResponse.ok) throw new Error(normalizeError(proposePayload));
-      setActiveProposalId(proposePayload.proposal_id);
-      setPreviewHtmlOverride(proposePayload.preview_html);
-      setSession((prev) =>
-        prev
-          ? {
-              ...prev,
-              messages: [
-                ...prev.messages,
-                {
-                  id: makeId(),
-                  role: "assistant",
-                  content: `🛠 수정안 생성 완료 · proposal_id=${proposePayload.proposal_id} (중앙 프리뷰 반영)`,
-                  timestamp: Date.now(),
-                },
-              ],
-            }
-          : prev,
-      );
-      await refreshActivitiesFromEvents(session.id);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "issue_create_failed");
-    } finally {
-      setIsIssueBusy(false);
-    }
-  }, [issueCategory, issueDraft, refreshActivitiesFromEvents, session?.id]);
-
   const handleProposeFix = useCallback(async () => {
     if (!session?.id || !activeIssueId) return;
     setIsIssueBusy(true);
@@ -847,7 +864,7 @@ export function EditorWorkspace() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          instruction: issueDraft.trim(),
+          instruction: lastPrompt.trim(),
         }),
       });
       const payload = (await response.json().catch(() => ({}))) as ProposalResponse;
@@ -876,7 +893,7 @@ export function EditorWorkspace() {
     } finally {
       setIsIssueBusy(false);
     }
-  }, [activeIssueId, issueDraft, refreshActivitiesFromEvents, session?.id]);
+  }, [activeIssueId, lastPrompt, refreshActivitiesFromEvents, session?.id]);
 
   const handleApplyFix = useCallback(async () => {
     if (!session?.id || !activeIssueId) return;
@@ -996,12 +1013,12 @@ export function EditorWorkspace() {
 
   const handleRetryLast = useCallback(() => {
     if (!lastPrompt.trim() || isGenerating) return;
-    void handleSend(lastPrompt);
+    void handleSend({ prompt: lastPrompt, mode: "generate" });
   }, [handleSend, isGenerating, lastPrompt]);
 
   const handleRerunQa = useCallback(() => {
     if (!session?.id || isGenerating) return;
-    void handleSend("현재 게임 플레이는 유지하고 품질 이슈만 다시 검사해서 개선해줘.");
+    void handleSend({ prompt: "현재 게임 플레이는 유지하고 품질 이슈만 다시 검사해서 개선해줘.", mode: "issue" });
   }, [handleSend, isGenerating, session?.id]);
 
   const handleRestorePrevious = useCallback(() => {
@@ -1023,12 +1040,29 @@ export function EditorWorkspace() {
     });
   }, []);
 
+  const handleStartFreshSession = useCallback(() => {
+    setSession(null);
+    setRunId(null);
+    setRunStatus("idle");
+    setRunError(null);
+    setActiveIssueId(null);
+    setActiveProposalId(null);
+    setPreviewHtmlOverride(null);
+    setHtmlHistory([]);
+    setError(null);
+    restoredSessionRef.current = null;
+    router.replace("/editor");
+  }, [router]);
+
   return (
     <div className="editor-layout">
       <header className="editor-header">
         <h2>🕹 세션 에디터</h2>
         <div className="editor-header-actions">
           <span className="editor-loop-badge">Codegen · Visual QA · Playtester 루프</span>
+          <button type="button" className="button button-ghost" onClick={handleStartFreshSession} disabled={isGenerating || isIssueBusy}>
+            🆕 새 세션
+          </button>
           <button type="button" className="button button-ghost" disabled={!session?.id || isGenerating} onClick={handleApprovePublish}>
             ✅ 퍼블리시 승인
           </button>
@@ -1097,11 +1131,6 @@ export function EditorWorkspace() {
           onRetryLast={handleRetryLast}
           onRerunQa={handleRerunQa}
           onRestorePrevious={handleRestorePrevious}
-          issueDraft={issueDraft}
-          issueCategory={issueCategory}
-          onIssueDraftChange={setIssueDraft}
-          onIssueCategoryChange={setIssueCategory}
-          onReportIssue={handleReportIssue}
           onProposeFix={handleProposeFix}
           onApplyFix={handleApplyFix}
           issueBusy={isIssueBusy}
