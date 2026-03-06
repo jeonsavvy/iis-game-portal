@@ -118,13 +118,13 @@ export function ChatPanel({ messages, onSend, isGenerating, actions = [] }: Chat
                         <h4>🚀 무엇을 만들까요?</h4>
                         <p>왼쪽 채팅에서 요청하고, 오른쪽 프리뷰를 보며 바로 수정하세요. 진단 레일은 필요할 때만 열면 됩니다.</p>
                         <div className="editor-chat-suggestions">
-                            <button type="button" onClick={() => onSend({ prompt: "오픈휠 레이스카로 서킷을 주행하며 랩타임을 기록하는 풀 3D 레이싱 게임 만들어줘" })} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "신스웨이브 스타일 네온 그리드 트랙 위를 오픈휠 레이스카로 달리며 랩타임을 기록하는 풀 3D 아케이드 서킷 레이싱 게임 만들어줘. 시작 카운트다운, 부스트 시 FOV 확장, 빛나는 파티클 트레일, 최고 기록 갱신 UI 애니메이션까지 포함해줘." })} disabled={isGenerating}>
                                 🏎️ 레이싱 게임
                             </button>
-                            <button type="button" onClick={() => onSend({ prompt: "우주 도그파이트에 초점을 맞춘 풀 3D 플라이트 슈팅 게임 만들어줘" })} disabled={isGenerating}>
-                                🚀 플라이트 슈팅 게임
+                            <button type="button" onClick={() => onSend({ prompt: "따뜻한 일몰 조명과 Flat Shading 로우폴리 스타일로, 섬과 바다 위를 프로펠러 비행기로 돌아다니며 빛나는 링을 통과하는 풀 3D 플라이트 게임 만들어줘. 기수/주날개/꼬리날개/프로펠러를 분리해 조립하고, 안개와 링 파티클, Web Audio 효과음까지 넣어줘." })} disabled={isGenerating}>
+                                ✈️ 플라이트 게임
                             </button>
-                            <button type="button" onClick={() => onSend({ prompt: "트윈스틱 이동과 에임, 대시, 웨이브 전투가 있는 탑뷰 슈팅 게임 만들어줘" })} disabled={isGenerating}>
+                            <button type="button" onClick={() => onSend({ prompt: "검은 배경 위 형광 시안/마젠타 네온 도형이 빛나는 Geometry Wars 스타일 탑뷰 탄막 슈팅 게임 만들어줘. 트윈스틱 이동/에임, 대시, 웨이브 시스템, 타이틀 메뉴, 킬 카운트 UI, 스크린 쉐이크, 폭발 파티클, 게임오버/재시작 상태 관리까지 완성해줘." })} disabled={isGenerating}>
                                 🔫 탑뷰 슈팅 게임
                             </button>
                         </div>
