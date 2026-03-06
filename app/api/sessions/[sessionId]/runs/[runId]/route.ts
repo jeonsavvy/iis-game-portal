@@ -11,8 +11,8 @@ export async function GET(
     return forwardToCoreEngine({
       path: `/api/v1/sessions/${encodeURIComponent(sessionId)}/runs/${encodeURIComponent(runId)}`,
       method: "GET",
-      timeoutMs: 12000,
-      retries: 2,
+      timeoutMs: 20000,
+      retries: 4,
       responseHeaders: { "Cache-Control": "no-store, max-age=0" },
     });
   });

@@ -10,6 +10,7 @@ import {
 } from "@/components/editor/AgentLogPanel";
 import { ChatPanel, type ChatMessage } from "@/components/editor/ChatPanel";
 import { GamePreview } from "@/components/editor/GamePreview";
+import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
 type SessionState = {
   id: string;
@@ -75,6 +76,7 @@ const CHAT_MAX_WIDTH = 560;
 const LOG_MIN_WIDTH = 360;
 const LOG_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-editor-layout-v3";
+const MAX_TRANSIENT_POLL_FAILURES = 8;
 const ISSUE_CATEGORY_LABELS: Record<IssueCategory, string> = {
   gameplay: "게임플레이",
   visual: "비주얼",
@@ -243,34 +245,61 @@ export function EditorWorkspace() {
   const pollRun = useCallback(
     async (sessionId: string, queuedRunId: string): Promise<RunResponse> => {
       let attempt = 0;
+      let transientFailures = 0;
       while (attempt < 180) {
         attempt += 1;
-        const response = await fetch(`${API_BASE}/${sessionId}/runs/${queuedRunId}`, {
-          method: "GET",
-          cache: "no-store",
-        });
-        const payload = (await response.json().catch(() => ({}))) as RunResponse;
-        if (!response.ok) {
-          throw new Error(normalizeError(payload));
+        try {
+          const response = await fetch(`${API_BASE}/${sessionId}/runs/${queuedRunId}`, {
+            method: "GET",
+            cache: "no-store",
+          });
+          const payload = (await response.json().catch(() => ({}))) as RunResponse;
+          if (!response.ok) {
+            if (
+              transientFailures < MAX_TRANSIENT_POLL_FAILURES &&
+              isTransientCoreEnginePollFailure({ status: response.status, payload })
+            ) {
+              transientFailures += 1;
+              setRunStatus("running");
+              setRunError(`코어 엔진 재연결 대기 중 (${transientFailures}/${MAX_TRANSIENT_POLL_FAILURES})`);
+              await wait(1500);
+              continue;
+            }
+            throw new Error(normalizeError(payload));
+          }
+
+          transientFailures = 0;
+          const nextStatus = (payload.status || "queued") as RunStatus;
+          setRunStatus(nextStatus);
+          setRunError(
+            payload.error_code
+              ? `${payload.error_code}${payload.error_detail ? ` · ${payload.error_detail}` : ""}`
+              : payload.error_detail || null,
+          );
+
+          if (Array.isArray(payload.activities)) {
+            setSession((prev) => (prev ? { ...prev, activities: payload.activities ?? prev.activities } : prev));
+          }
+
+          if (nextStatus === "succeeded" || nextStatus === "failed" || nextStatus === "cancelled") {
+            return payload;
+          }
+
+          await wait(1200);
+        } catch (error) {
+          const message = error instanceof Error ? error.message : "unknown_error";
+          if (
+            transientFailures < MAX_TRANSIENT_POLL_FAILURES &&
+            isTransientCoreEnginePollFailure({ message })
+          ) {
+            transientFailures += 1;
+            setRunStatus("running");
+            setRunError(`코어 엔진 재연결 대기 중 (${transientFailures}/${MAX_TRANSIENT_POLL_FAILURES})`);
+            await wait(1500);
+            continue;
+          }
+          throw error;
         }
-
-        const nextStatus = (payload.status || "queued") as RunStatus;
-        setRunStatus(nextStatus);
-        setRunError(
-          payload.error_code
-            ? `${payload.error_code}${payload.error_detail ? ` · ${payload.error_detail}` : ""}`
-            : payload.error_detail || null,
-        );
-
-        if (Array.isArray(payload.activities)) {
-          setSession((prev) => (prev ? { ...prev, activities: payload.activities ?? prev.activities } : prev));
-        }
-
-        if (nextStatus === "succeeded" || nextStatus === "failed" || nextStatus === "cancelled") {
-          return payload;
-        }
-
-        await wait(1200);
       }
 
       throw new Error("run_poll_timeout");
