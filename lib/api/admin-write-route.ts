@@ -1,14 +1,18 @@
 import { NextResponse } from "next/server";
 
-import { withAdminGuard, type AdminGuardContext } from "@/lib/api/admin-guard";
+import { withAdminGuard, type AdminGuardContext, type StaffPermission } from "@/lib/api/admin-guard";
 import { ensureNoStoreHeaders } from "@/lib/api/response-headers";
 import { coreEngineUnavailableError, jsonError } from "@/lib/api/error-response";
 
 type AdminWriteHandler = (auth: AdminGuardContext) => Promise<NextResponse>;
 
-export async function runAdminWriteRoute(request: Request, handler: AdminWriteHandler): Promise<NextResponse> {
+type AdminWriteRouteOptions = {
+  permission?: Extract<StaffPermission, "workspace:write" | "admin:write">;
+};
+
+export async function runAdminWriteRoute(request: Request, handler: AdminWriteHandler, options: AdminWriteRouteOptions = {}): Promise<NextResponse> {
   try {
-    const auth = await withAdminGuard("session:write", { request });
+    const auth = await withAdminGuard(options.permission ?? "workspace:write", { request });
     if (auth instanceof NextResponse) {
       return ensureNoStoreHeaders(auth);
     }

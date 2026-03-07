@@ -18,7 +18,7 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if (request.nextUrl.pathname.startsWith("/admin") && !hasSupabaseAuthCookie(request)) {
+  if ((request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/workspace")) && !hasSupabaseAuthCookie(request)) {
     const redirectUrl = request.nextUrl.clone();
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     redirectUrl.pathname = "/login";
@@ -31,5 +31,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*"],
+  matcher: ["/admin/:path*", "/workspace/:path*"],
 };

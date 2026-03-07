@@ -22,7 +22,7 @@ export function GamePreview({ html, title = "게임 미리보기" }: { html: str
         <div className="max-w-xl space-y-3">
           <p className="text-[11px] font-semibold uppercase tracking-[0.22em] text-accent">Preview</p>
           <h3 className="font-display text-3xl tracking-[-0.04em] text-foreground">게임 미리보기가 여기에 표시됩니다</h3>
-          <p className="text-sm leading-7 text-muted-foreground">왼쪽 채팅에서 요청을 보내면 Codegen → Visual QA → Playtester 루프가 순서대로 결과를 개선합니다.</p>
+          <p className="text-sm leading-7 text-muted-foreground">왼쪽에서 요청을 보내면 결과를 만들고, 실행 상태를 보면서 바로 수정할 수 있습니다.</p>
         </div>
       </div>
     );

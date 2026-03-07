@@ -106,7 +106,7 @@ export function EditorWorkspace() {
             onMouseDown={startResize()}
             role="separator"
             aria-orientation="vertical"
-            aria-label="채팅 패널 너비 조절"
+            aria-label="작업 입력 패널 너비 조절"
           />
         ) : null}
 
@@ -121,8 +121,8 @@ export function EditorWorkspace() {
         <Sheet open={diagnosticsOpen} onOpenChange={setDiagnosticsOpen}>
           <SheetContent side="right" className="w-[min(92vw,26rem)] p-0">
             <SheetHeader className="border-b border-white/8 px-5 py-4">
-              <SheetTitle>진단 레일</SheetTitle>
-              <SheetDescription>현재 세션의 실행 상태, 최근 활동, 수정 흐름을 모바일에서도 바로 확인합니다.</SheetDescription>
+              <SheetTitle>실행 상태</SheetTitle>
+              <SheetDescription>현재 세션의 실행 상태와 최근 변경 내역을 모바일에서도 바로 확인합니다.</SheetDescription>
             </SheetHeader>
             <div className="h-full min-h-0 p-4">{diagnostics}</div>
           </SheetContent>

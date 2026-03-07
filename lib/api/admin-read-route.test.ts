@@ -64,4 +64,14 @@ describe("runAdminReadRoute", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
   });
+
+  it("passes custom permission through to guard", async () => {
+    mockedWithAdminGuard.mockResolvedValueOnce({ userId: "u1", role: "master_admin", supabase: {} } as never);
+
+    await runAdminReadRoute(async () => NextResponse.json({ ok: true }), {
+      permission: "admin:read",
+    });
+
+    expect(mockedWithAdminGuard).toHaveBeenCalledWith("admin:read", { errorHeaders: undefined });
+  });
 });

@@ -1,12 +1,12 @@
 import { NextResponse } from "next/server";
 
-import { canReadSessions, canWriteSessions } from "@/lib/auth/rbac";
+import { canAccessWorkspace, canManageAdmin } from "@/lib/auth/rbac";
 import { jsonError } from "@/lib/api/error-response";
 import { validateTrustedWriteOrigin } from "@/lib/api/request-origin";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 
-type AdminPermission = "session:write" | "session:read";
+export type StaffPermission = "workspace:write" | "workspace:read" | "admin:write" | "admin:read";
 
 export type AdminGuardContext = {
   supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -23,26 +23,26 @@ type AdminGuardWriteOptions = {
   errorHeaders?: HeadersInit;
 };
 
-function canAccess(permission: AdminPermission, role: AppRole | null): boolean {
-  if (permission === "session:write") {
-    return canWriteSessions(role);
+function canAccess(permission: StaffPermission, role: AppRole | null): boolean {
+  if (permission === "workspace:write" || permission === "workspace:read") {
+    return canAccessWorkspace(role);
   }
-  return canReadSessions(role);
+  return canManageAdmin(role);
 }
 
 export async function withAdminGuard(
-  permission: "session:write",
+  permission: "workspace:write" | "admin:write",
   options: AdminGuardWriteOptions,
 ): Promise<AdminGuardContext | NextResponse>;
 export async function withAdminGuard(
-  permission: "session:read",
+  permission: "workspace:read" | "admin:read",
   options?: AdminGuardReadOptions,
 ): Promise<AdminGuardContext | NextResponse>;
 export async function withAdminGuard(
-  permission: AdminPermission,
+  permission: StaffPermission,
   options?: AdminGuardReadOptions | AdminGuardWriteOptions,
 ): Promise<AdminGuardContext | NextResponse> {
-  if (permission === "session:write") {
+  if (permission === "workspace:write" || permission === "admin:write") {
     const request = (options as AdminGuardWriteOptions | undefined)?.request;
     if (!request) {
       return jsonError({

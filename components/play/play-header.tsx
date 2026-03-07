@@ -4,11 +4,21 @@ import { ArrowLeft, ExternalLink } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 
-export function PlayHeader({ title, summary, debugHref }: { title: string; summary: string; debugHref?: string | null }) {
+export function PlayHeader({
+  title,
+  summary,
+  detailHref,
+  debugHref,
+}: {
+  title: string;
+  summary: string;
+  detailHref: string;
+  debugHref?: string | null;
+}) {
   return (
-    <header className="flex flex-col gap-6 rounded-[1.85rem] border border-white/8 bg-[#111118]/82 p-6 shadow-[var(--shadow-soft)] lg:flex-row lg:items-end lg:justify-between">
+    <header className="flex flex-col gap-6 rounded-[1.25rem] border border-white/8 bg-[#111118]/82 p-6 shadow-[var(--shadow-soft)] lg:flex-row lg:items-end lg:justify-between">
       <div className="max-w-3xl space-y-4">
-        <Badge variant="outline" className="w-fit border-white/12 text-accent">Launch stage</Badge>
+        <Badge variant="outline" className="w-fit border-white/12 text-accent">바로 플레이</Badge>
         <div className="space-y-3">
           <h1 className="font-display text-4xl leading-none tracking-[-0.05em] text-balance text-foreground sm:text-5xl">{title}</h1>
           <p className="text-sm leading-7 text-muted-foreground sm:text-base">{summary}</p>
@@ -20,6 +30,9 @@ export function PlayHeader({ title, summary, debugHref }: { title: string; summa
             <ArrowLeft className="size-4" />
             홈으로
           </Link>
+        </Button>
+        <Button asChild variant="outline">
+          <Link href={detailHref}>게임 상세 보기</Link>
         </Button>
         {debugHref ? (
           <Button asChild>

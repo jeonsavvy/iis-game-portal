@@ -71,8 +71,8 @@ export function AgentLogPanel({
       <div className="border-b border-white/8 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Diagnostic rail</p>
-            <h2 className="mt-2 font-display text-[1.85rem] tracking-[-0.04em] text-foreground">진단 레일</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Run status</p>
+            <h2 className="mt-2 font-display text-[1.85rem] tracking-[-0.04em] text-foreground">실행 상태</h2>
           </div>
           <Badge variant={runStatus === "failed" ? "destructive" : runStatus === "succeeded" ? "success" : "outline"}>{RUN_LABELS[runStatus]}</Badge>
         </div>
@@ -111,7 +111,7 @@ export function AgentLogPanel({
               </div>
             </div>
           ) : (
-            <p className="rounded-[1.4rem] border border-dashed border-white/10 px-4 py-6 text-sm text-muted-foreground">프롬프트를 보내면 상세 진단이 여기에 표시됩니다.</p>
+            <p className="rounded-[1.4rem] border border-dashed border-white/10 px-4 py-6 text-sm text-muted-foreground">프롬프트를 보내면 실행 상태와 최근 변경 내역이 여기에 표시됩니다.</p>
           )}
 
           {activities.map((activity, index) => (

@@ -23,7 +23,7 @@ function getErrorMessage(code: string | null | undefined): string | null {
   if (!code) return null;
   switch (code) {
     case "forbidden":
-      return "허용된 관리자 이메일만 운영실에 로그인할 수 있습니다.";
+      return "허용된 계정만 작업공간과 운영 기능에 로그인할 수 있습니다.";
     case "missing_code":
       return "인증 코드가 누락되었습니다. 메일 링크를 다시 열어주세요.";
     case "exchange_failed":
@@ -65,7 +65,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       return;
     }
     if (!allowedEmails.includes(normalizedEmail)) {
-      setStatus("허용된 관리자 이메일만 로그인할 수 있습니다.");
+      setStatus("허용된 계정만 로그인할 수 있습니다.");
       return;
     }
     if (!supabase) {
@@ -93,8 +93,8 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
   return (
     <AdminLoginPanel
-      title="운영실 로그인"
-      description="허용된 관리자 이메일만 매직링크로 세션을 발급받아 Studio Console에 진입할 수 있습니다."
+      title="작업공간 로그인"
+      description="허용된 계정만 매직링크로 로그인해 작업공간과 운영 기능에 접근할 수 있습니다."
       meta={
         <div className="grid gap-1">
           <p>허용된 관리자만 접근 가능합니다.</p>
@@ -104,7 +104,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
     >
       <form onSubmit={handleSubmit} className="grid gap-4">
         <label className="grid gap-2 text-sm text-muted-foreground">
-          <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">관리자 이메일</span>
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">로그인 이메일</span>
           <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="jeonsavvy@gmail.com" autoComplete="email" required />
         </label>
         <div className="flex flex-wrap items-center gap-3">

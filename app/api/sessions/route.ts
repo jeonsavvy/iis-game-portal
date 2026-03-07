@@ -1,6 +1,6 @@
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
 import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
-import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
+import { buildCoreActorHeaders, forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 
 export async function GET(request: Request) {
   return runAdminReadRoute(async () => {
@@ -26,7 +26,7 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  return runAdminWriteRoute(request, async () => {
+  return runAdminWriteRoute(request, async (auth) => {
     const body = (await request.json()) as { title?: string; genre_hint?: string };
 
     return forwardToCoreEngine({
@@ -34,6 +34,7 @@ export async function POST(request: Request) {
       method: "POST",
       timeoutMs: 15000,
       retries: 1,
+      headers: buildCoreActorHeaders(auth),
       body: {
         title: body.title?.trim() ?? "",
         genre_hint: body.genre_hint?.trim() ?? "",

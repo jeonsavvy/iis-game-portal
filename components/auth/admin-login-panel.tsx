@@ -17,7 +17,7 @@ export function AdminLoginPanel({
     <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border-white/10 bg-[#111118]/90">
       <CardHeader className="space-y-4 border-b border-white/6 pb-6">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Studio Console</p>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Workspace Access</p>
           <CardTitle className="text-4xl tracking-[-0.05em]">{title}</CardTitle>
         </div>
         <p className="max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>

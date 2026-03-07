@@ -1,11 +1,11 @@
 import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
-import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
+import { buildCoreActorHeaders, forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 
 export async function POST(
   request: Request,
   context: { params: Promise<{ sessionId: string; runId: string }> },
 ) {
-  return runAdminWriteRoute(request, async () => {
+  return runAdminWriteRoute(request, async (auth) => {
     const { sessionId, runId } = await context.params;
 
     return forwardToCoreEngine({
@@ -13,6 +13,7 @@ export async function POST(
       method: "POST",
       timeoutMs: 15000,
       retries: 0,
+      headers: buildCoreActorHeaders(auth),
       body: {},
     });
   });

@@ -62,9 +62,9 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/8 bg-[#111118]/90">
       <div className="border-b border-white/8 px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Creative prompt rail</p>
-        <h2 className="mt-2 font-display text-[1.9rem] tracking-[-0.04em] text-foreground">게임 제작 채팅</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">왼쪽에서 요청을 정리하고, 중앙 프리뷰와 진단 레일로 즉시 결과를 검수합니다.</p>
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Game prompt</p>
+        <h2 className="mt-2 font-display text-[1.9rem] tracking-[-0.04em] text-foreground">게임 만들기</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">원하는 장르, 분위기, 조작감, 목표를 적으면 바로 결과를 만들고 수정할 수 있습니다.</p>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
@@ -72,7 +72,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
           {messages.length === 0 ? (
             <div className="rounded-[1.6rem] border border-dashed border-white/10 bg-white/[0.03] p-5">
               <h3 className="font-display text-2xl tracking-[-0.04em] text-foreground">무엇을 만들까요?</h3>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">구체적인 장르, 분위기, 조작감, 목표 루프를 적어주면 멀티 에이전트가 초안을 만듭니다.</p>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">장르, 분위기, 조작, 목표를 구체적으로 적을수록 더 빠르게 원하는 게임에 가까워집니다.</p>
               <div className="mt-4 grid gap-2">
                 {[
                   "신스웨이브 네온 서킷 위를 달리는 3D 오픈휠 레이싱 게임 만들어줘.",
@@ -114,7 +114,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
 
           {isGenerating ? (
             <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-muted-foreground">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">멀티 에이전트</div>
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">생성 중</div>
               <div className="flex items-center gap-2">
                 <span className="size-2 animate-pulse rounded-full bg-accent" />
                 <span>현재 프롬프트를 해석하고 결과를 준비하는 중입니다…</span>

@@ -1,6 +1,7 @@
-export type AppRole = "master_admin";
+export type AppRole = "master_admin" | "creator";
 export type GameStatus = "active" | "inactive" | "archived";
 export type SessionStatus = "active" | "published" | "cancelled" | "error";
+export type GameVisibility = "public" | "hidden" | "unlisted";
 
 export type Database = {
   public: {
@@ -36,6 +37,15 @@ export type Database = {
           url: string;
           thumbnail_url: string | null;
           ai_review: string | null;
+          short_description: string | null;
+          description: string | null;
+          genre_primary: string | null;
+          genre_tags: string[] | null;
+          hero_image_url: string | null;
+          featured_rank: number | null;
+          released_at: string | null;
+          visibility: GameVisibility;
+          play_count_cached: number;
           marketing_summary: string | null;
           play_overview: string[] | null;
           controls_guide: string[] | null;
@@ -54,6 +64,15 @@ export type Database = {
           url: string;
           thumbnail_url?: string | null;
           ai_review?: string | null;
+          short_description?: string | null;
+          description?: string | null;
+          genre_primary?: string | null;
+          genre_tags?: string[] | null;
+          hero_image_url?: string | null;
+          featured_rank?: number | null;
+          released_at?: string | null;
+          visibility?: GameVisibility;
+          play_count_cached?: number;
           marketing_summary?: string | null;
           play_overview?: string[] | null;
           controls_guide?: string[] | null;
@@ -71,6 +90,15 @@ export type Database = {
           url?: string;
           thumbnail_url?: string | null;
           ai_review?: string | null;
+          short_description?: string | null;
+          description?: string | null;
+          genre_primary?: string | null;
+          genre_tags?: string[] | null;
+          hero_image_url?: string | null;
+          featured_rank?: number | null;
+          released_at?: string | null;
+          visibility?: GameVisibility;
+          play_count_cached?: number;
           marketing_summary?: string | null;
           play_overview?: string[] | null;
           controls_guide?: string[] | null;
@@ -107,6 +135,29 @@ export type Database = {
           created_at?: string;
         };
         Relationships: [{ foreignKeyName: "leaderboard_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games_metadata"; referencedColumns: ["id"] }];
+      };
+      game_play_events: {
+        Row: {
+          id: string;
+          game_id: string;
+          fingerprint_hash: string;
+          source: string;
+          created_at: string;
+        };
+        Insert: {
+          id?: string;
+          game_id: string;
+          fingerprint_hash: string;
+          source?: string;
+          created_at?: string;
+        };
+        Update: {
+          game_id?: string;
+          fingerprint_hash?: string;
+          source?: string;
+          created_at?: string;
+        };
+        Relationships: [{ foreignKeyName: "game_play_events_game_id_fkey"; columns: ["game_id"]; isOneToOne: false; referencedRelation: "games_metadata"; referencedColumns: ["id"] }];
       };
       sessions: {
         Row: {
@@ -279,6 +330,7 @@ export type Database = {
     Enums: {
       app_role: AppRole;
       game_status: GameStatus;
+      game_visibility: GameVisibility;
     };
     CompositeTypes: Record<PropertyKey, never>;
   };

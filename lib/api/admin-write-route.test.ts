@@ -95,4 +95,18 @@ describe("runAdminWriteRoute", () => {
     expect(response.status).toBe(200);
     expect(response.headers.get("Cache-Control")).toBe("public, max-age=60");
   });
+
+  it("passes custom permission through to guard", async () => {
+    const request = new Request("https://portal.example.com/api/games/delete", {
+      method: "POST",
+      headers: { origin: "https://portal.example.com" },
+    });
+    mockedWithAdminGuard.mockResolvedValueOnce({ userId: "u1", role: "master_admin", supabase: {} } as never);
+
+    await runAdminWriteRoute(request, async () => NextResponse.json({ ok: true }), {
+      permission: "admin:write",
+    });
+
+    expect(mockedWithAdminGuard).toHaveBeenCalledWith("admin:write", { request });
+  });
 });

@@ -24,9 +24,9 @@
   --border: oklch(0.32 0.01 285 / 0.8);
   --input: oklch(0.26 0.01 285);
   --ring: oklch(0.69 0.09 248);
-  --radius: 1.15rem;
+  --radius: 0.95rem;
   --font-body: var(--font-noto-sans-kr);
-  --font-display: var(--font-fraunces);
+  --font-display: var(--font-noto-sans-kr);
   --shadow-soft: 0 16px 42px rgba(5, 7, 16, 0.28);
   --shadow-panel: 0 24px 64px rgba(0, 0, 0, 0.42);
   --shell-width: 1440px;
@@ -81,8 +81,8 @@
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
     background-image:
-      radial-gradient(circle at 18% 16%, rgba(180, 147, 94, 0.12), transparent 28%),
-      radial-gradient(circle at 84% 12%, rgba(86, 113, 204, 0.12), transparent 26%),
+      radial-gradient(circle at 18% 16%, rgba(44, 112, 255, 0.16), transparent 28%),
+      radial-gradient(circle at 84% 12%, rgba(37, 211, 102, 0.1), transparent 26%),
       linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%),
       linear-gradient(180deg, #0a0a0f 0%, #111116 38%, #17171f 100%);
   }

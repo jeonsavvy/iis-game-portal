@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import type { AdminGuardContext } from "@/lib/api/admin-guard";
 import { jsonError, normalizeCoreErrorPayload } from "@/lib/api/error-response";
 import { fetchWithRetry } from "@/lib/http/fetch-with-retry";
 
@@ -30,6 +31,13 @@ function parseCoreResponse(rawBody: string): unknown {
   } catch {
     return { error: rawBody };
   }
+}
+
+export function buildCoreActorHeaders(auth: Pick<AdminGuardContext, "userId" | "role">): HeadersInit {
+  return {
+    "X-IIS-Actor-Id": auth.userId,
+    "X-IIS-Actor-Role": auth.role ?? "unknown",
+  };
 }
 
 export async function forwardToCoreEngine({

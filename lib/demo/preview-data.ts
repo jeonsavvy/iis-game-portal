@@ -5,6 +5,19 @@ type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
 const now = Date.now();
 const minutes = (m: number) => new Date(now - m * 60_000).toISOString();
 
+export const PREVIEW_CREATORS = {
+  "creator-demo-1": {
+    id: "creator-demo-1",
+    alias: "creator-neon",
+    headline: "레이싱과 속도감을 중심으로 프로토타입을 만드는 제작자",
+  },
+  "creator-demo-2": {
+    id: "creator-demo-2",
+    alias: "creator-sky",
+    headline: "비행과 공간감이 있는 3D 플레이 경험을 실험하는 제작자",
+  },
+} as const;
+
 export const PREVIEW_GAMES: GameRow[] = [
   {
     id: "demo-neon-drift",
@@ -15,6 +28,16 @@ export const PREVIEW_GAMES: GameRow[] = [
     thumbnail_url: "/assets/preview/neon-drift.svg",
     ai_review:
       "90초 생존 구간에서 드리프트 라인 유지와 근접 회피를 반복하는 리듬형 스코어어택입니다.\n부스트 게이지를 초반에 소모하지 말고 후반 교차 구간에서 사용하면 안정적으로 점수를 끌어올릴 수 있습니다.",
+    short_description: "네온 서킷에서 라인을 유지하며 기록을 줄여가는 하이스피드 레이싱",
+    description:
+      "Neon Drift: Outrun Chain\n\n네온 서킷에서 라인을 유지하며 기록을 줄여가는 하이스피드 레이싱 게임입니다.\n\n핵심 포인트\n- 체크포인트를 이어가며 랩타임을 줄입니다.\n- 코너 진입 전 감속, 탈출 구간 재가속이 핵심입니다.",
+    genre_primary: "racing",
+    genre_tags: ["racing", "3d", "time-attack", "neon"],
+    hero_image_url: "/assets/preview/neon-drift.svg",
+    featured_rank: 1,
+    released_at: minutes(18),
+    visibility: "public",
+    play_count_cached: 248,
     marketing_summary: "네온 서킷에서 라인을 유지하며 기록을 줄여가는 하이스피드 레이싱",
     play_overview: [
       "체크포인트를 이어가며 랩타임을 줄이는 레이싱 빌드입니다.",
@@ -28,7 +51,7 @@ export const PREVIEW_GAMES: GameRow[] = [
     publish_copy_version: "v1",
     screenshot_url: "/assets/preview/neon-drift.svg",
     status: "active",
-    created_by: null,
+    created_by: "creator-demo-1",
     created_at: minutes(600),
     updated_at: minutes(20),
   },
@@ -41,6 +64,16 @@ export const PREVIEW_GAMES: GameRow[] = [
     thumbnail_url: "/assets/preview/skyline-jet.svg",
     ai_review:
       "저고도 비행에서 장애물 간격을 읽는 시야 확보가 핵심입니다.\n스로틀을 일정하게 유지하면 초반 실패율이 크게 줄어듭니다.",
+    short_description: "우주 전장에서 추격과 회피를 반복하는 3D 플라이트 슈팅 경험",
+    description:
+      "풀3D 비행기 조종 시뮬레이터 Infinite\n\n우주 전장에서 추격과 회피를 반복하는 3D 플라이트 슈팅 경험을 제공합니다.\n\n핵심 포인트\n- 적 편대를 추격하며 전장을 크게 선회합니다.\n- 부스트와 자세 제어를 짧게 나눠 쓰는 것이 중요합니다.",
+    genre_primary: "flight",
+    genre_tags: ["flight", "3d", "dogfight", "arcade"],
+    hero_image_url: "/assets/preview/skyline-jet.svg",
+    featured_rank: 3,
+    released_at: minutes(54),
+    visibility: "public",
+    play_count_cached: 146,
     marketing_summary: "우주 전장에서 추격과 회피를 반복하는 3D 플라이트 슈팅 경험",
     play_overview: [
       "적 편대를 추격하며 전장을 크게 선회하는 도그파이트형 전투입니다.",
@@ -54,7 +87,7 @@ export const PREVIEW_GAMES: GameRow[] = [
     publish_copy_version: "v1",
     screenshot_url: "/assets/preview/skyline-jet.svg",
     status: "active",
-    created_by: null,
+    created_by: "creator-demo-2",
     created_at: minutes(420),
     updated_at: minutes(55),
   },
@@ -66,6 +99,16 @@ export const PREVIEW_GAMES: GameRow[] = [
     url: "https://example.com/demo/fracture",
     thumbnail_url: "/assets/preview/fracture-labyrinth.svg",
     ai_review: "실험작: 시야 분할 퍼즐.\n정답보다 경로 탐색 순서가 핵심인 유형입니다.",
+    short_description: "시야 분할과 경로 판단에 집중한 실험형 퍼즐 프로토타입",
+    description:
+      "Fracture Labyrinth Prototype\n\n시야 분할과 경로 판단에 집중한 실험형 퍼즐 프로토타입입니다.\n\n핵심 포인트\n- 분리된 시야 조각을 읽어 경로를 해석해야 합니다.\n- 정답보다 탐색 순서가 중요한 구조입니다.",
+    genre_primary: "puzzle",
+    genre_tags: ["puzzle", "prototype", "experimental"],
+    hero_image_url: "/assets/preview/fracture-labyrinth.svg",
+    featured_rank: 6,
+    released_at: minutes(118),
+    visibility: "public",
+    play_count_cached: 52,
     marketing_summary: "시야 분할과 경로 판단에 집중한 실험형 퍼즐 프로토타입",
     play_overview: [
       "분리된 시야 조각을 읽어 경로를 순서대로 해석해야 합니다.",
@@ -79,7 +122,7 @@ export const PREVIEW_GAMES: GameRow[] = [
     publish_copy_version: "v1",
     screenshot_url: "/assets/preview/fracture-labyrinth.svg",
     status: "active",
-    created_by: null,
+    created_by: "creator-demo-2",
     created_at: minutes(360),
     updated_at: minutes(120),
   },
@@ -91,6 +134,16 @@ export const PREVIEW_GAMES: GameRow[] = [
     url: "https://example.com/demo/ember",
     thumbnail_url: "/assets/preview/ember-survival.svg",
     ai_review: "초반 자원 루프 학습형 서바이벌 알파 버전입니다.",
+    short_description: "초반 자원 루프를 익히며 생존 시간을 늘려가는 서바이벌 알파",
+    description:
+      "Ember Survival Alpha\n\n초반 자원 루프를 익히며 생존 시간을 늘려가는 서바이벌 알파 버전입니다.\n\n핵심 포인트\n- 생존 루프를 빠르게 익혀야 합니다.\n- 압박이 커지기 전에 위치를 정리하는 것이 중요합니다.",
+    genre_primary: "survival",
+    genre_tags: ["survival", "alpha", "arcade"],
+    hero_image_url: "/assets/preview/ember-survival.svg",
+    featured_rank: 4,
+    released_at: minutes(138),
+    visibility: "public",
+    play_count_cached: 94,
     marketing_summary: "초반 자원 루프를 익히며 생존 시간을 늘려가는 서바이벌 알파",
     play_overview: [
       "생존 루프를 빠르게 익히고 압박이 커지기 전에 위치를 정리하세요.",
@@ -103,7 +156,7 @@ export const PREVIEW_GAMES: GameRow[] = [
     publish_copy_version: "v1",
     screenshot_url: "/assets/preview/ember-survival.svg",
     status: "active",
-    created_by: null,
+    created_by: "creator-demo-1",
     created_at: minutes(300),
     updated_at: minutes(140),
   },
@@ -115,13 +168,22 @@ export const PREVIEW_GAMES: GameRow[] = [
     url: "https://example.com/demo/timebreak",
     thumbnail_url: "/assets/preview/timebreakers.svg",
     ai_review: null,
+    short_description: null,
+    description: null,
+    genre_primary: "arcade",
+    genre_tags: ["arcade", "beta"],
+    hero_image_url: "/assets/preview/timebreakers.svg",
+    featured_rank: null,
+    released_at: minutes(210),
+    visibility: "hidden",
+    play_count_cached: 0,
     marketing_summary: null,
     play_overview: [],
     controls_guide: [],
     publish_copy_version: null,
     screenshot_url: "/assets/preview/timebreakers.svg",
     status: "inactive",
-    created_by: null,
+    created_by: "creator-demo-2",
     created_at: minutes(260),
     updated_at: minutes(220),
   },
@@ -133,6 +195,16 @@ export const PREVIEW_GAMES: GameRow[] = [
     url: "https://example.com/demo/aether",
     thumbnail_url: "/assets/preview/aether-courier.svg",
     ai_review: "실험 루프 테스트용 빌드",
+    short_description: "실험 루프와 이동 감각을 테스트하는 프로토타입 빌드",
+    description:
+      "Aether Courier Lab\n\n실험 루프와 이동 감각을 테스트하는 프로토타입 빌드입니다.\n\n핵심 포인트\n- 핵심 루프 검증에 집중한 테스트 빌드입니다.\n- 이동 감각과 템포를 빠르게 점검할 수 있습니다.",
+    genre_primary: "score-attack",
+    genre_tags: ["score-attack", "prototype", "flight"],
+    hero_image_url: "/assets/preview/aether-courier.svg",
+    featured_rank: 2,
+    released_at: minutes(28),
+    visibility: "public",
+    play_count_cached: 182,
     marketing_summary: "실험 루프와 이동 감각을 테스트하는 프로토타입 빌드",
     play_overview: [
       "핵심 루프와 이동 감각 검증에 집중한 테스트 빌드입니다.",
@@ -145,7 +217,7 @@ export const PREVIEW_GAMES: GameRow[] = [
     publish_copy_version: "v1",
     screenshot_url: "/assets/preview/aether-courier.svg",
     status: "active",
-    created_by: null,
+    created_by: "creator-demo-1",
     created_at: minutes(200),
     updated_at: minutes(30),
   },
@@ -280,5 +352,17 @@ export const PREVIEW_SESSION_EVENTS: Record<string, Array<Record<string, unknown
       error_code: null,
       created_at: minutes(8),
     },
+  ],
+};
+
+export const PREVIEW_LEADERBOARDS: Record<string, Array<{ id: number; player_name: string; score: number; created_at: string }>> = {
+  "neon-drift-outrun-chain": [
+    { id: 1, player_name: "NOVA", score: 91234, created_at: minutes(14) },
+    { id: 2, player_name: "JET", score: 87420, created_at: minutes(18) },
+    { id: 3, player_name: "ARC", score: 82110, created_at: minutes(32) },
+  ],
+  "skyline-jet-infinite": [
+    { id: 4, player_name: "SKY", score: 5520, created_at: minutes(40) },
+    { id: 5, player_name: "ACE", score: 4980, created_at: minutes(55) },
   ],
 };

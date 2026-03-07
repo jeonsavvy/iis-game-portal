@@ -100,9 +100,9 @@ type ApplyFixResponse = {
 const API_BASE = "/api/sessions";
 const CHAT_MIN_WIDTH = 320;
 const CHAT_MAX_WIDTH = 560;
-const LAYOUT_STORAGE_KEY = "iis-editor-layout-v4";
+const LAYOUT_STORAGE_KEY = "iis-workspace-layout-v5";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
-const LAST_SESSION_STORAGE_KEY = "iis-editor-last-session-v1";
+const LAST_SESSION_STORAGE_KEY = "iis-workspace-last-session-v2";
 
 let msgCounter = 0;
 function makeId() {
@@ -310,7 +310,7 @@ export function useEditorSession() {
       } else {
         params.delete("run");
       }
-      router.replace(`/editor?${params.toString()}`);
+      router.replace(`/workspace?${params.toString()}`);
       if (typeof window !== "undefined") {
         localStorage.setItem(LAST_SESSION_STORAGE_KEY, sessionId);
       }
@@ -593,7 +593,7 @@ export function useEditorSession() {
     if (typeof window === "undefined") return;
     const rememberedSession = localStorage.getItem(LAST_SESSION_STORAGE_KEY)?.trim();
     if (rememberedSession && !session?.id) {
-      router.replace(`/editor?session=${encodeURIComponent(rememberedSession)}`);
+      router.replace(`/workspace?session=${encodeURIComponent(rememberedSession)}`);
     }
   }, [router, searchParams, session?.id]);
 
@@ -917,7 +917,7 @@ export function useEditorSession() {
       const res = await fetch(`${API_BASE}/${session.id}/approve-publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ note: "editor 승인" }),
+        body: JSON.stringify({ note: "workspace 승인" }),
       });
       const payload = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(normalizeError(payload));
@@ -997,7 +997,7 @@ export function useEditorSession() {
     if (typeof window !== "undefined") {
       localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
     }
-    router.replace("/editor");
+    router.replace("/workspace");
   }, [router]);
 
   const actionsState = useMemo(

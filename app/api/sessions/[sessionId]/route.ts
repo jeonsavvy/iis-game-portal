@@ -1,6 +1,6 @@
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
 import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
-import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
+import { buildCoreActorHeaders, forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 
 export async function GET(
   _request: Request,
@@ -22,13 +22,14 @@ export async function DELETE(
   request: Request,
   context: { params: Promise<{ sessionId: string }> },
 ) {
-  return runAdminWriteRoute(request, async () => {
+  return runAdminWriteRoute(request, async (auth) => {
     const { sessionId } = await context.params;
     return forwardToCoreEngine({
       path: `/api/v1/sessions/${encodeURIComponent(sessionId)}`,
       method: "DELETE",
       timeoutMs: 10000,
       retries: 1,
+      headers: buildCoreActorHeaders(auth),
     });
   });
 }

@@ -39,5 +39,5 @@ export async function POST(request: Request) {
         reason: "admin_manual_delete",
       },
     });
-  });
+  }, { permission: "admin:write" });
 }

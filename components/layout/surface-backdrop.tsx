@@ -3,7 +3,7 @@
 import { usePathname } from "next/navigation";
 
 function resolveSurface(pathname: string) {
-  if (pathname.startsWith("/editor")) return "editor";
+  if (pathname.startsWith("/workspace") || pathname.startsWith("/editor")) return "editor";
   if (pathname.startsWith("/admin")) return "admin";
   if (pathname.startsWith("/play")) return "play";
   return "arcade";

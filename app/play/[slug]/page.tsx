@@ -6,6 +6,7 @@ import { cache } from "react";
 import { PlayEmbedFrame } from "@/components/PlayEmbedFrame";
 import { PlayInfoTabs } from "@/components/PlayInfoTabs";
 import { PlayHeader } from "@/components/play/play-header";
+import { PlayEventTracker } from "@/components/play/play-event-tracker";
 import { PlayMetaRail } from "@/components/play/play-meta-rail";
 import { PlayStageShell } from "@/components/play/play-stage-shell";
 import { Card } from "@/components/ui/card";
@@ -99,8 +100,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
     const previewGame = getPreviewGameBySlug(slugParam) ?? getPreviewGameById(slugParam) ?? PREVIEW_GAMES[0];
-    const ogImage = previewGame.screenshot_url || previewGame.thumbnail_url || undefined;
-    const description = previewGame.marketing_summary || previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+    const ogImage = previewGame.hero_image_url || previewGame.screenshot_url || previewGame.thumbnail_url || undefined;
+    const description = previewGame.short_description || previewGame.marketing_summary || previewGame.ai_review || `${previewGame.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
     return {
       title: `${previewGame.name} - IIS Arcade`,
       description,
@@ -113,8 +114,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
   if (errorMessage) return { title: "IIS Arcade" };
   if (!game) return { title: "Game Not Found" };
   const resolvedAiReview = await resolveAiReviewFallback(game.slug, game.ai_review);
-  const ogImage = game.screenshot_url || game.thumbnail_url || undefined;
-  const defaultDescription = game.marketing_summary || `${game.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
+  const ogImage = game.hero_image_url || game.screenshot_url || game.thumbnail_url || undefined;
+  const defaultDescription = game.short_description || game.marketing_summary || `${game.name} 플레이 페이지입니다. 키보드 조작으로 기록에 도전해보세요.`;
 
   return {
     title: `${game.name} - IIS Arcade`,
@@ -167,9 +168,11 @@ async function renderPlayPage(typedGame: GameRow, previewMode: boolean) {
 
       <PlayHeader
         title={typedGame.name}
-        summary={typedGame.marketing_summary?.trim() || typedGame.ai_review?.trim() || "바로 플레이하고 목표를 달성하세요."}
+        summary={typedGame.short_description?.trim() || typedGame.marketing_summary?.trim() || typedGame.ai_review?.trim() || "바로 플레이하고 목표를 달성하세요."}
+        detailHref={`/games/${typedGame.slug}`}
         debugHref={debugMode ? proxiedArtifactUrl : null}
       />
+      {!previewMode ? <PlayEventTracker slug={typedGame.slug} /> : null}
 
       <PlayStageShell
         stage={
