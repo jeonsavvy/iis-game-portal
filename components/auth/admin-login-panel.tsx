@@ -14,14 +14,14 @@ export function AdminLoginPanel({
   children: React.ReactNode;
 }) {
   return (
-    <Card className="mx-auto w-full max-w-2xl rounded-[2rem] border-white/10 bg-[#111118]/90">
-      <CardHeader className="space-y-4 border-b border-white/6 pb-6">
+    <Card className="mx-auto w-full max-w-2xl rounded-[1.25rem] border-zinc-200 bg-white">
+      <CardHeader className="space-y-4 border-b border-zinc-200 pb-6">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Workspace Access</p>
+          <p className="text-[11px] font-semibold text-primary">로그인</p>
           <CardTitle className="text-4xl tracking-[-0.05em]">{title}</CardTitle>
         </div>
         <p className="max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>
-        {meta ? <div className="rounded-[1.35rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-muted-foreground">{meta}</div> : null}
+        {meta ? <div className="rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-muted-foreground">{meta}</div> : null}
       </CardHeader>
       <CardContent className="pt-6">{children}</CardContent>
     </Card>

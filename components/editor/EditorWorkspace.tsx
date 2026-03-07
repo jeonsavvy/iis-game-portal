@@ -18,12 +18,14 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
     messages,
     isDesktop,
     handleSend,
-    handleApprovePublish,
     handlePublish,
     handleStartFreshSession,
+    handleSelectSession,
     dismissError,
     dismissRestoreWarning,
     actionsState,
+    sessionOptions,
+    selectedSessionId,
   } = useEditorSession();
 
   return (
@@ -32,9 +34,11 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
         runStatus={runStatus}
         canPublish={actionsState.canPublish}
         onFreshSession={handleStartFreshSession}
-        onApprovePublish={handleApprovePublish}
         onPublish={handlePublish}
         disableActions={isGenerating || isIssueBusy}
+        sessionOptions={sessionOptions}
+        selectedSessionId={selectedSessionId}
+        onSelectSession={handleSelectSession}
       />
 
       <EditorStatusBanners

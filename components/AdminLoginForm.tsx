@@ -97,7 +97,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       description="허용된 계정만 매직링크로 로그인해 작업공간과 운영 기능에 접근할 수 있습니다."
       meta={
         <div className="grid gap-1">
-          <p>허용된 관리자만 접근 가능합니다.</p>
+          <p>허용된 계정만 접근 가능합니다.</p>
           <p>로그인 후 이동 경로: {nextPath}</p>
         </div>
       }
@@ -112,7 +112,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
           {allowedEmails.length > 0 ? <p className="text-sm text-muted-foreground">허용 계정 예시: {allowedEmails.join(", ")}</p> : null}
         </div>
       </form>
-      {status ? <p className="mt-4 rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}
+      {status ? <p className="mt-4 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}
     </AdminLoginPanel>
   );
 }
