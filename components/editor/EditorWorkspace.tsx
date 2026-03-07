@@ -21,6 +21,7 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
     handlePublish,
     handleStartFreshSession,
     handleSelectSession,
+    handleDeleteSession,
     dismissError,
     dismissRestoreWarning,
     actionsState,
@@ -35,6 +36,7 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
         canPublish={actionsState.canPublish}
         onFreshSession={handleStartFreshSession}
         onPublish={handlePublish}
+        onDeleteSession={handleDeleteSession}
         disableActions={isGenerating || isIssueBusy}
         sessionOptions={sessionOptions}
         selectedSessionId={selectedSessionId}

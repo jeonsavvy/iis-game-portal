@@ -26,6 +26,7 @@ export function EditorTopbar({
   canPublish,
   onFreshSession,
   onPublish,
+  onDeleteSession,
   disableActions,
   sessionOptions,
   selectedSessionId,
@@ -35,6 +36,7 @@ export function EditorTopbar({
   canPublish: boolean;
   onFreshSession: () => void;
   onPublish: () => void;
+  onDeleteSession: () => void;
   disableActions: boolean;
   sessionOptions: SessionOption[];
   selectedSessionId: string;
@@ -64,6 +66,7 @@ export function EditorTopbar({
       </div>
       <div className="flex flex-wrap gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onFreshSession} disabled={disableActions}><Plus className="size-4" />새 세션</Button>
+        <Button type="button" variant="outline" size="sm" onClick={onDeleteSession} disabled={!selectedSessionId || disableActions}>세션 삭제</Button>
         <Button type="button" size="sm" onClick={onPublish} disabled={!canPublish || disableActions}><Rocket className="size-4" />퍼블리시</Button>
       </div>
     </div>

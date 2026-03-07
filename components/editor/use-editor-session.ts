@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import { useRouter, useSearchParams } from "next/navigation";
 
 import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, RunStatus } from "@/components/editor/types";
+import { normalizeSessionTitle } from "@/lib/editor/session-options";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
 type SessionState = {
@@ -351,7 +352,7 @@ export function useEditorSession() {
       activities: [],
     });
     setSessionOptions((prev) => [
-      { session_id: newId, title: "New Session", status: "active" },
+      { session_id: newId, title: "새 세션", status: "active" },
       ...prev.filter((item) => item.session_id !== newId),
     ]);
     syncEditorUrl(newId, null);
@@ -364,7 +365,7 @@ export function useEditorSession() {
       if (!res.ok) return;
       const payload = (await res.json().catch(() => ({}))) as SessionListResponse;
       if (Array.isArray(payload.sessions) && payload.sessions.length > 0) {
-        setSessionOptions(payload.sessions);
+        setSessionOptions(payload.sessions.map((session) => ({ ...session, title: normalizeSessionTitle(session) })));
       }
     } catch {
       // noop
@@ -1067,6 +1068,38 @@ export function useEditorSession() {
     [session?.id, syncEditorUrl],
   );
 
+  const handleDeleteSession = useCallback(async () => {
+    const targetSessionId = searchParams?.get("session")?.trim() || session?.id || "";
+    if (!targetSessionId) return;
+
+    const confirmed = typeof window === "undefined" ? true : window.confirm("현재 세션을 삭제할까요?");
+    if (!confirmed) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/${targetSessionId}`, { method: "DELETE" });
+      const payload = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(normalizeError(payload));
+
+      const remaining = sessionOptions.filter((item) => item.session_id !== targetSessionId);
+      setSessionOptions(remaining);
+      setSession(null);
+      setRunId(null);
+      setRunStatus("idle");
+      setRunError(null);
+      setActiveIssueId(null);
+      setActiveProposalId(null);
+      setPreviewHtmlOverride(null);
+
+      if (remaining[0]?.session_id) {
+        syncEditorUrl(remaining[0].session_id, null);
+      } else {
+        router.replace("/workspace");
+      }
+    } catch (error) {
+      setError(error instanceof Error ? error.message : "세션 삭제 실패");
+    }
+  }, [router, searchParams, session?.id, sessionOptions, syncEditorUrl]);
+
   const actionsState = useMemo(
     () => ({
       canProposeFix: Boolean(activeIssueId),
@@ -1105,6 +1138,7 @@ export function useEditorSession() {
     handlePublish,
     handleStartFreshSession,
     handleSelectSession,
+    handleDeleteSession,
     dismissError: () => setError(null),
     dismissRestoreWarning: () => setRestoreWarning(null),
     actionsState,
