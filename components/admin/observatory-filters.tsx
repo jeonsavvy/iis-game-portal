@@ -25,11 +25,11 @@ export function ObservatoryFilters({
   setErrorFilter: (value: string) => void;
 }) {
   return (
-    <Card className="rounded-[1.85rem] border-white/8 bg-[#101118]/82 p-5">
+    <Card data-admin-surface="observatory-filters" className="p-5">
       <div className="mb-4 flex items-center gap-3">
-        <Filter className="size-4 text-accent" />
+        <Filter className="size-4 text-zinc-500" />
         <div>
-          <h2 className="font-display text-[1.6rem] tracking-[-0.04em] text-foreground">필터</h2>
+          <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">필터</h2>
           <p className="text-sm text-muted-foreground">상태, 에이전트, 작업 단계, 오류 여부를 기준으로 운영 로그를 정리합니다.</p>
         </div>
       </div>
@@ -46,7 +46,7 @@ export function ObservatoryFilters({
 function FilterSelect({ label, value, onValueChange, items }: { label: string; value: string; onValueChange: (value: string) => void; items: Array<{ value: string; label: string }> }) {
   return (
     <label className="grid gap-2 text-sm text-muted-foreground">
-      <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">{label}</span>
+      <span className="text-[11px] font-semibold">{label}</span>
       <Select value={value || "all"} onValueChange={(next) => onValueChange(next === "all" ? "" : next)}>
         <SelectTrigger>
           <SelectValue placeholder="전체" />

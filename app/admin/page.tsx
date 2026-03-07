@@ -24,17 +24,17 @@ function AdminHub({ previewMode }: { previewMode: boolean }) {
   return (
     <section className="grid gap-5">
       <div className="flex justify-end">{previewMode ? null : <SignOutButton />}</div>
-      <Card className="rounded-[1.5rem] border-white/10 bg-[#111118]/90 p-6 sm:p-8">
-        <div className="space-y-3">
+      <Card data-admin-surface="hub" className="p-6 sm:p-8">
+        <div className="space-y-2">
           <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">운영실</h1>
-          <p className="text-sm leading-7 text-muted-foreground">공개 서비스와 분리된 운영 허브입니다. 세션 운영과 게임 관리를 각각의 화면으로 나누었습니다.</p>
+          <p className="text-sm text-muted-foreground">세션 운영과 게임 관리를 여기서 나눠서 봅니다.</p>
         </div>
         <div className="mt-6 grid gap-4 md:grid-cols-2">
-          {sections.map((section) => (
-            <Card key={section.href} className="rounded-[1.2rem] border-white/8 bg-white/[0.03] p-5">
-              <h2 className="text-[1.4rem] font-bold tracking-[-0.04em] text-foreground">{section.title}</h2>
-              <p className="mt-3 text-sm leading-7 text-muted-foreground">{section.description}</p>
-              <Button asChild className="mt-5">
+          {sections.map((section, index) => (
+            <Card key={section.href} data-admin-surface={`hub-section-${index + 1}`} className="border-zinc-200 p-5 shadow-none">
+              <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">{section.title}</h2>
+              <p className="mt-2 text-sm leading-6 text-muted-foreground">{section.description}</p>
+              <Button asChild className="mt-5 rounded-lg">
                 <Link href={section.href}>{section.title}</Link>
               </Button>
             </Card>
@@ -56,10 +56,10 @@ export default async function AdminPage() {
     supabase = await createSupabaseServerClient();
   } catch (error) {
     return (
-      <Card className="grid gap-4 rounded-[1.85rem] border-white/8 bg-[#111118]/86 p-6">
+      <Card className="grid gap-4 p-6">
         <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">운영실</h1>
         <p className="text-sm leading-7 text-muted-foreground">Supabase 구성이 올바르지 않아 운영실을 불러오지 못했습니다.</p>
-        <p className="text-sm text-red-100">{error instanceof Error ? error.message : "unknown_error"}</p>
+        <p className="text-sm text-red-600">{error instanceof Error ? error.message : "unknown_error"}</p>
       </Card>
     );
   }
@@ -69,7 +69,7 @@ export default async function AdminPage() {
   } = await supabase.auth.getUser();
   if (!user) {
     return (
-      <Card className="grid gap-4 rounded-[1.85rem] border-white/8 bg-[#111118]/86 p-6">
+      <Card className="grid gap-4 p-6">
         <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">운영실</h1>
         <p className="text-sm leading-7 text-muted-foreground">운영실 접근에는 로그인 필요합니다.</p>
         <Button asChild className="w-fit">
@@ -83,7 +83,7 @@ export default async function AdminPage() {
   const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
   if (!isMasterAdmin(role)) {
     return (
-      <Card className="grid gap-4 rounded-[1.85rem] border-white/8 bg-[#111118]/86 p-6">
+      <Card className="grid gap-4 p-6">
         <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">운영실</h1>
         <p className="text-sm leading-7 text-muted-foreground">master_admin 권한이 필요합니다. (현재 로그인: {user.email ?? user.id})</p>
         <div>

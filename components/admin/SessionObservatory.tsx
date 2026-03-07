@@ -277,7 +277,7 @@ export function SessionObservatory({ previewMode = false }: { previewMode?: bool
   return (
     <section className="grid gap-5">
       <ObservatoryHeader totalSessions={sessions.length} selectedTitle={selectedSession?.title ?? null} />
-      {error ? <Card className="rounded-[1.6rem] border-red-400/20 bg-red-400/10 px-5 py-4 text-sm text-red-100">{error}</Card> : null}
+      {error ? <Card className="rounded-[1rem] border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</Card> : null}
       <ObservatoryFilters
         statusFilter={statusFilter}
         setStatusFilter={setStatusFilter}

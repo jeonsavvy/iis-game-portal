@@ -133,31 +133,31 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
 
   return (
     <section className="grid gap-5">
-      <Card className="rounded-[1.5rem] border-white/10 bg-[#111118]/90 p-6 sm:p-8">
+      <Card data-admin-surface="games-header" className="p-6 sm:p-8">
         <div className="space-y-3">
           <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">게임 관리</h1>
-          <p className="text-sm leading-7 text-muted-foreground">공개된 게임을 확인하고, 필요할 때만 위험 작업(완전 삭제)을 실행합니다.</p>
+          <p className="text-sm text-muted-foreground">공개된 게임을 확인하고, 필요할 때만 위험 작업을 실행합니다.</p>
         </div>
       </Card>
 
       {readOnly ? (
-        <Card className="rounded-[1.2rem] border-amber-300/20 bg-amber-300/10 px-5 py-4 text-sm text-amber-100">
+        <Card className="rounded-[1rem] border-amber-200 bg-amber-50 px-5 py-4 text-sm text-amber-700">
           프리뷰 모드에서는 실제 삭제가 차단되며 UI만 검토할 수 있습니다.
         </Card>
       ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <Card className="rounded-[1.25rem] border-white/8 bg-[#111118]/88 p-5">
+        <Card data-admin-surface="games-list" className="p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
-              <h2 className="text-[1.5rem] font-bold tracking-[-0.04em] text-foreground">삭제 대상 선택</h2>
+              <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">삭제 대상 선택</h2>
               <p className="mt-2 text-sm text-muted-foreground">현재 등록된 게임 중 삭제할 대상을 선택하세요.</p>
             </div>
             <span className="text-sm text-muted-foreground">{games.length}개</span>
           </div>
 
           {games.length === 0 ? (
-            <p className="rounded-[1rem] border border-dashed border-white/10 px-4 py-5 text-sm text-muted-foreground">삭제 가능한 게임이 없습니다.</p>
+            <p className="rounded-[1rem] border border-dashed border-zinc-200 px-4 py-5 text-sm text-muted-foreground">삭제 가능한 게임이 없습니다.</p>
           ) : (
             <div className="grid gap-3">
               {games.map((game) => {
@@ -172,7 +172,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
                       setConfirmChecked(false);
                       setResultMessage("");
                     }}
-                    className={`rounded-[1rem] border px-4 py-4 text-left transition ${active ? "border-red-400/40 bg-red-400/10" : "border-white/8 bg-white/[0.03] hover:border-white/16"}`}
+                    className={`rounded-[1rem] border px-4 py-4 text-left transition ${active ? "border-red-200 bg-red-50" : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -193,12 +193,12 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
           )}
         </Card>
 
-        <Card className="rounded-[1.25rem] border-white/8 bg-[#111118]/88 p-5">
-          <h2 className="text-[1.5rem] font-bold tracking-[-0.04em] text-foreground">삭제 확인 (되돌릴 수 없음)</h2>
+        <Card data-admin-surface="games-delete" className="p-5">
+          <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">삭제 확인 (되돌릴 수 없음)</h2>
 
           {selectedGame ? (
             <div className="mt-4 grid gap-4">
-              <div className="rounded-[1rem] border border-red-400/20 bg-red-400/10 px-4 py-4 text-sm leading-7 text-red-50">
+              <div className="rounded-[1rem] border border-red-200 bg-red-50 px-4 py-4 text-sm leading-7 text-red-700">
                 <p><strong>선택 게임:</strong> {selectedGame.name}</p>
                 <p><strong>슬러그:</strong> {selectedGame.slug}</p>
                 <p>이 작업은 게임 산출물(DB · 스토리지 · 아카이브)을 영구 삭제합니다.</p>
@@ -209,7 +209,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
                 <Input value={confirmSlug} onChange={(event) => setConfirmSlug(event.target.value)} placeholder={selectedGame.slug} />
               </label>
 
-              <label className="flex items-start gap-3 rounded-[1rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm text-muted-foreground">
+              <label className="flex items-start gap-3 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm text-muted-foreground">
                 <input type="checkbox" checked={confirmChecked} onChange={(event) => setConfirmChecked(event.target.checked)} className="mt-1" />
                 <span>2) 영구 삭제이며 복구할 수 없다는 점을 이해했습니다.</span>
               </label>
@@ -219,7 +219,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
               </Button>
             </div>
           ) : (
-            <p className="mt-4 rounded-[1rem] border border-dashed border-white/10 px-4 py-5 text-sm text-muted-foreground">왼쪽 목록에서 삭제할 게임을 선택하세요.</p>
+            <p className="mt-4 rounded-[1rem] border border-dashed border-zinc-200 px-4 py-5 text-sm text-muted-foreground">왼쪽 목록에서 삭제할 게임을 선택하세요.</p>
           )}
 
           {resultMessage ? <p className="mt-4 text-sm leading-7 text-muted-foreground">{resultMessage}</p> : null}

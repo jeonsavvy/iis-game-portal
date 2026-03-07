@@ -3,14 +3,12 @@ import { Card } from "@/components/ui/card";
 
 export function ObservatoryHeader({ totalSessions, selectedTitle }: { totalSessions: number; selectedTitle?: string | null }) {
   return (
-    <Card className="rounded-[2rem] border-white/10 bg-[#111118]/88 p-6 sm:p-7">
+    <Card data-admin-surface="observatory-header" className="p-6 sm:p-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="space-y-3">
-          <Badge variant="outline" className="w-fit border-white/12 text-accent">Showcase console</Badge>
-          <div className="space-y-2">
-            <h1 className="font-display text-4xl leading-none tracking-[-0.05em] text-foreground sm:text-5xl">세션 운영실</h1>
-            <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">세션별 실행 상태와 에이전트 이벤트를 하나의 컨트롤 룸에서 읽기 쉽게 정리합니다.</p>
-          </div>
+        <div className="space-y-2">
+          <Badge variant="outline" className="w-fit">세션 운영</Badge>
+          <h1 className="text-4xl font-bold leading-none tracking-[-0.05em] text-foreground sm:text-[2.6rem]">세션 운영실</h1>
+          <p className="max-w-2xl text-sm leading-6 text-muted-foreground">세션 상태와 최근 이벤트를 한 화면에서 빠르게 확인합니다.</p>
         </div>
         <div className="flex flex-wrap gap-3 text-sm">
           <Badge variant="secondary">세션 {totalSessions}개</Badge>
