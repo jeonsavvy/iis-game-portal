@@ -1,0 +1,10 @@
+<svg width="280" height="64" viewBox="0 0 280 64" fill="none" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">IIS Game Studio wordmark</title>
+  <desc id="desc">Editorial-style wordmark for IIS Game Studio.</desc>
+  <rect width="280" height="64" rx="22" fill="#111118"/>
+  <path d="M30 20h8v24h-8zM46 20h8v24h-8zM62 20h8v24h-8z" fill="#EEE9DD"/>
+  <path d="M24 16h52" stroke="#A48A64" stroke-width="1.5" stroke-linecap="round"/>
+  <path d="M24 48h52" stroke="#A48A64" stroke-width="1.5" stroke-linecap="round"/>
+  <text x="96" y="30" fill="#F5F1E8" font-family="Fraunces, serif" font-size="20" font-weight="600" letter-spacing="-0.6">IIS</text>
+  <text x="96" y="48" fill="#A6A3B2" font-family="'Noto Sans KR', sans-serif" font-size="11" letter-spacing="2.8">GAME STUDIO</text>
+</svg>

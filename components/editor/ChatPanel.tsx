@@ -1,238 +1,172 @@
 "use client";
 
 import Image from "next/image";
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import { ImagePlus, SendHorizontal } from "lucide-react";
+import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
-export type ChatAttachment = {
-    name: string;
-    mime_type: string;
-    data_url?: string;
-};
-
-export type ChatMessage = {
-    id: string;
-    role: "user" | "assistant" | "visual_qa" | "playtester" | "system";
-    content: string;
-    timestamp: number;
-    attachment?: ChatAttachment | null;
-};
-
-export type ChatSendPayload = {
-    prompt: string;
-    attachment?: ChatAttachment | null;
-    mode?: "auto" | "generate" | "issue";
-};
-
-export type ChatAction = {
-    id: string;
-    label: string;
-    onClick: () => void;
-    disabled?: boolean;
-    tone?: "default" | "primary";
-};
-
-type ChatPanelProps = {
-    messages: ChatMessage[];
-    onSend: (payload: ChatSendPayload) => void;
-    isGenerating: boolean;
-    actions?: ChatAction[];
-};
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Textarea } from "@/components/ui/textarea";
+import type { ChatAttachment, ChatMessage, ChatSendPayload } from "@/components/editor/types";
+import { cn } from "@/lib/utils";
 
 const ROLE_LABELS: Record<ChatMessage["role"], string> = {
-    user: "나",
-    assistant: "코드젠",
-    visual_qa: "시각 QA",
-    playtester: "플레이테스터",
-    system: "시스템",
+  user: "요청",
+  assistant: "코드젠",
+  visual_qa: "시각 QA",
+  playtester: "플레이테스터",
+  system: "시스템",
 };
 
-const ROLE_ICONS: Record<ChatMessage["role"], string> = {
-    user: "👤",
-    assistant: "🤖",
-    visual_qa: "👁️",
-    playtester: "🎮",
-    system: "⚙️",
+const ROLE_TONE: Record<ChatMessage["role"], string> = {
+  user: "border-cyan-300/25 bg-cyan-300/8 text-cyan-50",
+  assistant: "border-indigo-300/20 bg-indigo-300/8 text-indigo-50",
+  visual_qa: "border-emerald-300/20 bg-emerald-300/8 text-emerald-50",
+  playtester: "border-amber-300/20 bg-amber-300/8 text-amber-50",
+  system: "border-white/10 bg-white/[0.04] text-foreground",
 };
 
-export function ChatPanel({ messages, onSend, isGenerating, actions = [] }: ChatPanelProps) {
-    const [input, setInput] = useState("");
-    const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
-    const scrollRef = useRef<HTMLDivElement>(null);
-    const inputRef = useRef<HTMLTextAreaElement>(null);
-    const fileInputRef = useRef<HTMLInputElement>(null);
+export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMessage[]; onSend: (payload: ChatSendPayload) => void; isGenerating: boolean; }) {
+  const [input, setInput] = useState("");
+  const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const scrollViewportRef = useRef<HTMLDivElement | null>(null);
 
-    const handleSubmit = (e: FormEvent) => {
-        e.preventDefault();
-        const trimmed = input.trim();
-        if (!trimmed || isGenerating) return;
-        onSend({ prompt: trimmed, attachment });
-        setInput("");
-        setAttachment(null);
-        if (fileInputRef.current) fileInputRef.current.value = "";
-        inputRef.current?.focus();
+  useEffect(() => {
+    const viewport = scrollViewportRef.current;
+    if (!viewport) return;
+    viewport.scrollTo({ top: viewport.scrollHeight, behavior: "smooth" });
+  }, [messages.length, isGenerating]);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const trimmed = input.trim();
+    if (!trimmed || isGenerating) return;
+    onSend({ prompt: trimmed, attachment });
+    setInput("");
+    setAttachment(null);
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const handlePickImage = (event: ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file || !file.type.startsWith("image/") || file.size > 1_500_000) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result !== "string") return;
+      setAttachment({ name: file.name, mime_type: file.type, data_url: reader.result });
     };
+    reader.readAsDataURL(file);
+  };
 
-    const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-        if (e.key === "Enter" && !e.shiftKey) {
-            e.preventDefault();
-            handleSubmit(e);
-        }
-    };
+  return (
+    <div className="flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/8 bg-[#111118]/90">
+      <div className="border-b border-white/8 px-5 py-4">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Creative prompt rail</p>
+        <h2 className="mt-2 font-display text-[1.9rem] tracking-[-0.04em] text-foreground">게임 제작 채팅</h2>
+        <p className="mt-2 text-sm leading-6 text-muted-foreground">왼쪽에서 요청을 정리하고, 중앙 프리뷰와 진단 레일로 즉시 결과를 검수합니다.</p>
+      </div>
 
-    // Auto-scroll to bottom
-    const prevMsgCount = useRef(messages.length);
-    if (messages.length !== prevMsgCount.current) {
-        prevMsgCount.current = messages.length;
-        requestAnimationFrame(() => {
-            scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: "smooth" });
-        });
-    }
-
-    const handlePickImage = async (event: ChangeEvent<HTMLInputElement>) => {
-        const file = event.target.files?.[0];
-        if (!file) return;
-        if (!file.type.startsWith("image/")) return;
-        if (file.size > 1_500_000) return;
-
-        const reader = new FileReader();
-        reader.onload = () => {
-            if (typeof reader.result !== "string") return;
-            setAttachment({
-                name: file.name,
-                mime_type: file.type,
-                data_url: reader.result,
-            });
-        };
-        reader.readAsDataURL(file);
-    };
-
-    return (
-        <div className="editor-chat-panel">
-            <div className="editor-chat-header">
-                <h3>💬 게임 제작 채팅</h3>
-            </div>
-
-            <div className="editor-chat-messages" ref={scrollRef}>
-                {messages.length === 0 ? (
-                    <div className="editor-chat-welcome">
-                        <h4>🚀 무엇을 만들까요?</h4>
-                        <p>왼쪽 채팅에서 요청하고, 오른쪽 프리뷰를 보며 바로 수정하세요. 진단 레일은 필요할 때만 열면 됩니다.</p>
-                        <div className="editor-chat-suggestions">
-                            <button type="button" onClick={() => onSend({ prompt: "신스웨이브 스타일 네온 그리드 트랙 위를 오픈휠 레이스카로 달리며 랩타임을 기록하는 풀 3D 아케이드 서킷 레이싱 게임 만들어줘. 시작 카운트다운, 부스트 시 FOV 확장, 빛나는 파티클 트레일, 최고 기록 갱신 UI 애니메이션까지 포함해줘." })} disabled={isGenerating}>
-                                🏎️ 레이싱 게임
-                            </button>
-                            <button type="button" onClick={() => onSend({ prompt: "따뜻한 일몰 조명과 Flat Shading 로우폴리 스타일로, 섬과 바다 위를 프로펠러 비행기로 돌아다니며 빛나는 링을 통과하는 풀 3D 플라이트 게임 만들어줘. 기수/주날개/꼬리날개/프로펠러를 분리해 조립하고, 안개와 링 파티클, Web Audio 효과음까지 넣어줘." })} disabled={isGenerating}>
-                                ✈️ 플라이트 게임
-                            </button>
-                            <button type="button" onClick={() => onSend({ prompt: "로우폴리 탑뷰 슈팅 게임 만들어줘. 읽히는 아레나, 커버 구조물, 적 탄 압박, 대시, 타이틀 메뉴, 웨이브 시스템, 히트/머즐/폭발 피드백, 게임오버/재시작 상태까지 완성해줘." })} disabled={isGenerating}>
-                                🔫 탑뷰 슈팅 게임
-                            </button>
-                        </div>
-                    </div>
-                ) : (
-                    messages.map((msg) => (
-                        <div key={msg.id} className={`editor-chat-msg editor-chat-msg--${msg.role}`}>
-                            <div className="editor-chat-msg-meta">
-                                <span className="editor-chat-msg-icon">{ROLE_ICONS[msg.role]}</span>
-                                <span className="editor-chat-msg-role">{ROLE_LABELS[msg.role]}</span>
-                            </div>
-                            <div className="editor-chat-msg-body">{msg.content}</div>
-                            {msg.attachment ? (
-                                msg.attachment.data_url ? (
-                                    <Image
-                                        src={msg.attachment.data_url}
-                                        alt={msg.attachment.name}
-                                        width={92}
-                                        height={68}
-                                        unoptimized
-                                        className="editor-chat-attachment-preview"
-                                    />
-                                ) : (
-                                    <div className="editor-chat-attachment-pill">📎 {msg.attachment.name}</div>
-                                )
-                            ) : null}
-                        </div>
-                    ))
-                )}
-
-                {isGenerating && (
-                    <div className="editor-chat-msg editor-chat-msg--assistant">
-                        <div className="editor-chat-msg-meta">
-                            <span className="editor-chat-msg-icon">🤖</span>
-                            <span className="editor-chat-msg-role">멀티에이전트</span>
-                        </div>
-                        <div className="editor-chat-msg-body editor-chat-typing">
-                            <span></span><span></span><span></span>
-                        </div>
-                    </div>
-                )}
-            </div>
-
-            {actions.length > 0 ? (
-                <div className="editor-chat-quick-actions">
-                    {actions.map((action) => (
-                        <button
-                            key={action.id}
-                            type="button"
-                            className={`editor-chat-quick-action editor-chat-quick-action--${action.tone ?? "default"}`}
-                            onClick={action.onClick}
-                            disabled={Boolean(action.disabled) || isGenerating}
-                        >
-                            {action.label}
-                        </button>
-                    ))}
-                </div>
-            ) : null}
-
-            <form className="editor-chat-input" onSubmit={handleSubmit}>
-                <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/png,image/jpeg,image/webp"
-                    style={{ display: "none" }}
-                    onChange={handlePickImage}
-                />
-                <textarea
-                    ref={inputRef}
-                    value={input}
-                    onChange={(e) => setInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    placeholder={isGenerating ? "에이전트 루프 실행 중..." : "원하는 게임을 자세히 적어주세요... (Enter 전송 / Shift+Enter 줄바꿈)"}
+      <ScrollArea className="min-h-0 flex-1">
+        <div ref={scrollViewportRef} className="grid gap-3 px-4 py-4 sm:px-5">
+          {messages.length === 0 ? (
+            <div className="rounded-[1.6rem] border border-dashed border-white/10 bg-white/[0.03] p-5">
+              <h3 className="font-display text-2xl tracking-[-0.04em] text-foreground">무엇을 만들까요?</h3>
+              <p className="mt-3 text-sm leading-6 text-muted-foreground">구체적인 장르, 분위기, 조작감, 목표 루프를 적어주면 멀티 에이전트가 초안을 만듭니다.</p>
+              <div className="mt-4 grid gap-2">
+                {[
+                  "신스웨이브 네온 서킷 위를 달리는 3D 오픈휠 레이싱 게임 만들어줘.",
+                  "로우폴리 섬과 링을 활용한 3D 비행 게임 만들어줘.",
+                  "탑뷰 슈팅에 대시와 웨이브 시스템을 넣은 아레나 게임 만들어줘.",
+                ].map((suggestion) => (
+                  <button
+                    key={suggestion}
+                    type="button"
+                    className="cursor-pointer rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-white/16 hover:bg-white/[0.05] hover:text-foreground"
+                    onClick={() => onSend({ prompt: suggestion })}
                     disabled={isGenerating}
-                    rows={2}
-                />
-                <div className="editor-chat-input-actions">
-                    <button
-                        type="button"
-                        className="editor-chat-attach"
-                        onClick={() => fileInputRef.current?.click()}
-                        disabled={isGenerating}
-                    >
-                        이미지
-                    </button>
-                    {attachment ? (
-                        <button
-                            type="button"
-                            className="editor-chat-attach editor-chat-attach--secondary"
-                            onClick={() => {
-                                setAttachment(null);
-                                if (fileInputRef.current) fileInputRef.current.value = "";
-                            }}
-                        >
-                            첨부 제거
-                        </button>
-                    ) : null}
+                  >
+                    {suggestion}
+                  </button>
+                ))}
+              </div>
+            </div>
+          ) : (
+            messages.map((message) => (
+              <article key={message.id} className={cn("rounded-[1.4rem] border px-4 py-3 text-sm leading-6", ROLE_TONE[message.role])}>
+                <div className="mb-2 flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
+                  <span>{ROLE_LABELS[message.role]}</span>
+                  <time className="text-muted-foreground">{new Date(message.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</time>
                 </div>
-                <button type="submit" disabled={isGenerating || !input.trim()} className="editor-chat-send">
-                    전송
-                </button>
-            </form>
-            {attachment ? (
-                <div className="editor-chat-attachment-draft">
-                    {attachment.data_url ? <Image src={attachment.data_url} alt={attachment.name} width={92} height={68} unoptimized className="editor-chat-attachment-preview" /> : null}
-                    <span>첨부 예정: {attachment.name}</span>
-                </div>
-            ) : null}
+                <p className="whitespace-pre-wrap text-pretty">{message.content}</p>
+                {message.attachment ? (
+                  <div className="mt-3">
+                    {message.attachment.data_url ? (
+                      <Image src={message.attachment.data_url} alt={message.attachment.name} width={128} height={96} unoptimized className="rounded-2xl border border-white/8 object-cover" />
+                    ) : (
+                      <p className="text-xs text-muted-foreground">첨부: {message.attachment.name}</p>
+                    )}
+                  </div>
+                ) : null}
+              </article>
+            ))
+          )}
+
+          {isGenerating ? (
+            <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-muted-foreground">
+              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">멀티 에이전트</div>
+              <div className="flex items-center gap-2">
+                <span className="size-2 animate-pulse rounded-full bg-accent" />
+                <span>현재 프롬프트를 해석하고 결과를 준비하는 중입니다…</span>
+              </div>
+            </div>
+          ) : null}
         </div>
-    );
+      </ScrollArea>
+
+      <form onSubmit={handleSubmit} className="border-t border-white/8 px-4 py-4 sm:px-5">
+        <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePickImage} />
+        <div className="grid gap-3">
+          <Textarea
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                if (input.trim()) {
+                  onSend({ prompt: input.trim(), attachment });
+                  setInput("");
+                  setAttachment(null);
+                  if (fileInputRef.current) fileInputRef.current.value = "";
+                }
+              }
+            }}
+            placeholder={isGenerating ? "에이전트 루프 실행 중..." : "원하는 게임을 자세히 적어주세요... (Enter 전송 / Shift+Enter 줄바꿈)"}
+            disabled={isGenerating}
+            rows={4}
+            className="min-h-[7.5rem]"
+          />
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Button type="button" variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={isGenerating}>
+                <ImagePlus className="size-4" />
+                이미지
+              </Button>
+              {attachment ? (
+                <Button type="button" variant="ghost" size="sm" onClick={() => { setAttachment(null); if (fileInputRef.current) fileInputRef.current.value = ""; }}>
+                  첨부 제거 · {attachment.name}
+                </Button>
+              ) : null}
+            </div>
+            <Button type="submit" size="lg" disabled={isGenerating || !input.trim()}>
+              <SendHorizontal className="size-4" />
+              전송
+            </Button>
+          </div>
+        </div>
+      </form>
+    </div>
+  );
 }
+
+export type { ChatAttachment, ChatMessage, ChatSendPayload } from "@/components/editor/types";

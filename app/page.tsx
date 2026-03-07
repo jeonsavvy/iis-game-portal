@@ -1,6 +1,8 @@
-import Link from "next/link";
-
-import { GameCard } from "@/components/GameCard";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { HomeFeaturedStrip } from "@/components/home/home-featured-strip";
+import { HomeFilters } from "@/components/home/home-filters";
+import { HomeGameGrid } from "@/components/home/home-game-grid";
+import { HomeHero } from "@/components/home/home-hero";
 import { PREVIEW_GAMES } from "@/lib/demo/preview-data";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -41,15 +43,7 @@ function applySorting(rows: GameRow[], sort: (typeof SORT_OPTIONS)[number]): Gam
   return sorted;
 }
 
-async function loadHomeRows({
-  previewMode,
-  sort,
-  q,
-}: {
-  previewMode: boolean;
-  sort: (typeof SORT_OPTIONS)[number];
-  q: string;
-}): Promise<HomeDataResult> {
+async function loadHomeRows({ previewMode, sort, q }: { previewMode: boolean; sort: (typeof SORT_OPTIONS)[number]; q: string }): Promise<HomeDataResult> {
   if (previewMode) {
     const filtered = PREVIEW_GAMES.filter((game) => game.status === "active");
     const searched = q ? filtered.filter((game) => game.name.toLowerCase().includes(q.toLowerCase())) : filtered;
@@ -81,102 +75,41 @@ async function loadHomeRows({
 export default async function HomePage({ searchParams }: { searchParams?: Promise<HomeSearchParams> }) {
   const params = searchParams ? await searchParams : {};
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
-  const sort =
-    params.sort && SORT_OPTIONS.includes(params.sort as (typeof SORT_OPTIONS)[number])
-      ? (params.sort as (typeof SORT_OPTIONS)[number])
-      : "newest";
+  const sort = params.sort && SORT_OPTIONS.includes(params.sort as (typeof SORT_OPTIONS)[number]) ? (params.sort as (typeof SORT_OPTIONS)[number]) : "newest";
   const q = typeof params.q === "string" ? params.q.trim() : "";
 
   const { rows, error } = await loadHomeRows({ previewMode, sort, q });
   const heroGame = rows[0] ?? null;
   const heroImage = heroGame?.screenshot_url ?? heroGame?.thumbnail_url ?? null;
-  const heroBackground = heroImage
-    ? `linear-gradient(120deg, rgba(8,12,19,0.88) 0%, rgba(8,12,19,0.45) 52%, rgba(8,12,19,0.9) 100%), url(${heroImage})`
-    : "linear-gradient(120deg, #0f172a 0%, #111827 38%, #1f2937 100%)";
 
   return (
-    <section className="arcade-home-page">
-      <section className="surface arcade-hero-showcase" style={{ backgroundImage: heroBackground }}>
-        <div className="arcade-hero-content">
-          <p className="arcade-kicker">IIS ARCADE</p>
-          <h1>{heroGame?.name ?? "지금 플레이할 게임을 선택하세요"}</h1>
-          <p className="arcade-hero-description">
-            {heroGame
-              ? "지금 생성된 최신 게임을 바로 실행할 수 있습니다."
-              : "아직 공개된 게임이 없습니다."}
-          </p>
-          {previewMode ? <p className="arcade-preview-note">프리뷰 모드: 샘플 데이터로 화면을 검수 중입니다.</p> : null}
-          <div className="arcade-hero-actions">
-            {heroGame ? (
-              <Link className="button button-primary" href={`/play/${heroGame.slug}`}>
-                지금 플레이
-              </Link>
-            ) : (
-              <p className="arcade-hero-hint">새 게임이 퍼블리시되면 이 자리에서 바로 플레이할 수 있어요.</p>
-            )}
-          </div>
-        </div>
-
-        <aside className="arcade-hero-side">
-          <div className="arcade-hero-stat">
-            <span>등록 게임</span>
-            <strong>{rows.length}</strong>
-          </div>
-        </aside>
-      </section>
-
-      <form className="surface quick-discover-bar" method="GET">
-        <div className="quick-discover-head">
-          <h2 className="section-title">빠른 탐색</h2>
-        </div>
-
-        <div className="quick-discover-grid">
-          <label className="field">
-            <span>정렬</span>
-            <select className="input" name="sort" defaultValue={sort}>
-              {SORT_OPTIONS.map((option) => (
-                <option key={option} value={option}>
-                  {SORT_LABELS[option]}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label className="field field-search">
-            <span>게임 검색</span>
-            <input className="input" name="q" defaultValue={q} placeholder="게임 이름으로 검색" />
-          </label>
-
-          <button className="button button-primary" type="submit">
-            적용
-          </button>
-        </div>
-      </form>
+    <section className="grid gap-5">
+      <HomeHero game={heroGame} previewMode={previewMode} count={rows.length} backgroundImage={heroImage} />
+      <HomeFeaturedStrip totalCount={rows.length} previewMode={previewMode} />
+      <HomeFilters sort={sort} sortLabels={SORT_LABELS} q={q} />
 
       {error && !previewMode ? (
-        <section className="surface arcade-empty-state">
-          <h3>데이터를 불러오지 못했습니다</h3>
-          <p>{error}</p>
-        </section>
+        <Card className="rounded-[1.85rem] border-red-400/20 bg-red-400/10">
+          <CardHeader>
+            <CardTitle>데이터를 불러오지 못했습니다</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-red-100">{error}</p>
+          </CardContent>
+        </Card>
       ) : null}
 
       {rows.length === 0 ? (
-        <section className="surface arcade-empty-state">
-          <h3>표시할 게임이 없습니다</h3>
-          <p>조금 뒤에 다시 확인해 주세요.</p>
-        </section>
+        <Card className="rounded-[1.85rem] border-white/8 bg-[#101118]/82">
+          <CardHeader>
+            <CardTitle>표시할 게임이 없습니다</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-muted-foreground">조금 뒤에 다시 확인해 주세요.</p>
+          </CardContent>
+        </Card>
       ) : (
-        <section className="arcade-section">
-          <div className="arcade-section-head">
-            <h3>게임 목록</h3>
-            <span>{rows.length}개</span>
-          </div>
-          <div className="arcade-game-grid featured-grid">
-            {rows.map((game) => (
-              <GameCard key={game.id} game={game} variant="featured" />
-            ))}
-          </div>
-        </section>
+        <HomeGameGrid rows={rows} />
       )}
     </section>
   );

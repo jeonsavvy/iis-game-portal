@@ -1,7 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState } from "react";
+import { type FormEvent, useMemo, useState } from "react";
 
+import { AdminLoginPanel } from "@/components/auth/admin-login-panel";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type AdminLoginFormProps = {
@@ -17,10 +20,7 @@ function buildCallbackUrl(nextPath: string): string {
 }
 
 function getErrorMessage(code: string | null | undefined): string | null {
-  if (!code) {
-    return null;
-  }
-
+  if (!code) return null;
   switch (code) {
     case "forbidden":
       return "허용된 관리자 이메일만 운영실에 로그인할 수 있습니다.";
@@ -59,18 +59,15 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail) {
       setStatus("이메일을 입력해주세요.");
       return;
     }
-
     if (!allowedEmails.includes(normalizedEmail)) {
       setStatus("허용된 관리자 이메일만 로그인할 수 있습니다.");
       return;
     }
-
     if (!supabase) {
       setStatus("로그인 설정 오류로 매직링크를 전송할 수 없습니다.");
       return;
@@ -81,9 +78,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
-      options: {
-        emailRedirectTo: buildCallbackUrl(nextPath),
-      },
+      options: { emailRedirectTo: buildCallbackUrl(nextPath) },
     });
 
     if (error) {
@@ -97,30 +92,27 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
   };
 
   return (
-    <section className="card" style={{ maxWidth: 560, margin: "0 auto", display: "grid", gap: 12 }}>
-      <h1 style={{ margin: 0 }}>운영실 로그인</h1>
-      <p style={{ margin: 0, color: "#94a3b8" }}>
-        관리자 이메일만 로그인 가능합니다. 매직링크로 세션을 발급한 뒤 운영실로 이동합니다.
-      </p>
-      <form onSubmit={handleSubmit} style={{ display: "grid", gap: 8 }}>
-        <label style={{ display: "grid", gap: 4 }}>
-          관리자 이메일
-          <input
-            className="input"
-            type="email"
-            value={email}
-            onChange={(event) => setEmail(event.target.value)}
-            placeholder="jeonsavvy@gmail.com"
-            autoComplete="email"
-            required
-          />
+    <AdminLoginPanel
+      title="운영실 로그인"
+      description="허용된 관리자 이메일만 매직링크로 세션을 발급받아 Studio Console에 진입할 수 있습니다."
+      meta={
+        <div className="grid gap-1">
+          <p>허용된 관리자만 접근 가능합니다.</p>
+          <p>로그인 후 이동 경로: {nextPath}</p>
+        </div>
+      }
+    >
+      <form onSubmit={handleSubmit} className="grid gap-4">
+        <label className="grid gap-2 text-sm text-muted-foreground">
+          <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">관리자 이메일</span>
+          <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="jeonsavvy@gmail.com" autoComplete="email" required />
         </label>
-        <button className="button" type="submit" disabled={submitting}>
-          {submitting ? "전송 중..." : "매직링크 보내기"}
-        </button>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button type="submit" size="lg" disabled={submitting}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
+          {allowedEmails.length > 0 ? <p className="text-sm text-muted-foreground">허용 계정 예시: {allowedEmails.join(", ")}</p> : null}
+        </div>
       </form>
-      {status ? <p style={{ margin: 0 }}>{status}</p> : null}
-      <p style={{ margin: 0, color: "#64748b", fontSize: 13 }}>로그인 후 이동 경로: {nextPath}</p>
-    </section>
+      {status ? <p className="mt-4 rounded-[1.2rem] border border-white/8 bg-white/[0.03] px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}
+    </AdminLoginPanel>
   );
 }
