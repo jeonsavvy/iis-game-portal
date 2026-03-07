@@ -18,14 +18,14 @@ const SheetOverlay = React.forwardRef<
 >(({ className, ...props }, ref) => (
   <DialogPrimitive.Overlay
     ref={ref}
-    className={cn("fixed inset-0 z-50 bg-black/60 backdrop-blur-sm data-[state=open]:animate-in data-[state=closed]:animate-out", className)}
+    className={cn("fixed inset-0 z-50 bg-black/20 backdrop-blur-[2px] data-[state=open]:animate-in data-[state=closed]:animate-out", className)}
     {...props}
   />
 ));
 SheetOverlay.displayName = DialogPrimitive.Overlay.displayName;
 
 const sheetVariants = cva(
-  "fixed z-50 gap-4 bg-[#111118] p-6 shadow-[var(--shadow-panel)] transition ease-in-out border border-white/10",
+  "fixed z-50 gap-4 bg-white p-6 shadow-[var(--shadow-panel)] transition ease-in-out border border-zinc-200",
   {
     variants: {
       side: {
@@ -51,7 +51,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof DialogPrimitive.Co
       <SheetOverlay />
       <DialogPrimitive.Content ref={ref} className={cn(sheetVariants({ side }), className)} {...props}>
         {children}
-        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full border border-white/10 p-2 text-muted-foreground transition hover:bg-white/[0.06] hover:text-foreground">
+        <DialogPrimitive.Close className="absolute right-4 top-4 rounded-full border border-zinc-200 p-2 text-muted-foreground transition hover:bg-zinc-100 hover:text-foreground">
           <X className="size-4" />
           <span className="sr-only">Close</span>
         </DialogPrimitive.Close>

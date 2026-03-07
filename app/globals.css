@@ -1,40 +1,33 @@
 @import "tailwindcss";
 
-@custom-variant dark (&:is(.dark *));
-
 :root {
-  --background: oklch(0.16 0.01 285);
-  --foreground: oklch(0.95 0.01 75);
-  --card: oklch(0.21 0.01 285);
-  --card-foreground: oklch(0.96 0.01 75);
-  --popover: oklch(0.2 0.01 285);
-  --popover-foreground: oklch(0.95 0.01 75);
-  --primary: oklch(0.62 0.08 248);
-  --primary-foreground: oklch(0.98 0.01 75);
-  --secondary: oklch(0.26 0.01 285);
-  --secondary-foreground: oklch(0.95 0.01 75);
-  --muted: oklch(0.26 0.01 285);
-  --muted-foreground: oklch(0.73 0.01 75);
-  --accent: oklch(0.61 0.05 70);
-  --accent-foreground: oklch(0.17 0.01 285);
-  --destructive: oklch(0.62 0.21 25);
-  --destructive-foreground: oklch(0.97 0 0);
-  --success: oklch(0.74 0.15 157);
-  --warning: oklch(0.78 0.16 82);
-  --border: oklch(0.32 0.01 285 / 0.8);
-  --input: oklch(0.26 0.01 285);
-  --ring: oklch(0.69 0.09 248);
-  --radius: 0.95rem;
+  --background: #f5f6f8;
+  --foreground: #171717;
+  --card: #ffffff;
+  --card-foreground: #171717;
+  --popover: #ffffff;
+  --popover-foreground: #171717;
+  --primary: #ff5a1f;
+  --primary-foreground: #ffffff;
+  --secondary: #f0f2f5;
+  --secondary-foreground: #171717;
+  --muted: #f3f4f6;
+  --muted-foreground: #6b7280;
+  --accent: #fff1eb;
+  --accent-foreground: #ff5a1f;
+  --destructive: #ef4444;
+  --destructive-foreground: #ffffff;
+  --success: #059669;
+  --warning: #d97706;
+  --border: #e5e7eb;
+  --input: #ffffff;
+  --ring: #ff5a1f;
+  --radius: 0.85rem;
   --font-body: var(--font-noto-sans-kr);
   --font-display: var(--font-noto-sans-kr);
-  --shadow-soft: 0 16px 42px rgba(5, 7, 16, 0.28);
-  --shadow-panel: 0 24px 64px rgba(0, 0, 0, 0.42);
-  --shell-width: 1440px;
-}
-
-.dark {
-  --background: oklch(0.16 0.01 285);
-  --foreground: oklch(0.95 0.01 75);
+  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
+  --shadow-panel: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --shell-width: 1280px;
 }
 
 @theme inline {
@@ -73,18 +66,14 @@
   }
 
   html {
-    color-scheme: dark;
+    color-scheme: light;
     scroll-behavior: smooth;
   }
 
   body {
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
-    background-image:
-      radial-gradient(circle at 18% 16%, rgba(44, 112, 255, 0.16), transparent 28%),
-      radial-gradient(circle at 84% 12%, rgba(37, 211, 102, 0.1), transparent 26%),
-      linear-gradient(180deg, rgba(255, 255, 255, 0.02), transparent 22%),
-      linear-gradient(180deg, #0a0a0f 0%, #111116 38%, #17171f 100%);
+    background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
   }
 
   a {
@@ -102,7 +91,7 @@
   }
 
   ::selection {
-    background: color-mix(in oklab, var(--primary) 65%, white 15%);
+    background: color-mix(in oklab, var(--primary) 30%, white 55%);
     color: white;
   }
 
@@ -112,11 +101,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(255, 255, 255, 0.02);
+    background: rgba(0, 0, 0, 0.04);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(206, 195, 164, 0.18);
+    background: rgba(0, 0, 0, 0.12);
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: padding-box;
@@ -129,25 +118,6 @@
 }
 
 @layer utilities {
-  .surface-gradient {
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-      rgba(17, 17, 24, 0.9);
-  }
-
-  .editorial-panel {
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    background:
-      linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.015)),
-      rgba(17, 17, 24, 0.9);
-    box-shadow: var(--shadow-panel);
-    backdrop-filter: blur(24px);
-  }
-
-  .editorial-line {
-    background: linear-gradient(90deg, transparent, rgba(214, 205, 182, 0.4), transparent);
-  }
-
   .text-balance {
     text-wrap: balance;
   }
@@ -156,17 +126,6 @@
     text-wrap: pretty;
   }
 
-  .bg-editorial-grid {
-    background-image: url('/assets/brand/editorial-grid.svg');
-    background-repeat: repeat;
-    background-size: 240px 240px;
-  }
-
-  .bg-control-noise {
-    background-image: url('/assets/brand/control-room-noise.svg');
-    background-repeat: repeat;
-    background-size: 180px 180px;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

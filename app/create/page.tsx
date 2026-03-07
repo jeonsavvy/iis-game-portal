@@ -3,50 +3,41 @@ import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
-const STEPS = [
-  {
-    title: "아이디어 입력",
-    description: "장르, 분위기, 조작, 목표를 적으면 AI가 바로 게임 제작 방향을 잡습니다.",
-  },
-  {
-    title: "미리보기 확인",
-    description: "작업공간에서 결과를 바로 실행하고 수정 요청을 이어서 보낼 수 있습니다.",
-  },
-  {
-    title: "퍼블리시 준비",
-    description: "수정안 적용과 퍼블리시 승인 흐름을 거쳐 공개 가능한 상태로 정리합니다.",
-  },
+const PRESETS = [
+  { title: "레이싱", prompt: "신스웨이브 네온 서킷을 달리는 3D 레이싱 게임" },
+  { title: "비행", prompt: "로우폴리 섬과 링을 통과하는 3D 비행 게임" },
+  { title: "슈팅", prompt: "탑뷰 슈팅과 대시가 있는 아레나 게임" },
+  { title: "퍼즐", prompt: "짧게 즐길 수 있는 브라우저 퍼즐 게임" },
+  { title: "액션", prompt: "즉시 시작 가능한 아케이드 액션 게임" },
+  { title: "실험작", prompt: "짧고 독특한 규칙을 가진 실험적인 게임" },
 ];
 
 export default function CreatePage() {
   return (
     <section className="grid gap-6">
-      <Card className="rounded-[1.5rem] border-white/10 bg-[#111118]/92 p-6 sm:p-8 lg:p-10">
-        <div className="max-w-4xl space-y-5">
-          <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground sm:text-5xl">AI로 게임 만들기</h1>
-          <p className="text-sm leading-7 text-muted-foreground sm:text-base">
-            iis는 게임 아이디어를 빠르게 시도하고, 바로 실행해 보고, 수정한 뒤 퍼블리시까지 이어지는 제작 흐름을 제공합니다.
-            현재 작업공간은 승인된 제작자와 운영자를 중심으로 제공하고 있습니다.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            <Button asChild size="lg">
-              <Link href="/workspace">내 작업공간 열기</Link>
-            </Button>
-            <Button asChild size="lg" variant="outline">
-              <Link href="/discover">먼저 게임 둘러보기</Link>
-            </Button>
-          </div>
-        </div>
-      </Card>
+      <div>
+        <h1 className="text-[2rem] font-semibold tracking-[-0.04em] text-foreground">게임 만들기</h1>
+        <p className="mt-2 text-sm text-muted-foreground">원하는 장르를 고르고 바로 작업공간에서 시작하세요.</p>
+      </div>
 
-      <div className="grid gap-4 lg:grid-cols-3">
-        {STEPS.map((step, index) => (
-          <Card key={step.title} className="rounded-[1.25rem] border-white/8 bg-[#111118]/88 p-6">
-            <p className="text-xs font-semibold uppercase tracking-[0.18em] text-accent">STEP {index + 1}</p>
-            <h2 className="mt-3 text-[1.4rem] font-bold tracking-[-0.04em] text-foreground">{step.title}</h2>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">{step.description}</p>
+      <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+        {PRESETS.map((preset) => (
+          <Card key={preset.title} className="p-0">
+            <form action="/workspace" method="GET" className="grid gap-3 p-5">
+              <input type="hidden" name="prompt" value={preset.prompt} />
+              <button type="submit" className="grid gap-2 text-left">
+                <span className="text-xl font-semibold text-foreground">{preset.title}</span>
+                <span className="text-sm leading-6 text-muted-foreground">{preset.prompt}</span>
+              </button>
+            </form>
           </Card>
         ))}
+      </div>
+
+      <div className="flex gap-3">
+        <Button asChild>
+          <Link href="/workspace">내 작업공간 열기</Link>
+        </Button>
       </div>
     </section>
   );

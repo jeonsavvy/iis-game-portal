@@ -19,15 +19,15 @@ const ROLE_LABELS: Record<ChatMessage["role"], string> = {
 };
 
 const ROLE_TONE: Record<ChatMessage["role"], string> = {
-  user: "border-cyan-300/25 bg-cyan-300/8 text-cyan-50",
-  assistant: "border-indigo-300/20 bg-indigo-300/8 text-indigo-50",
-  visual_qa: "border-emerald-300/20 bg-emerald-300/8 text-emerald-50",
-  playtester: "border-amber-300/20 bg-amber-300/8 text-amber-50",
-  system: "border-white/10 bg-white/[0.04] text-foreground",
+  user: "border-zinc-200 bg-zinc-50 text-foreground",
+  assistant: "border-orange-100 bg-orange-50 text-foreground",
+  visual_qa: "border-emerald-100 bg-emerald-50 text-foreground",
+  playtester: "border-amber-100 bg-amber-50 text-foreground",
+  system: "border-zinc-200 bg-white text-foreground",
 };
 
-export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMessage[]; onSend: (payload: ChatSendPayload) => void; isGenerating: boolean; }) {
-  const [input, setInput] = useState("");
+export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }: { messages: ChatMessage[]; onSend: (payload: ChatSendPayload) => void; isGenerating: boolean; initialPrompt?: string; }) {
+  const [input, setInput] = useState(initialPrompt);
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
@@ -60,19 +60,16 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[1.8rem] border border-white/8 bg-[#111118]/90">
-      <div className="border-b border-white/8 px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Game prompt</p>
-        <h2 className="mt-2 font-display text-[1.9rem] tracking-[-0.04em] text-foreground">게임 만들기</h2>
-        <p className="mt-2 text-sm leading-6 text-muted-foreground">원하는 장르, 분위기, 조작감, 목표를 적으면 바로 결과를 만들고 수정할 수 있습니다.</p>
+    <div className="flex h-full flex-col overflow-hidden rounded-[1rem] border border-zinc-200 bg-white">
+      <div className="border-b border-zinc-200 px-5 py-4">
+        <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">채팅</h2>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
         <div ref={scrollViewportRef} className="grid gap-3 px-4 py-4 sm:px-5">
-          {messages.length === 0 ? (
-            <div className="rounded-[1.6rem] border border-dashed border-white/10 bg-white/[0.03] p-5">
-              <h3 className="font-display text-2xl tracking-[-0.04em] text-foreground">무엇을 만들까요?</h3>
-              <p className="mt-3 text-sm leading-6 text-muted-foreground">장르, 분위기, 조작, 목표를 구체적으로 적을수록 더 빠르게 원하는 게임에 가까워집니다.</p>
+          {messages.length === 0 && !input.trim() ? (
+            <div className="rounded-[1rem] border border-dashed border-zinc-200 bg-zinc-50 p-5">
+              <h3 className="text-xl font-semibold tracking-[-0.03em] text-foreground">무엇을 만들까요?</h3>
               <div className="mt-4 grid gap-2">
                 {[
                   "신스웨이브 네온 서킷 위를 달리는 3D 오픈휠 레이싱 게임 만들어줘.",
@@ -82,7 +79,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
                   <button
                     key={suggestion}
                     type="button"
-                    className="cursor-pointer rounded-2xl border border-white/8 bg-black/20 px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-white/16 hover:bg-white/[0.05] hover:text-foreground"
+                    className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-foreground"
                     onClick={() => onSend({ prompt: suggestion })}
                     disabled={isGenerating}
                   >
@@ -93,8 +90,8 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
             </div>
           ) : (
             messages.map((message) => (
-              <article key={message.id} className={cn("rounded-[1.4rem] border px-4 py-3 text-sm leading-6", ROLE_TONE[message.role])}>
-                <div className="mb-2 flex items-center justify-between gap-3 text-[11px] font-semibold uppercase tracking-[0.18em]">
+              <article key={message.id} className={cn("rounded-[1rem] border px-4 py-3 text-sm leading-6", ROLE_TONE[message.role])}>
+                <div className="mb-2 flex items-center justify-between gap-3 text-[11px] font-semibold">
                   <span>{ROLE_LABELS[message.role]}</span>
                   <time className="text-muted-foreground">{new Date(message.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</time>
                 </div>
@@ -102,7 +99,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
                 {message.attachment ? (
                   <div className="mt-3">
                     {message.attachment.data_url ? (
-                      <Image src={message.attachment.data_url} alt={message.attachment.name} width={128} height={96} unoptimized className="rounded-2xl border border-white/8 object-cover" />
+                      <Image src={message.attachment.data_url} alt={message.attachment.name} width={128} height={96} unoptimized className="rounded-2xl border border-zinc-200 object-cover" />
                     ) : (
                       <p className="text-xs text-muted-foreground">첨부: {message.attachment.name}</p>
                     )}
@@ -113,8 +110,8 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
           )}
 
           {isGenerating ? (
-            <div className="rounded-[1.4rem] border border-white/8 bg-white/[0.04] px-4 py-4 text-sm text-muted-foreground">
-              <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-accent">생성 중</div>
+            <div className="rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-muted-foreground">
+              <div className="mb-2 text-[11px] font-semibold text-accent">생성 중</div>
               <div className="flex items-center gap-2">
                 <span className="size-2 animate-pulse rounded-full bg-accent" />
                 <span>현재 프롬프트를 해석하고 결과를 준비하는 중입니다…</span>
@@ -124,7 +121,7 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="border-t border-white/8 px-4 py-4 sm:px-5">
+      <form onSubmit={handleSubmit} className="border-t border-zinc-200 px-4 py-4 sm:px-5">
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePickImage} />
         <div className="grid gap-3">
           <Textarea
@@ -141,10 +138,10 @@ export function ChatPanel({ messages, onSend, isGenerating }: { messages: ChatMe
                 }
               }
             }}
-            placeholder={isGenerating ? "에이전트 루프 실행 중..." : "원하는 게임을 자세히 적어주세요... (Enter 전송 / Shift+Enter 줄바꿈)"}
+            placeholder={isGenerating ? "생성 중..." : "원하는 게임을 적어주세요"}
             disabled={isGenerating}
             rows={4}
-            className="min-h-[7.5rem]"
+            className="min-h-[8rem]"
           />
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="flex flex-wrap items-center gap-2">

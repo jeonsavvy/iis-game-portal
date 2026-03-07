@@ -7,10 +7,16 @@ import { canAccessWorkspace } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
 
-export default async function WorkspacePage() {
+type WorkspaceSearchParams = {
+  prompt?: string;
+};
+
+export default async function WorkspacePage({ searchParams }: { searchParams?: Promise<WorkspaceSearchParams> }) {
+  const params = searchParams ? await searchParams : {};
+  const initialPrompt = typeof params.prompt === "string" ? params.prompt.trim() : "";
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
-    return <EditorWorkspace />;
+    return <EditorWorkspace initialPrompt={initialPrompt} />;
   }
 
   let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -55,5 +61,5 @@ export default async function WorkspacePage() {
     );
   }
 
-  return <EditorWorkspace />;
+  return <EditorWorkspace initialPrompt={initialPrompt} />;
 }
