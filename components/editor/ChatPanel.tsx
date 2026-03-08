@@ -126,6 +126,7 @@ export function ChatPanel({
     runError,
     canApplyFix,
   });
+  const showStatusPanel = Boolean(runError || canApplyFix || canRestorePrevious);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -160,41 +161,37 @@ export function ChatPanel({
         <div className="flex flex-wrap items-end justify-between gap-3">
           <div>
             <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">채팅</h2>
-            <p className="mt-1 text-sm text-muted-foreground">요청과 진행 상황을 한 자리에서 확인합니다.</p>
           </div>
           <Badge variant={statusTone(runStatus)}>{RUN_LABELS[runStatus]}</Badge>
         </div>
-        <div className="mt-4 rounded-[1.1rem] border border-[#1b1337]/8 bg-white/88 px-4 py-4">
-          <div className="flex flex-wrap items-center justify-between gap-3">
-            <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">현재 상태</p>
-              <h3 className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">현재 상태</h3>
-              <p className="mt-2 text-sm leading-6 text-foreground">{statusSummary}</p>
-              {latestActivity ? (
-                <p className="mt-1 text-xs text-muted-foreground">
-                  {AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · {ACTION_LABELS[latestActivity.action] ?? latestActivity.action}
-                </p>
+        {showStatusPanel ? (
+          <div className="mt-4 rounded-[1.1rem] border border-[#1b1337]/8 bg-white/88 px-4 py-4">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="text-sm leading-6 text-foreground">{statusSummary}</p>
+                {latestActivity ? (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    {AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · {ACTION_LABELS[latestActivity.action] ?? latestActivity.action}
+                  </p>
+                ) : null}
+                {runId ? <p className="mt-1 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
+                {runError ? <p className="mt-2 text-sm text-red-700">{runError}</p> : null}
+              </div>
+            </div>
+            <div className="mt-4 flex flex-wrap gap-2">
+              {canApplyFix ? (
+                <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
+                  오른쪽 수정 미리보기 적용
+                </Button>
               ) : null}
-              {runId ? <p className="mt-1 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
-              {runError ? <p className="mt-2 text-sm text-red-700">{runError}</p> : null}
+              {canRestorePrevious ? (
+                <Button type="button" variant="ghost" size="sm" onClick={onRestorePrevious} disabled={isGenerating}>
+                  직전 결과 되돌리기
+                </Button>
+              ) : null}
             </div>
           </div>
-          <div className="mt-4 flex flex-wrap gap-2">
-            {canApplyFix ? (
-              <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
-                오른쪽 수정 미리보기 적용
-              </Button>
-            ) : null}
-            {canRestorePrevious ? (
-              <Button type="button" variant="ghost" size="sm" onClick={onRestorePrevious} disabled={isGenerating}>
-                직전 결과 되돌리기
-              </Button>
-            ) : null}
-            {!canApplyFix && !canRestorePrevious ? (
-              <p className="text-xs text-muted-foreground">예: START RUN 눌러도 시작 안 돼 / 대시가 너무 구려 / 적이 벽을 통과해</p>
-            ) : null}
-          </div>
-        </div>
+        ) : null}
       </div>
 
       <ScrollArea className="min-h-0 flex-1">

@@ -26,7 +26,8 @@ test("작업공간은 좌 채팅 우 미리보기 중심으로 렌더링된다",
   await expect(page.getByRole("heading", { name: "내 작업공간" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "채팅" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "미리보기" })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "현재 상태" })).toBeVisible();
+  await expect(page.getByText("세션 스냅샷 복원에 실패했습니다. 잠시 후 다시 시도해주세요.")).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "현재 상태" })).toHaveCount(0);
   await expect(page.getByLabel("세션 선택")).toBeVisible();
   await expect(page.getByRole("button", { name: "세션 삭제" })).toBeVisible();
   await expect(page.getByText("빠른 작업")).toHaveCount(0);

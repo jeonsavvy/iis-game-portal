@@ -306,6 +306,7 @@ export function useEditorSession() {
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const restoredSessionRef = useRef<string | null>(null);
+  const pendingCreatedSessionRef = useRef<string | null>(null);
   const dragStateRef = useRef<{
     mode: "chat";
     rectLeft: number;
@@ -341,6 +342,8 @@ export function useEditorSession() {
     }
 
     const newId = String(payload.session_id || "");
+    pendingCreatedSessionRef.current = newId;
+    restoredSessionRef.current = `${newId}:`;
     setSession({
       id: newId,
       html: "",
@@ -529,6 +532,11 @@ export function useEditorSession() {
   useEffect(() => {
     if (typeof window === "undefined" || !session?.id) return;
     localStorage.setItem(LAST_SESSION_STORAGE_KEY, session.id);
+    if (pendingCreatedSessionRef.current === session.id) {
+      pendingCreatedSessionRef.current = null;
+      setRestoreWarning(null);
+      setError(null);
+    }
   }, [session?.id]);
 
   useEffect(() => {
@@ -536,10 +544,15 @@ export function useEditorSession() {
     const runParam = searchParams?.get("run")?.trim();
     if (!sessionParam) return;
 
-    if (session?.id === sessionParam && session.messages.length > 0) {
+    if (pendingCreatedSessionRef.current === sessionParam) {
+      return;
+    }
+
+    if (session?.id === sessionParam) {
       if (runParam && runParam !== runId) {
         setRunId(runParam);
       }
+      setRestoreWarning(null);
       return;
     }
 
@@ -1041,6 +1054,7 @@ export function useEditorSession() {
   const handleStartFreshSession = useCallback(() => {
     void (async () => {
       try {
+        pendingCreatedSessionRef.current = null;
         setSession(null);
         setRunId(null);
         setRunStatus("idle");
