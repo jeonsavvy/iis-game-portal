@@ -1,16 +1,12 @@
 import Link from "next/link";
-import { Crosshair, Flag, Plane, Puzzle, Sparkles, Swords } from "lucide-react";
+import { Crosshair, Plane } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 
 const PRESETS = [
-  { title: "레이싱", summary: "네온 서킷 레이싱", prompt: "신스웨이브 네온 서킷을 달리는 3D 레이싱 게임", Icon: Flag },
-  { title: "비행", summary: "섬과 링을 가르는 비행", prompt: "로우폴리 섬과 링을 통과하는 3D 비행 게임", Icon: Plane },
-  { title: "슈팅", summary: "탑뷰 아레나 슈팅", prompt: "탑뷰 슈팅과 대시가 있는 아레나 게임", Icon: Crosshair },
-  { title: "퍼즐", summary: "짧고 선명한 퍼즐", prompt: "짧게 즐길 수 있는 브라우저 퍼즐 게임", Icon: Puzzle },
-  { title: "액션", summary: "즉시 시작 액션", prompt: "즉시 시작 가능한 아케이드 액션 게임", Icon: Swords },
-  { title: "실험작", summary: "짧고 이상한 규칙", prompt: "짧고 독특한 규칙을 가진 실험적인 게임", Icon: Sparkles },
+  { title: "비행", summary: "섬과 링을 통과하는 안정적인 3D 비행", prompt: "로우폴리 섬과 링을 통과하는 3D 비행 게임", Icon: Plane },
+  { title: "슈팅", summary: "대시와 업그레이드가 있는 탑뷰 아레나 슈팅", prompt: "탑뷰 슈팅에 대시와 웨이브 시스템을 넣은 아레나 게임 만들어줘.", Icon: Crosshair },
 ];
 
 export default function CreatePage() {

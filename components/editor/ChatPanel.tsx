@@ -204,7 +204,6 @@ export function ChatPanel({
               <h3 className="text-xl font-semibold tracking-[-0.03em] text-foreground">무엇을 만들까요?</h3>
               <div className="mt-4 grid gap-2">
                 {[
-                  "신스웨이브 네온 서킷 위를 달리는 3D 오픈휠 레이싱 게임 만들어줘.",
                   "로우폴리 섬과 링을 활용한 3D 비행 게임 만들어줘.",
                   "탑뷰 슈팅에 대시와 웨이브 시스템을 넣은 아레나 게임 만들어줘.",
                 ].map((suggestion) => (
