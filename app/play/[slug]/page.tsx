@@ -9,6 +9,7 @@ import { PlayEventTracker } from "@/components/play/play-event-tracker";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { PREVIEW_GAMES, getPreviewGameById, getPreviewGameBySlug } from "@/lib/demo/preview-data";
+import { resolveGameControls, resolveGameImage, resolveGameOverview, resolveGameSummary } from "@/lib/games/presentation";
 import { parseLegacySandboxAllowlist, resolveGameIframeSandboxPolicy } from "@/lib/games/sandbox-policy";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Database } from "@/types/database";
@@ -48,17 +49,11 @@ const getGameBySlug = cache(async (slugOrId: string): Promise<GameLookupResult> 
 });
 
 function controlsByGame(game: GameRow): string[] {
-  if (Array.isArray(game.controls_guide) && game.controls_guide.length > 0) {
-    return game.controls_guide.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  }
-  return ["방향키 또는 WASD로 조작", "Space로 액션", "R로 다시 시작"];
+  return resolveGameControls(game);
 }
 
 function overviewByGame(game: GameRow): string[] {
-  if (Array.isArray(game.play_overview) && game.play_overview.length > 0) {
-    return game.play_overview.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
-  }
-  return [game.short_description?.trim() || game.marketing_summary?.trim() || "바로 실행해서 플레이해보세요."];
+  return resolveGameOverview(game);
 }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
@@ -72,8 +67,8 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
     return { title: "iis" };
   }
 
-  const description = game.short_description || game.marketing_summary || `${game.name} 플레이`;
-  const image = game.hero_image_url || game.screenshot_url || game.thumbnail_url || undefined;
+  const description = resolveGameSummary(game);
+  const image = resolveGameImage(game) ?? undefined;
   return {
     title: `${game.name} | iis`,
     description,
@@ -121,7 +116,8 @@ async function renderPlayPage(game: GameRow, previewMode: boolean) {
   const proxiedArtifactUrl = `/api/games/${game.id}/artifact/index.html`;
   const controls = controlsByGame(game);
   const overview = overviewByGame(game);
-  const summary = game.short_description?.trim() || game.marketing_summary?.trim() || "바로 플레이할 수 있습니다.";
+  const summary = resolveGameSummary(game);
+  const coverImage = resolveGameImage(game);
 
   return (
     <section className="grid gap-6">
@@ -145,8 +141,8 @@ async function renderPlayPage(game: GameRow, previewMode: boolean) {
       <div className="overflow-hidden rounded-[2rem] border border-[#1b1337]/12 bg-[#050816] shadow-[0_24px_60px_rgba(9,12,33,0.22)]">
         {previewMode ? (
           <div className="play-frame-wrap relative aspect-video w-full overflow-hidden bg-[#050816]">
-            {game.screenshot_url ? (
-              <Image src={game.screenshot_url} alt={`${game.name} preview`} fill sizes="(max-width: 1280px) 100vw, 70vw" className="object-cover" />
+            {coverImage ? (
+              <Image src={coverImage} alt={`${game.name} preview`} fill sizes="(max-width: 1280px) 100vw, 70vw" className="object-cover" />
             ) : null}
           </div>
         ) : (

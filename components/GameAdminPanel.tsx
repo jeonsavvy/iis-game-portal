@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { resolveGenreLabel } from "@/lib/games/presentation";
 
 type AdminGameRow = {
   id: string;
@@ -182,7 +183,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
                       <span className="text-xs text-muted-foreground">{game.status}</span>
                     </div>
                     <div className="mt-3 flex flex-wrap gap-2 text-xs text-muted-foreground">
-                      <span>{game.genre}</span>
+                      <span>{resolveGenreLabel({ genre: game.genre, genre_primary: game.genre, genre_tags: [game.genre] })}</span>
                       <span>·</span>
                       <span>{new Date(game.created_at).toLocaleString("ko-KR", { hour12: false })}</span>
                     </div>

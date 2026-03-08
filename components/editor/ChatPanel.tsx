@@ -5,9 +5,10 @@ import { ImagePlus, SendHorizontal } from "lucide-react";
 import { useEffect, useRef, useState, type ChangeEvent, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
-import type { ChatAttachment, ChatMessage, ChatSendPayload } from "@/components/editor/types";
+import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, RunStatus } from "@/components/editor/types";
 import { cn } from "@/lib/utils";
 
 const ROLE_LABELS: Record<ChatMessage["role"], string> = {
@@ -26,11 +27,77 @@ const ROLE_TONE: Record<ChatMessage["role"], string> = {
   system: "border-zinc-200 bg-white text-foreground",
 };
 
-export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }: { messages: ChatMessage[]; onSend: (payload: ChatSendPayload) => void; isGenerating: boolean; initialPrompt?: string; }) {
+const RUN_LABELS: Record<RunStatus, string> = {
+  idle: "대기",
+  queued: "대기열",
+  retrying: "재시도 예정",
+  running: "실행 중",
+  succeeded: "완료",
+  failed: "실패",
+  cancelled: "취소됨",
+};
+
+const AGENT_LABELS: Record<string, string> = {
+  codegen: "빌더",
+  visual_qa: "시각 점검",
+  playtester: "플레이 점검",
+};
+
+const ACTION_LABELS: Record<string, string> = {
+  generate: "생성",
+  modify: "수정",
+  evaluate: "평가",
+  test: "테스트",
+  refine: "개선",
+  publish: "퍼블리시",
+};
+
+function statusTone(runStatus: RunStatus): "outline" | "success" | "destructive" {
+  if (runStatus === "succeeded") return "success";
+  if (runStatus === "failed" || runStatus === "cancelled") return "destructive";
+  return "outline";
+}
+
+export function ChatPanel({
+  messages,
+  onSend,
+  isGenerating,
+  initialPrompt = "",
+  activities,
+  runStatus,
+  runId,
+  runError,
+  canRetryLast,
+  canRestorePrevious,
+  canProposeFix,
+  canApplyFix,
+  onRetryLast,
+  onRestorePrevious,
+  onProposeFix,
+  onApplyFix,
+}: {
+  messages: ChatMessage[];
+  onSend: (payload: ChatSendPayload) => void;
+  isGenerating: boolean;
+  initialPrompt?: string;
+  activities: AgentActivity[];
+  runStatus: RunStatus;
+  runId?: string | null;
+  runError?: string | null;
+  canRetryLast: boolean;
+  canRestorePrevious: boolean;
+  canProposeFix: boolean;
+  canApplyFix: boolean;
+  onRetryLast: () => void;
+  onRestorePrevious: () => void;
+  onProposeFix: () => void;
+  onApplyFix: () => void;
+}) {
   const [input, setInput] = useState(initialPrompt);
   const [attachment, setAttachment] = useState<ChatAttachment | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
+  const latestActivity = activities.length > 0 ? activities[activities.length - 1] : null;
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -62,7 +129,50 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-[#1b1337]/10 bg-white/78 shadow-[0_18px_36px_rgba(27,19,55,0.06)] backdrop-blur-sm">
       <div className="border-b border-[#1b1337]/8 px-5 py-4">
-        <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">채팅</h2>
+        <div className="flex flex-wrap items-end justify-between gap-3">
+          <div>
+            <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">채팅</h2>
+            <p className="mt-1 text-sm text-muted-foreground">요청과 진행 상황을 한 자리에서 확인합니다.</p>
+          </div>
+          <Badge variant={statusTone(runStatus)}>{RUN_LABELS[runStatus]}</Badge>
+        </div>
+        <div className="mt-4 rounded-[1.1rem] border border-[#1b1337]/8 bg-white/88 px-4 py-4">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">실행 상태</p>
+              <h3 className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">실행 상태</h3>
+              <p className="mt-2 text-sm leading-6 text-foreground">
+                {latestActivity
+                  ? `${AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · ${ACTION_LABELS[latestActivity.action] ?? latestActivity.action} · ${latestActivity.summary}`
+                  : "아직 실행 기록이 없습니다."}
+              </p>
+              {runId ? <p className="mt-1 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
+              {runError ? <p className="mt-2 text-sm text-red-700">{runError}</p> : null}
+            </div>
+          </div>
+          <div className="mt-4 flex flex-wrap gap-2">
+            {canRetryLast ? (
+              <Button type="button" variant="outline" size="sm" onClick={onRetryLast} disabled={isGenerating}>
+                같은 요청 다시 만들기
+              </Button>
+            ) : null}
+            {canProposeFix ? (
+              <Button type="button" variant="outline" size="sm" onClick={onProposeFix} disabled={isGenerating}>
+                문제 수정안 만들기
+              </Button>
+            ) : null}
+            {canApplyFix ? (
+              <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
+                수정안 적용
+              </Button>
+            ) : null}
+            {canRestorePrevious ? (
+              <Button type="button" variant="ghost" size="sm" onClick={onRestorePrevious} disabled={isGenerating}>
+                직전 결과 되돌리기
+              </Button>
+            ) : null}
+          </div>
+        </div>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">

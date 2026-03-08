@@ -305,8 +305,8 @@ export function SessionObservatory({ previewMode = false }: { previewMode?: bool
           labelForEvent={labelForEvent}
         />
         <div className="grid gap-5">
-          <QueueSummaryPane title="협업 수정 흐름" count={issueQueue.length} events={issueQueue} labelForEvent={labelForEvent} />
-          <QueueSummaryPane title="퍼블리시 승인 흐름" count={approvalQueue.length} events={approvalQueue} labelForEvent={labelForEvent} />
+          <QueueSummaryPane title="수정 요청 흐름" count={issueQueue.length} events={issueQueue} labelForEvent={labelForEvent} />
+          <QueueSummaryPane title="퍼블리시 흐름" count={approvalQueue.length} events={approvalQueue} labelForEvent={labelForEvent} />
         </div>
       </section>
     </section>

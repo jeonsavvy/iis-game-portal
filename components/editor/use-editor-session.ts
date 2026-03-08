@@ -1105,8 +1105,10 @@ export function useEditorSession() {
       canProposeFix: Boolean(activeIssueId),
       canApplyFix: Boolean(activeIssueId && activeProposalId),
       canPublish: Boolean(session?.html.trim()),
+      canRetryLast: Boolean(lastPrompt.trim()),
+      canRestorePrevious: htmlHistory.length > 0,
     }),
-    [activeIssueId, activeProposalId, session?.html],
+    [activeIssueId, activeProposalId, htmlHistory.length, lastPrompt, session?.html],
   );
 
   return {

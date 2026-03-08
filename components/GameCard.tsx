@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { shouldUseUnoptimizedImage } from "@/lib/images/optimization";
+import { resolveGameImage, resolveGameSummary, resolveGenreLabel } from "@/lib/games/presentation";
 import type { Database } from "@/types/database";
 import { cn } from "@/lib/utils";
 
@@ -18,9 +19,9 @@ const variantMap: Record<GameCardVariant, { media: string }> = {
 };
 
 export function GameCard({ game, variant = "default" }: { game: Game; variant?: GameCardVariant }) {
-  const imageUrl = game.hero_image_url ?? game.thumbnail_url ?? game.screenshot_url;
+  const imageUrl = resolveGameImage(game);
   const playPath = `/play/${game.slug}`;
-  const summary = game.short_description?.trim() || game.marketing_summary?.trim() || "브라우저에서 즉시 실행";
+  const summary = resolveGameSummary(game);
   const style = variantMap[variant];
 
   return (
@@ -40,7 +41,7 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
         </div>
         <div className="grid gap-2 p-4">
           <div className="flex flex-wrap items-center gap-2">
-            <Badge variant="outline">{game.genre_primary ?? game.genre}</Badge>
+            <Badge variant="outline">{resolveGenreLabel(game)}</Badge>
           </div>
           <h3 className="text-xl font-semibold leading-tight tracking-[-0.03em] text-foreground">{game.name}</h3>
           <p className="text-sm leading-6 text-muted-foreground">{summary}</p>

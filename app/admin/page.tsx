@@ -5,6 +5,7 @@ import { SignOutButton } from "@/components/SignOutButton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { resolveGenreLabel } from "@/lib/games/presentation";
 import { isMasterAdmin } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
@@ -272,7 +273,9 @@ function AdminDashboard({ previewMode, data }: { previewMode: boolean; data: Das
                 <div className="flex items-start justify-between gap-3">
                   <div>
                     <p className="font-medium text-foreground">{game.name}</p>
-                    <p className="mt-1 text-sm text-muted-foreground">{game.genre}</p>
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {resolveGenreLabel({ genre: game.genre, genre_primary: game.genre, genre_tags: [game.genre] } as never)}
+                    </p>
                   </div>
                   <Badge variant="outline">{game.status}</Badge>
                 </div>
@@ -286,12 +289,12 @@ function AdminDashboard({ previewMode, data }: { previewMode: boolean; data: Das
       <section className="grid gap-5 xl:grid-cols-2">
         <Card data-admin-surface="dashboard-issue-queue" className="p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">협업 수정 대기</h2>
+            <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">수정 요청 대기</h2>
             <Badge variant="secondary">{data.issueQueue.length}</Badge>
           </div>
           <div className="grid gap-3">
             {data.issueQueue.length === 0 ? (
-              <p className="rounded-[1rem] border border-dashed border-[#1b1337]/10 px-4 py-5 text-sm text-muted-foreground">현재 대기 중인 수정 이벤트가 없습니다.</p>
+              <p className="rounded-[1rem] border border-dashed border-[#1b1337]/10 px-4 py-5 text-sm text-muted-foreground">현재 대기 중인 수정 요청이 없습니다.</p>
             ) : (
               data.issueQueue.map((event) => (
                 <div key={event.id} className="rounded-[1rem] border border-[#1b1337]/8 bg-white/88 px-4 py-4">
@@ -305,7 +308,7 @@ function AdminDashboard({ previewMode, data }: { previewMode: boolean; data: Das
 
         <Card data-admin-surface="dashboard-approval-queue" className="p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
-            <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">퍼블리시 승인 대기</h2>
+            <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">퍼블리시 흐름</h2>
             <Badge variant="secondary">{data.approvalQueue.length}</Badge>
           </div>
           <div className="grid gap-3">
