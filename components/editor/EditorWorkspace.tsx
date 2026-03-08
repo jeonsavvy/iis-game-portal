@@ -26,6 +26,7 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
     handleSelectSession,
     handleDeleteSession,
     handleRestorePrevious,
+    handleKeepCurrentVersion,
     handleApplyFix,
     dismissError,
     dismissRestoreWarning,
@@ -69,7 +70,9 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
             runError={runError}
             canRestorePrevious={actionsState.canRestorePrevious}
             canApplyFix={actionsState.canApplyFix}
+            canKeepCurrentVersion={actionsState.canKeepCurrentVersion}
             onRestorePrevious={handleRestorePrevious}
+            onKeepCurrentVersion={handleKeepCurrentVersion}
             onApplyFix={handleApplyFix}
           />
         </div>

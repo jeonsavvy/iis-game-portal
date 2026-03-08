@@ -63,14 +63,16 @@ function buildUserFacingStatusSummary({
   runStatus,
   runError,
   canApplyFix,
+  canKeepCurrentVersion,
 }: {
   latestActivity: AgentActivity | null;
   runStatus: RunStatus;
   runError?: string | null;
   canApplyFix: boolean;
+  canKeepCurrentVersion: boolean;
 }): string {
-  if (canApplyFix) {
-    return "문제를 반영한 수정 미리보기가 준비됐습니다. 오른쪽 화면을 확인한 뒤 아래 버튼으로 바로 적용하세요.";
+  if (canApplyFix || canKeepCurrentVersion) {
+    return "수정안 검토 단계입니다. 1) 현재 버전 유지 2) 수정안 반영 중 하나를 고르세요.";
   }
   if (runStatus === "queued" || runStatus === "retrying" || runStatus === "running") {
     return "지금 요청을 처리 중입니다. 끝나면 오른쪽 게임 화면이 새 결과로 바뀝니다.";
@@ -99,7 +101,9 @@ export function ChatPanel({
   runError,
   canRestorePrevious,
   canApplyFix,
+  canKeepCurrentVersion,
   onRestorePrevious,
+  onKeepCurrentVersion,
   onApplyFix,
 }: {
   messages: ChatMessage[];
@@ -112,7 +116,9 @@ export function ChatPanel({
   runError?: string | null;
   canRestorePrevious: boolean;
   canApplyFix: boolean;
+  canKeepCurrentVersion: boolean;
   onRestorePrevious: () => void;
+  onKeepCurrentVersion: () => void;
   onApplyFix: () => void;
 }) {
   const [input, setInput] = useState(initialPrompt);
@@ -125,8 +131,9 @@ export function ChatPanel({
     runStatus: isGenerating ? "running" : runStatus,
     runError,
     canApplyFix,
+    canKeepCurrentVersion,
   });
-  const showStatusPanel = Boolean(runError || canApplyFix || canRestorePrevious);
+  const showStatusPanel = Boolean(runError || canApplyFix || canKeepCurrentVersion || canRestorePrevious);
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -179,14 +186,19 @@ export function ChatPanel({
               </div>
             </div>
             <div className="mt-4 flex flex-wrap gap-2">
+              {canKeepCurrentVersion ? (
+                <Button type="button" variant="ghost" size="sm" onClick={onKeepCurrentVersion} disabled={isGenerating}>
+                  1. 현재 버전 유지
+                </Button>
+              ) : null}
               {canApplyFix ? (
                 <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
-                  오른쪽 수정 미리보기 적용
+                  2. 수정안 반영
                 </Button>
               ) : null}
               {canRestorePrevious ? (
                 <Button type="button" variant="ghost" size="sm" onClick={onRestorePrevious} disabled={isGenerating}>
-                  직전 결과 되돌리기
+                  직전 결과 롤백
                 </Button>
               ) : null}
             </div>

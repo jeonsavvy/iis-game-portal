@@ -12,7 +12,9 @@ export function EditorSidebar({
   runError,
   canRestorePrevious,
   canApplyFix,
+  canKeepCurrentVersion,
   onRestorePrevious,
+  onKeepCurrentVersion,
   onApplyFix,
 }: {
   messages: ChatMessage[];
@@ -25,7 +27,9 @@ export function EditorSidebar({
   runError?: string | null;
   canRestorePrevious: boolean;
   canApplyFix: boolean;
+  canKeepCurrentVersion: boolean;
   onRestorePrevious: () => void;
+  onKeepCurrentVersion: () => void;
   onApplyFix: () => void;
 }) {
   return (
@@ -41,7 +45,9 @@ export function EditorSidebar({
         runError={runError}
         canRestorePrevious={canRestorePrevious}
         canApplyFix={canApplyFix}
+        canKeepCurrentVersion={canKeepCurrentVersion}
         onRestorePrevious={onRestorePrevious}
+        onKeepCurrentVersion={onKeepCurrentVersion}
         onApplyFix={onApplyFix}
       />
     </div>

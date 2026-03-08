@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import { useRouter, useSearchParams } from "next/navigation";
 
 import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, RunStatus } from "@/components/editor/types";
+import { buildFixReviewState, normalizeWorkspaceError, RESTORE_BANNER_DELAY_MS } from "@/lib/editor/workspace-feedback";
 import { normalizeSessionTitle } from "@/lib/editor/session-options";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
@@ -247,36 +248,6 @@ function normalizeAttachmentMetadata(metadata: Record<string, unknown> | undefin
   };
 }
 
-function normalizeError(payload: unknown): string {
-  if (!payload || typeof payload !== "object") {
-    return "요청 처리 중 오류가 발생했습니다";
-  }
-  const row = payload as Record<string, unknown>;
-  const detail = row.detail;
-
-  if (detail && typeof detail === "object") {
-    const detailRow = detail as Record<string, unknown>;
-    const nestedError = detailRow.error;
-    const nestedCode = detailRow.code;
-    if (typeof nestedError === "string" && nestedError.trim()) {
-      if (typeof nestedCode === "string" && nestedCode.trim()) {
-        return `${nestedError} (${nestedCode})`;
-      }
-      return nestedError;
-    }
-  }
-
-  if (typeof row.error === "string" && row.error.trim()) {
-    const code = typeof row.code === "string" ? row.code.trim() : "";
-    const nested = typeof row.detail === "string" ? row.detail.trim() : "";
-    if (code && nested) return `${row.error} (${code}) · ${nested}`;
-    if (code) return `${row.error} (${code})`;
-    return row.error;
-  }
-  if (typeof row.detail === "string" && row.detail.trim()) return row.detail;
-  return "요청 처리 중 오류가 발생했습니다";
-}
-
 function wait(ms: number): Promise<void> {
   return new Promise((resolve) => {
     window.setTimeout(resolve, ms);
@@ -301,6 +272,7 @@ export function useEditorSession() {
   const [activeProposalId, setActiveProposalId] = useState<string | null>(null);
   const [previewHtmlOverride, setPreviewHtmlOverride] = useState<string | null>(null);
   const [isRestoring, setIsRestoring] = useState(false);
+  const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [restoreWarning, setRestoreWarning] = useState<string | null>(null);
   const [sessionOptions, setSessionOptions] = useState<Array<{ session_id: string; title: string; status: string; updated_at?: string | null }>>([]);
 
@@ -338,7 +310,7 @@ export function useEditorSession() {
     });
     const payload = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(normalizeError(payload));
+      throw new Error(normalizeWorkspaceError(payload));
     }
 
     const newId = String(payload.session_id || "");
@@ -458,7 +430,7 @@ export function useEditorSession() {
             await wait(1500);
             continue;
           }
-          throw new Error(normalizeError(payload));
+          throw new Error(normalizeWorkspaceError(payload));
         }
 
         transientFailures = 0;
@@ -500,6 +472,16 @@ export function useEditorSession() {
   useEffect(() => {
     void loadSessionOptions();
   }, [loadSessionOptions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (!isRestoring) {
+      setShowRestoreBanner(false);
+      return;
+    }
+    const timer = window.setTimeout(() => setShowRestoreBanner(true), RESTORE_BANNER_DELAY_MS);
+    return () => window.clearTimeout(timer);
+  }, [isRestoring]);
 
   useEffect(() => {
     const syncViewport = () => {
@@ -570,7 +552,7 @@ export function useEditorSession() {
             setRestoreWarning("세션 스냅샷을 다시 불러오지 못했지만 현재 화면은 유지했습니다.");
             return;
           }
-          throw new Error("세션 스냅샷 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          throw new Error("세션 스냅샷을 아직 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
         }
         if (cancelled) return;
 
@@ -622,7 +604,7 @@ export function useEditorSession() {
         }
       } catch (err) {
         if (!cancelled && session?.id !== sessionParam) {
-          setError(err instanceof Error ? err.message : "세션 스냅샷 복원에 실패했습니다. 잠시 후 다시 시도해주세요.");
+          setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
         }
       } finally {
         if (!cancelled) {
@@ -708,7 +690,7 @@ export function useEditorSession() {
           }),
         });
         const issuePayload = (await issueResponse.json().catch(() => ({}))) as IssueCreateResponse;
-        if (!issueResponse.ok) throw new Error(normalizeError(issuePayload));
+        if (!issueResponse.ok) throw new Error(normalizeWorkspaceError(issuePayload));
         setActiveIssueId(issuePayload.issue_id);
         setActiveProposalId(null);
 
@@ -725,7 +707,7 @@ export function useEditorSession() {
           }),
         });
         const proposePayload = (await proposeResponse.json().catch(() => ({}))) as ProposalResponse;
-        if (!proposeResponse.ok) throw new Error(normalizeError(proposePayload));
+        if (!proposeResponse.ok) throw new Error(normalizeWorkspaceError(proposePayload));
         setActiveProposalId(proposePayload.proposal_id);
         setPreviewHtmlOverride(proposePayload.preview_html);
         pushMessage({ id: makeId(), role: "assistant", content: "수정안 준비 완료 · 중앙 프리뷰에서 바로 확인하고 적용할 수 있습니다.", timestamp: Date.now() });
@@ -811,7 +793,7 @@ export function useEditorSession() {
 
         const queuedPayload = (await res.json().catch(() => ({}))) as { run_id?: string; status?: RunStatus };
         if (!res.ok) {
-          throw new Error(normalizeError(queuedPayload));
+          throw new Error(normalizeWorkspaceError(queuedPayload));
         }
         const queuedRunId = String(queuedPayload.run_id || "");
         if (!queuedRunId) throw new Error("run_id_missing");
@@ -911,7 +893,7 @@ export function useEditorSession() {
         body: JSON.stringify({ instruction: lastPrompt.trim() }),
       });
       const payload = (await response.json().catch(() => ({}))) as ProposalResponse;
-      if (!response.ok) throw new Error(normalizeError(payload));
+      if (!response.ok) throw new Error(normalizeWorkspaceError(payload));
       setActiveProposalId(payload.proposal_id);
       setPreviewHtmlOverride(payload.preview_html);
       setSession((prev) =>
@@ -921,11 +903,28 @@ export function useEditorSession() {
       );
       await refreshActivitiesFromEvents(session.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "fix_propose_failed");
+      setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
     } finally {
       setIsIssueBusy(false);
     }
   }, [activeIssueId, lastPrompt, refreshActivitiesFromEvents, session?.id]);
+
+  const handleKeepCurrentVersion = useCallback(() => {
+    if (!activeProposalId) return;
+    setActiveProposalId(null);
+    setPreviewHtmlOverride(null);
+    setSession((prev) =>
+      prev
+        ? {
+            ...prev,
+            messages: [
+              ...prev.messages,
+              { id: makeId(), role: "system", content: "현재 버전을 유지하고 수정안 미리보기를 닫았습니다.", timestamp: Date.now() },
+            ],
+          }
+        : prev,
+    );
+  }, [activeProposalId]);
 
   const handleApplyFix = useCallback(async () => {
     if (!session?.id || !activeIssueId) return;
@@ -937,7 +936,7 @@ export function useEditorSession() {
         body: JSON.stringify({ proposal_id: activeProposalId }),
       });
       const payload = (await response.json().catch(() => ({}))) as ApplyFixResponse;
-      if (!response.ok) throw new Error(normalizeError(payload));
+      if (!response.ok) throw new Error(normalizeWorkspaceError(payload));
 
       setPreviewHtmlOverride(null);
       setSession((prev) => {
@@ -953,7 +952,7 @@ export function useEditorSession() {
       });
       await refreshActivitiesFromEvents(session.id);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "fix_apply_failed");
+      setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
     } finally {
       setIsIssueBusy(false);
     }
@@ -969,12 +968,12 @@ export function useEditorSession() {
         body: JSON.stringify({ note: "workspace 승인" }),
       });
       const payload = await res.json().catch(() => ({}));
-      if (!res.ok) throw new Error(normalizeError(payload));
+      if (!res.ok) throw new Error(normalizeWorkspaceError(payload));
       setSession((prev) =>
         prev ? { ...prev, messages: [...prev.messages, { id: makeId(), role: "system", content: "퍼블리시 승인 완료", timestamp: Date.now() }] } : prev,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "approve_publish_failed");
+      setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
     } finally {
       setIsGenerating(false);
     }
@@ -1006,11 +1005,11 @@ export function useEditorSession() {
           body: JSON.stringify({ note: "workspace auto-approve" }),
         });
         const approvePayload = await approveResponse.json().catch(() => ({}));
-        if (!approveResponse.ok) throw new Error(normalizeError(approvePayload));
+        if (!approveResponse.ok) throw new Error(normalizeWorkspaceError(approvePayload));
         ({ response: res, payload: result } = await publishOnce());
       }
 
-      if (!res.ok) throw new Error(normalizeError(result));
+      if (!res.ok) throw new Error(normalizeWorkspaceError(result));
       const gameUrl = typeof result.game_url === "string" ? result.game_url : "";
       setSession((prev) =>
         prev
@@ -1022,7 +1021,7 @@ export function useEditorSession() {
           : prev,
       );
     } catch (err) {
-      setError(err instanceof Error ? err.message : "퍼블리시 실패");
+      setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
     } finally {
       setIsGenerating(false);
     }
@@ -1071,7 +1070,7 @@ export function useEditorSession() {
         }
         await createSessionDraft();
       } catch (error) {
-        setError(error instanceof Error ? error.message : "새 세션 생성 실패");
+        setError(normalizeWorkspaceError(error instanceof Error ? error.message : error));
       }
     })();
   }, [createSessionDraft]);
@@ -1101,7 +1100,7 @@ export function useEditorSession() {
     try {
       const response = await fetch(`${API_BASE}/${targetSessionId}`, { method: "DELETE" });
       const payload = await response.json().catch(() => ({}));
-      if (!response.ok) throw new Error(normalizeError(payload));
+      if (!response.ok) throw new Error(normalizeWorkspaceError(payload));
 
       const remaining = sessionOptions.filter((item) => item.session_id !== targetSessionId);
       setSessionOptions(remaining);
@@ -1119,19 +1118,21 @@ export function useEditorSession() {
         router.replace("/workspace");
       }
     } catch (error) {
-      setError(error instanceof Error ? error.message : "세션 삭제 실패");
+      setError(normalizeWorkspaceError(error instanceof Error ? error.message : error));
     }
   }, [router, searchParams, session?.id, sessionOptions, syncEditorUrl]);
 
   const actionsState = useMemo(
     () => ({
       canProposeFix: Boolean(activeIssueId),
-      canApplyFix: Boolean(activeIssueId && activeProposalId),
       canPublish: Boolean(session?.html.trim()),
       canRetryLast: Boolean(lastPrompt.trim()),
-      canRestorePrevious: htmlHistory.length > 0,
+      ...buildFixReviewState({
+        hasPreviewFix: Boolean(activeIssueId && activeProposalId && previewHtmlOverride),
+        historyCount: htmlHistory.length,
+      }),
     }),
-    [activeIssueId, activeProposalId, htmlHistory.length, lastPrompt, session?.html],
+    [activeIssueId, activeProposalId, htmlHistory.length, lastPrompt, previewHtmlOverride, session?.html],
   );
 
   return {
@@ -1140,7 +1141,7 @@ export function useEditorSession() {
     isIssueBusy,
     error,
     restoreWarning,
-    isRestoring,
+    isRestoring: showRestoreBanner,
     runStatus,
     runId,
     runError,
@@ -1158,6 +1159,7 @@ export function useEditorSession() {
     handleRerunQa,
     handleRestorePrevious,
     handleProposeFix,
+    handleKeepCurrentVersion,
     handleApplyFix,
     handleApprovePublish,
     handlePublish,
