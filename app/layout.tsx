@@ -26,8 +26,8 @@ function resolveMetadataBase(rawUrl: string | undefined): URL | undefined {
 
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(process.env.NEXT_PUBLIC_SITE_URL),
-  title: "iis arcade",
-  description: "브라우저에서 바로 만들고 플레이하는 키치한 아케이드 포털",
+  title: "iis",
+  description: "브라우저에서 바로 만들고 플레이하는 게임 포털",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -40,7 +40,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           <PageTransition>{children}</PageTransition>
         </PageShell>
         <footer className="mx-auto w-full max-w-[var(--shell-width)] px-4 pb-10 pt-6 text-xs text-[#4b4265] sm:px-6 lg:px-8">
-          © iis arcade
+          © iis
         </footer>
       </body>
     </html>

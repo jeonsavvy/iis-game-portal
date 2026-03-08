@@ -24,12 +24,9 @@ export function GlobalNav() {
   return (
     <header className="sticky top-0 z-50 border-b border-[#1b1337]/10 bg-background/90 backdrop-blur-xl">
       <div className="mx-auto flex max-w-[var(--shell-width)] flex-wrap items-center justify-between gap-4 px-4 py-4 sm:px-6 lg:px-8">
-        <Link href="/" className="flex items-center gap-3 text-foreground">
+        <Link href="/" className="flex items-center text-foreground">
           <span className="inline-flex min-h-12 items-center rounded-full border border-[#1b1337]/12 bg-white/80 px-4 text-2xl font-semibold tracking-[-0.04em] shadow-[0_12px_28px_rgba(27,19,55,0.08)]">
             iis
-          </span>
-          <span className="hidden rounded-full border border-[#1b1337]/10 bg-[#fff5c2] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.18em] text-[#7a4b00] sm:inline-flex">
-            arcade portal
           </span>
         </Link>
 

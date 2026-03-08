@@ -65,7 +65,7 @@ export function PlayEmbedFrame({ src, title, sandbox }: { src: string; title: st
           ) : null}
         </div>
       ) : null}
-      <div className="play-frame-wrap relative aspect-video w-full overflow-hidden rounded-[1.8rem] border border-white/8 bg-black shadow-[var(--shadow-panel)]">
+      <div className="play-frame-wrap relative aspect-video w-full overflow-hidden rounded-[1.8rem] bg-black shadow-[var(--shadow-panel)]">
         {!loaded ? <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-white/[0.05] to-transparent" aria-hidden="true" /> : null}
         <iframe
           key={`${src}-${reloadSeed}`}
@@ -74,7 +74,7 @@ export function PlayEmbedFrame({ src, title, sandbox }: { src: string; title: st
           title={title}
           width="100%"
           height="100%"
-          className="relative z-10 h-full w-full border-0"
+          className="relative z-10 h-full w-full border-0 bg-black"
           sandbox={effectiveSandbox}
           referrerPolicy="no-referrer"
           tabIndex={0}

@@ -142,9 +142,9 @@ async function renderPlayPage(game: GameRow, previewMode: boolean) {
 
       {!previewMode ? <PlayEventTracker slug={game.slug} /> : null}
 
-      <Card className="p-4">
+      <div className="overflow-hidden rounded-[2rem] border border-[#1b1337]/12 bg-[#050816] shadow-[0_24px_60px_rgba(9,12,33,0.22)]">
         {previewMode ? (
-          <div className="play-frame-wrap relative aspect-video w-full overflow-hidden rounded-[1rem] border border-zinc-200 bg-zinc-100">
+          <div className="play-frame-wrap relative aspect-video w-full overflow-hidden bg-[#050816]">
             {game.screenshot_url ? (
               <Image src={game.screenshot_url} alt={`${game.name} preview`} fill sizes="(max-width: 1280px) 100vw, 70vw" className="object-cover" />
             ) : null}
@@ -152,7 +152,7 @@ async function renderPlayPage(game: GameRow, previewMode: boolean) {
         ) : (
           <PlayEmbedFrame src={proxiedArtifactUrl} title={game.name} sandbox={iframeSandboxPolicy} />
         )}
-      </Card>
+      </div>
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card className="p-5">
