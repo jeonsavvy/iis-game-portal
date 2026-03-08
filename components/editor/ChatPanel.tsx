@@ -58,6 +58,36 @@ function statusTone(runStatus: RunStatus): "outline" | "success" | "destructive"
   return "outline";
 }
 
+function buildUserFacingStatusSummary({
+  latestActivity,
+  runStatus,
+  runError,
+  canApplyFix,
+}: {
+  latestActivity: AgentActivity | null;
+  runStatus: RunStatus;
+  runError?: string | null;
+  canApplyFix: boolean;
+}): string {
+  if (canApplyFix) {
+    return "문제를 반영한 수정 미리보기가 준비됐습니다. 오른쪽 화면을 확인한 뒤 아래 버튼으로 바로 적용하세요.";
+  }
+  if (runStatus === "queued" || runStatus === "retrying" || runStatus === "running") {
+    return "지금 요청을 처리 중입니다. 끝나면 오른쪽 게임 화면이 새 결과로 바뀝니다.";
+  }
+  if (runError) {
+    return "이번 실행에서 문제가 생겼습니다. 아래 입력창에 고장 내용을 그대로 적으면 자동으로 수정 요청으로 처리됩니다.";
+  }
+  const summary = (latestActivity?.summary ?? "").toLowerCase();
+  if (summary.includes("proposal applied") || summary.includes("수정안 적용")) {
+    return "수정안이 적용됐습니다. 오른쪽 게임 화면이 최신 결과입니다.";
+  }
+  if (runStatus === "succeeded") {
+    return "요청 처리가 끝났습니다. 오른쪽 게임 화면이 최신 결과입니다.";
+  }
+  return "버그나 수정 요청은 아래 입력창에 그대로 적어 보내면 자동으로 수정 흐름으로 넘어갑니다.";
+}
+
 export function ChatPanel({
   messages,
   onSend,
@@ -90,13 +120,12 @@ export function ChatPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const latestActivity = activities.length > 0 ? activities[activities.length - 1] : null;
-  const statusSummary = canApplyFix
-    ? "문제를 바탕으로 수정 미리보기가 준비됐습니다. 적용하면 오른쪽 게임 화면이 바로 갱신됩니다."
-    : runStatus === "running" || isGenerating
-      ? "지금 요청을 처리 중입니다. 결과가 나오면 오른쪽 미리보기와 아래 기록이 함께 갱신됩니다."
-      : latestActivity
-        ? `${AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · ${ACTION_LABELS[latestActivity.action] ?? latestActivity.action} · ${latestActivity.summary}`
-        : "게임을 수정하고 싶다면 문제를 아래 입력창에 그대로 적어 보내세요. 자동으로 수정 요청으로 처리됩니다.";
+  const statusSummary = buildUserFacingStatusSummary({
+    latestActivity,
+    runStatus: isGenerating ? "running" : runStatus,
+    runError,
+    canApplyFix,
+  });
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -141,6 +170,11 @@ export function ChatPanel({
               <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">현재 상태</p>
               <h3 className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">현재 상태</h3>
               <p className="mt-2 text-sm leading-6 text-foreground">{statusSummary}</p>
+              {latestActivity ? (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · {ACTION_LABELS[latestActivity.action] ?? latestActivity.action}
+                </p>
+              ) : null}
               {runId ? <p className="mt-1 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
               {runError ? <p className="mt-2 text-sm text-red-700">{runError}</p> : null}
             </div>
@@ -148,7 +182,7 @@ export function ChatPanel({
           <div className="mt-4 flex flex-wrap gap-2">
             {canApplyFix ? (
               <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
-                수정 미리보기 적용
+                오른쪽 수정 미리보기 적용
               </Button>
             ) : null}
             {canRestorePrevious ? (
@@ -157,7 +191,7 @@ export function ChatPanel({
               </Button>
             ) : null}
             {!canApplyFix && !canRestorePrevious ? (
-              <p className="text-xs text-muted-foreground">버그나 수정 요청은 아래 입력창에 바로 적어 보내면 됩니다.</p>
+              <p className="text-xs text-muted-foreground">예: START RUN 눌러도 시작 안 돼 / 대시가 너무 구려 / 적이 벽을 통과해</p>
             ) : null}
           </div>
         </div>
