@@ -329,9 +329,7 @@ export function useEditorSession() {
     [router, searchParams],
   );
 
-  const ensureSession = useCallback(async (): Promise<string> => {
-    if (session?.id) return session.id;
-
+  const createSessionDraft = useCallback(async (): Promise<string> => {
     const res = await fetch(API_BASE, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -357,7 +355,12 @@ export function useEditorSession() {
     ]);
     syncEditorUrl(newId, null);
     return newId;
-  }, [session, syncEditorUrl]);
+  }, [syncEditorUrl]);
+
+  const ensureSession = useCallback(async (): Promise<string> => {
+    if (session?.id) return session.id;
+    return createSessionDraft();
+  }, [createSessionDraft, session]);
 
   const loadSessionOptions = useCallback(async () => {
     try {
@@ -1036,22 +1039,28 @@ export function useEditorSession() {
   }, []);
 
   const handleStartFreshSession = useCallback(() => {
-    setSession(null);
-    setRunId(null);
-    setRunStatus("idle");
-    setRunError(null);
-    setActiveIssueId(null);
-    setActiveProposalId(null);
-    setPreviewHtmlOverride(null);
-    setHtmlHistory([]);
-    setError(null);
-    setRestoreWarning(null);
-    restoredSessionRef.current = null;
-    if (typeof window !== "undefined") {
-      localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
-    }
-    router.replace("/workspace");
-  }, [router]);
+    void (async () => {
+      try {
+        setSession(null);
+        setRunId(null);
+        setRunStatus("idle");
+        setRunError(null);
+        setActiveIssueId(null);
+        setActiveProposalId(null);
+        setPreviewHtmlOverride(null);
+        setHtmlHistory([]);
+        setError(null);
+        setRestoreWarning(null);
+        restoredSessionRef.current = null;
+        if (typeof window !== "undefined") {
+          localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
+        }
+        await createSessionDraft();
+      } catch (error) {
+        setError(error instanceof Error ? error.message : "새 세션 생성 실패");
+      }
+    })();
+  }, [createSessionDraft]);
 
   const handleSelectSession = useCallback(
     (sessionId: string) => {
