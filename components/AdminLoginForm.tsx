@@ -36,6 +36,7 @@ function getErrorMessage(code: string | null | undefined): string | null {
 }
 
 export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminLoginFormProps) {
+  const allowlistConfigured = allowedEmails.length > 0;
   const [supabaseConfigError] = useState<string | null>(() => {
     try {
       createSupabaseBrowserClient();
@@ -54,12 +55,21 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
   }, []);
 
   const [email, setEmail] = useState(allowedEmails[0] ?? "");
-  const [status, setStatus] = useState<string>(getErrorMessage(initialError) ?? (supabaseConfigError ? `로그인 설정 오류: ${supabaseConfigError}` : ""));
+  const [status, setStatus] = useState<string>(
+    getErrorMessage(initialError)
+      ?? (supabaseConfigError
+        ? `로그인 설정 오류: ${supabaseConfigError}`
+        : (!allowlistConfigured ? "로그인 허용 계정이 아직 설정되지 않았습니다. 운영 환경변수를 확인해주세요." : "")),
+  );
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
+    if (!allowlistConfigured) {
+      setStatus("로그인 허용 계정이 설정되지 않았습니다.");
+      return;
+    }
     if (!normalizedEmail) {
       setStatus("이메일을 입력해주세요.");
       return;
@@ -98,6 +108,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       meta={
         <div className="grid gap-1">
           <p>허용된 계정만 접근 가능합니다.</p>
+          <p>허용 목록은 서버 환경변수에서만 관리됩니다.</p>
           <p>로그인 후 이동 경로: {nextPath}</p>
         </div>
       }
@@ -105,11 +116,10 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       <form onSubmit={handleSubmit} className="grid gap-4">
         <label className="grid gap-2 text-sm text-muted-foreground">
           <span className="text-[11px] font-semibold uppercase tracking-[0.18em]">로그인 이메일</span>
-          <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="jeonsavvy@gmail.com" autoComplete="email" required />
+          <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" autoComplete="email" required />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={submitting}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
-          {allowedEmails.length > 0 ? <p className="text-sm text-muted-foreground">허용 계정 예시: {allowedEmails.join(", ")}</p> : null}
+          <Button type="submit" size="lg" disabled={submitting || !allowlistConfigured || !supabase}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
         </div>
       </form>
       {status ? <p className="mt-4 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}

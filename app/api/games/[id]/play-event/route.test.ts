@@ -12,9 +12,11 @@ const mockedCreateSupabaseAdminClient = vi.mocked(createSupabaseAdminClient);
 function createAdminMock({
   game,
   totalEvents,
+  latestEventCreatedAt = null,
 }: {
   game: { id: string; slug: string; play_count_cached?: number | null } | null;
   totalEvents: number;
+  latestEventCreatedAt?: string | null;
 }) {
   return {
     from: vi.fn((table: string) => {
@@ -34,7 +36,24 @@ function createAdminMock({
       if (table === "game_play_events") {
         return {
           insert: vi.fn().mockResolvedValue({ data: null, error: null }),
-          select: vi.fn((_columns: string, options?: { count?: string; head?: boolean }) => {
+          select: vi.fn((columns: string, options?: { count?: string; head?: boolean }) => {
+            if (columns === "created_at") {
+              return {
+                eq: vi.fn(() => ({
+                  eq: vi.fn(() => ({
+                    order: vi.fn(() => ({
+                      limit: vi.fn(() => ({
+                        maybeSingle: vi.fn().mockResolvedValue({
+                          data: latestEventCreatedAt ? { created_at: latestEventCreatedAt } : null,
+                          error: null,
+                        }),
+                      })),
+                    })),
+                  })),
+                })),
+              };
+            }
+
             expect(options).toMatchObject({ count: "exact", head: true });
             return {
               eq: vi.fn().mockResolvedValue({ count: totalEvents, error: null }),
@@ -91,6 +110,37 @@ describe("POST /api/games/[id]/play-event", () => {
     expect(response.status).toBe(201);
     await expect(response.json()).resolves.toEqual({
       ok: true,
+      counted: true,
+      gameId: "game-1",
+      slug: "neon-drift",
+      playCount: 13,
+    });
+  });
+
+  it("does not double count repeated refreshes inside cooldown window", async () => {
+    mockedCreateSupabaseAdminClient.mockReturnValueOnce(
+      createAdminMock({
+        game: { id: "game-1", slug: "neon-drift", play_count_cached: 13 },
+        totalEvents: 14,
+        latestEventCreatedAt: new Date().toISOString(),
+      }) as never,
+    );
+
+    const response = await POST(
+      new Request("https://portal.example.com/api/games/neon-drift/play-event", {
+        method: "POST",
+        headers: {
+          "user-agent": "Vitest Browser",
+          "x-forwarded-for": "203.0.113.9",
+        },
+      }),
+      { params: Promise.resolve({ id: "neon-drift" }) },
+    );
+
+    expect(response.status).toBe(200);
+    await expect(response.json()).resolves.toEqual({
+      ok: true,
+      counted: false,
       gameId: "game-1",
       slug: "neon-drift",
       playCount: 13,

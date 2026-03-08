@@ -71,9 +71,6 @@ export function sortPublicGames(rows: PublicGame[], sort: PublicSort): PublicGam
       const playCountDiff = numericValue(right.play_count_cached) - numericValue(left.play_count_cached);
       if (playCountDiff !== 0) return playCountDiff;
 
-      const featuredDiff = numericValue(left.featured_rank) - numericValue(right.featured_rank);
-      if (featuredDiff !== 0) return featuredDiff;
-
       return parseDate(right.created_at) - parseDate(left.created_at);
     });
   }

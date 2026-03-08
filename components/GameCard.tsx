@@ -24,8 +24,8 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
   const style = variantMap[variant];
 
   return (
-    <Card className="overflow-hidden">
-      <Link href={playPath} className="group block">
+    <Card className="group overflow-hidden transition-transform duration-300 hover:-translate-y-1">
+      <Link href={playPath} className="block">
         <div className={cn("relative overflow-hidden bg-zinc-100", style.media)}>
           {imageUrl ? (
             <Image
@@ -39,8 +39,9 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
           ) : null}
         </div>
         <div className="grid gap-2 p-4">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{game.genre_primary ?? game.genre}</Badge>
+            <Badge variant="accent">{Number(game.play_count_cached ?? 0).toLocaleString("ko-KR")} plays</Badge>
           </div>
           <h3 className="text-xl font-semibold leading-tight tracking-[-0.03em] text-foreground">{game.name}</h3>
           <p className="text-sm leading-6 text-muted-foreground">{summary}</p>

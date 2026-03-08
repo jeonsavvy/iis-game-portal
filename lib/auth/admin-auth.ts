@@ -1,11 +1,10 @@
 export function parseAllowedStaffEmails(raw: string | undefined | null): string[] {
-  const values = (raw ?? "jeonsavvy@gmail.com")
+  const values = (raw ?? "")
     .split(",")
     .map((value) => value.trim().toLowerCase())
     .filter(Boolean);
 
-  const deduped = Array.from(new Set(values));
-  return deduped.length > 0 ? deduped : ["jeonsavvy@gmail.com"];
+  return Array.from(new Set(values));
 }
 
 export function parseAllowedAdminEmails(raw: string | undefined | null): string[] {

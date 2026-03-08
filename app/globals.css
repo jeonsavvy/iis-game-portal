@@ -1,32 +1,32 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f5f6f8;
-  --foreground: #171717;
-  --card: #ffffff;
-  --card-foreground: #171717;
-  --popover: #ffffff;
-  --popover-foreground: #171717;
+  --background: #fff6df;
+  --foreground: #1b1337;
+  --card: #fffdf5;
+  --card-foreground: #1b1337;
+  --popover: #fffdf5;
+  --popover-foreground: #1b1337;
   --primary: #ff5a1f;
   --primary-foreground: #ffffff;
-  --secondary: #f0f2f5;
-  --secondary-foreground: #171717;
-  --muted: #f3f4f6;
-  --muted-foreground: #6b7280;
-  --accent: #fff1eb;
-  --accent-foreground: #ff5a1f;
+  --secondary: #efe6ff;
+  --secondary-foreground: #1b1337;
+  --muted: #fff8eb;
+  --muted-foreground: #5d5476;
+  --accent: #fff4a8;
+  --accent-foreground: #7a4b00;
   --destructive: #ef4444;
   --destructive-foreground: #ffffff;
   --success: #059669;
   --warning: #d97706;
-  --border: #e5e7eb;
-  --input: #ffffff;
+  --border: rgba(27, 19, 55, 0.1);
+  --input: rgba(255, 255, 255, 0.82);
   --ring: #ff5a1f;
-  --radius: 0.85rem;
+  --radius: 1.15rem;
   --font-body: var(--font-noto-sans-kr);
-  --font-display: var(--font-noto-sans-kr);
-  --shadow-soft: 0 10px 30px rgba(15, 23, 42, 0.06);
-  --shadow-panel: 0 16px 40px rgba(15, 23, 42, 0.08);
+  --font-display: var(--font-fredoka);
+  --shadow-soft: 0 16px 36px rgba(27, 19, 55, 0.08);
+  --shadow-panel: 0 22px 48px rgba(27, 19, 55, 0.12);
   --shell-width: 1280px;
 }
 
@@ -73,7 +73,11 @@
   body {
     @apply bg-background text-foreground font-sans antialiased;
     min-height: 100vh;
-    background: linear-gradient(180deg, #fafafa 0%, #f3f4f6 100%);
+    background:
+      radial-gradient(circle at 14% 12%, rgba(255, 90, 31, 0.18), transparent 22%),
+      radial-gradient(circle at 86% 8%, rgba(17, 215, 255, 0.16), transparent 20%),
+      radial-gradient(circle at 52% 100%, rgba(255, 77, 166, 0.14), transparent 24%),
+      linear-gradient(180deg, #fff9ea 0%, #fff1d1 100%);
   }
 
   a {
@@ -101,11 +105,11 @@
   }
 
   ::-webkit-scrollbar-track {
-    background: rgba(0, 0, 0, 0.04);
+    background: rgba(27, 19, 55, 0.04);
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(0, 0, 0, 0.12);
+    background: rgba(27, 19, 55, 0.18);
     border-radius: 999px;
     border: 2px solid transparent;
     background-clip: padding-box;

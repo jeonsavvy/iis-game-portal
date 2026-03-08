@@ -1,54 +1,127 @@
-# iis-game-portal (IIS Arcade + Studio Console)
+# IIS Game Portal
 
-IIS 게임 탐색/플레이/운영실용 Next.js(App Router) 포털입니다.  
-Cloudflare Workers(OpenNext) 배포를 기준으로 구성되어 있습니다.
+IIS의 공개 게임 카탈로그, 보안 플레이어, 제작 작업공간, 운영실을 제공하는 Next.js App Router 포털입니다.  
+배포 타깃은 Cloudflare Workers(OpenNext)입니다.
 
-## 주요 페이지
-
-- `/` : 활성 게임 카탈로그 (`games_metadata`) + 장르/정렬/게임명 검색
-- `/play/[id]` : 게임 iframe 플레이 화면
-- `/login` : Studio Console 관리자 매직링크 로그인
-- `/admin` : Studio Console
-  - 파이프라인 트리거
-  - Pause/Resume/Stop/Retry 오퍼레이터 제어
-  - 실시간 파이프라인 로그
-  - QA Gate/차단 사유/Release 상태 진단 카드
-  - role 기반 접근 제어(`master_admin`)
-
-## 인증/권한 흐름
-
-- `/admin` 접근 시 미로그인이면 `/login?next=/admin`으로 이동
-- `/login`에서 Supabase **Magic Link** 로그인
-- `/auth/callback`에서 세션 교환 후 `/admin` 복귀
-- 앱 레벨에서 `ADMIN_ALLOWED_EMAILS` 목록만 로그인 허용
-- `/admin` 서버 렌더 단계에서 `profiles.role=master_admin` 권한 재검증
-
-## 핵심 모듈
-
-- `lib/supabase/*` : browser/server/admin/realtime 클라이언트
-- `lib/auth/rbac.ts` : role 체크 (`master_admin` 단일 운영 모드)
-- `lib/auth/admin-auth.ts` : 관리자 이메일 allowlist / next 경로 정규화
-- `types/pipeline.ts` : 파이프라인/로그/제어 타입 정의
-- `app/api/pipelines/trigger/route.ts` : 코어 엔진 트리거 프록시
-- `app/api/pipelines/control/route.ts` : 긴급 제어(pause/resume/cancel/retry) 프록시  
-  *(기존 approve 경로는 제거됨)*
-
-## 로컬 실행
-
-실행 컨텍스트 표기 규칙:
-- `[LOCAL WSL]` : 사용자 PC의 WSL/로컬 터미널
-- `[EC2 SSH]` : 코어 엔진 서버 SSH 셸
-- `[Cloudflare Dashboard]` : Workers/Pages 런타임 변수 설정 화면
-- `[GitHub Actions]` : `deploy-cloudflare` 워크플로우 재실행 화면
+## Quick Start
 
 ```bash
-# [LOCAL WSL]
-npm install
+npm ci
 cp .env.example .env.local
 npm run dev
 ```
 
-검증 명령:
+기본 개발 주소: `http://localhost:3000`
+
+## 현재 제품 화면
+
+### 공개 화면
+
+- `/` : 공개 게임 카탈로그, 검색, 장르 필터, 인기/신규/이름순 정렬
+- `/play/[slug]` : 보안 iframe 기반 플레이 화면, 게임 소개/조작법 노출, 플레이 이벤트 기록
+- `/create` : 프리셋 프롬프트로 작업공간 진입
+
+### 제작/운영 화면
+
+- `/workspace` : `creator` / `master_admin` 전용 세션 편집기
+  - 세션 생성/선택/삭제
+  - 프롬프트 전송
+  - plan-draft 생성
+  - 이슈 제기 → 수정안 생성 → 수정 적용
+  - 퍼블리시 승인/실행
+- `/admin` : 운영 허브
+- `/admin/sessions` : 세션 운영실, 이벤트 타임라인, 실행 상태, 승인 흐름
+- `/admin/games` : 공개 게임 목록 및 삭제 관리
+- `/login` → `/auth/callback` : Supabase Magic Link 로그인
+
+### 호환용 리다이렉트 라우트
+
+- `/discover` → `/`
+- `/editor` → `/workspace`
+- `/games/[slug]` → `/play/[slug]`
+- `/workspace/[sessionId]` → `/workspace?session=<id>`
+
+## 아키텍처
+
+- Framework: Next.js 15 + React 19 + TypeScript
+- Styling: Tailwind CSS v4 + Radix UI primitives
+- Auth / data: Supabase SSR (`lib/supabase/*`)
+- Core Engine BFF: `app/api/sessions/*`
+- Public game APIs: `app/api/games/*`
+- Cloudflare/OpenNext config: `open-next.config.ts`, `wrangler.jsonc`
+- Preview mode seed data: `lib/demo/preview-data.ts`
+
+## 인증 / 권한 모델
+
+- `middleware.ts`가 `/admin/*`, `/workspace*`에 Supabase auth cookie 게이트를 적용합니다.
+- 로그인은 Supabase Magic Link 기반입니다.
+- 앱 레벨 allowlist는 `ADMIN_ALLOWED_EMAILS`로 제한합니다.
+- 역할 기반 권한은 `lib/auth/rbac.ts` 기준입니다.
+  - `creator`, `master_admin` → 작업공간 접근 가능
+  - `master_admin` → 운영실/게임 삭제 접근 가능
+- Preview mode(`IIS_DEMO_PREVIEW=1`)에서는 Supabase 조회 없이 샘플 데이터로 렌더링됩니다.
+
+## BFF / API Surface
+
+### Core session proxy
+
+다음 라우트는 Core Engine(`/api/v1/...`)로 프록시됩니다.
+
+- `GET/POST /api/sessions`
+- `GET/DELETE /api/sessions/[sessionId]`
+- `GET /api/sessions/[sessionId]/conversation`
+- `GET /api/sessions/[sessionId]/events`
+- `POST /api/sessions/[sessionId]/plan-draft`
+- `POST /api/sessions/[sessionId]/prompt`
+- `GET /api/sessions/[sessionId]/runs/[runId]`
+- `POST /api/sessions/[sessionId]/runs/[runId]/cancel`
+- `POST /api/sessions/[sessionId]/issues`
+- `GET /api/sessions/[sessionId]/issues/latest`
+- `POST /api/sessions/[sessionId]/issues/[issueId]/propose-fix`
+- `POST /api/sessions/[sessionId]/issues/[issueId]/apply-fix`
+- `POST /api/sessions/[sessionId]/approve-publish`
+- `POST /api/sessions/[sessionId]/publish`
+- `POST /api/sessions/[sessionId]/cancel`
+
+### Public / portal-native APIs
+
+- `GET /api/games/[id]/artifact`
+- `GET /api/games/[id]/artifact/[...asset]`
+- `GET /api/games/[id]/leaderboard`
+- `POST /api/games/[id]/play-event`
+- `POST /api/games/delete`
+
+## 주요 환경변수
+
+전체 샘플은 `.env.example`를 기준으로 유지합니다.
+
+| 변수 | 용도 |
+| --- | --- |
+| `NEXT_PUBLIC_SUPABASE_URL` | 브라우저/SSR Supabase URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저 anon key |
+| `NEXT_PUBLIC_SITE_URL` | metadata/OG/canonical 기준 URL |
+| `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 admin client |
+| `CORE_ENGINE_URL` | Core Engine base URL |
+| `CORE_ENGINE_API_TOKEN` | production BFF Bearer token |
+| `ADMIN_ALLOWED_EMAILS` | 허용 이메일 allowlist |
+| `IIS_DEMO_PREVIEW` | `1`이면 preview seed data 모드 |
+| `FEATURED_GAME_SLUG` | 홈 대표작 고정(선택) |
+| `LEGACY_GAME_SANDBOX` | 레거시 iframe 호환 전체 롤백 플래그 |
+| `LEGACY_GAME_SANDBOX_ALLOWLIST` | 특정 게임만 legacy sandbox 허용 |
+
+프리뷰 모드 썸네일은 `public/assets/preview/*.svg`를 사용하므로 외부 이미지 네트워크 없이도 e2e 검증이 가능합니다.
+
+## 보안 메모
+
+- `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용입니다.
+- 모든 write BFF는 `Origin` 검증을 통과해야 합니다.
+- 읽기/쓰기 BFF는 `withAdminGuard`를 통해 로그인 + 역할 검사를 수행합니다.
+- Core proxy는 timeout/retry를 사용하며, 비멱등 POST는 `Idempotency-Key`가 없으면 재시도하지 않습니다.
+- artifact proxy는 `localhost`/사설 IP/비보안 리다이렉트 체인을 차단합니다.
+- `/play/[slug]` iframe은 기본적으로 same-origin 권한 없이 sandbox 됩니다.
+- 응답 헤더는 `Cache-Control: no-store`와 기본 보안 헤더를 강제합니다.
+
+## 검증
 
 ```bash
 npm run clean:next
@@ -59,55 +132,16 @@ npm run test:e2e
 npm run build
 ```
 
-## 주요 환경변수
+## 배포
 
-### 공개/브라우저
-- `NEXT_PUBLIC_SUPABASE_URL`
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-- `NEXT_PUBLIC_SITE_URL` *(권장: canonical/OG 메타 기준 URL, 예: `https://arcade.example.com`)*
-
-### 서버 전용
-- `FEATURED_GAME_SLUG` *(선택: 홈 Hero 대표작 슬러그 고정)*
-- `IIS_DEMO_PREVIEW` *(선택: `1`이면 Supabase 조회를 건너뛰고 샘플 데이터로 프리뷰 모드 렌더링)*
-- `OPS_COLLAB_ROOM_V2` *(선택: 기본 on, `0/false/off`로 레거시 보드 롤백)*
-- `LEGACY_GAME_SANDBOX` *(선택: `1`이면 레거시 게임 호환을 위해 iframe `allow-same-origin` 임시 복구)*
-- `LEGACY_GAME_SANDBOX_ALLOWLIST` *(선택: `id/slug` CSV. 전역 복구 없이 특정 게임만 레거시 sandbox 허용)*
-- `ADMIN_ALLOWED_EMAILS` (예: `jeonsavvy@gmail.com`)
-- `SUPABASE_SERVICE_ROLE_KEY`
-- `CORE_ENGINE_URL`
-- `CORE_ENGINE_API_TOKEN` *(production 권장/사실상 필수: 누락 시 BFF가 fail-fast로 500 반환)*
-
-프리뷰 모드 샘플 썸네일/스크린샷은 로컬 정적 자산(`public/assets/preview/*.svg`)을 사용해
-외부 이미지 네트워크 의존 없이 e2e 검증이 가능하도록 구성했습니다.
-
-## 보안 메모
-
-- `SUPABASE_SERVICE_ROLE_KEY`는 서버 전용 (클라이언트 노출 금지)
-- Trigger/Approve 프록시는 로그인 + role 검사를 통과한 요청만 코어 엔진으로 전달
-- Write 계열 BFF(`trigger/control/delete`)는 `Origin`을 앱 동일 출처로 강제해 sandbox iframe의 `Origin: null` 요청을 차단
-- Admin BFF(`pipeline:*`, `games/delete`) 응답은 기본 `Cache-Control: no-store`를 강제
-- `/play/[id]` iframe은 기본 sandbox를 `allow-scripts`로 제한해 same-origin 권한을 제거
-- artifact proxy는 `localhost/사설 IP` 소스를 차단하고, production에서는 `https` 소스만 허용
-- artifact proxy는 리다이렉트를 최대 3 hop만 허용하며, 리다이렉트 대상도 동일 보안 규칙(공인 호스트/production https)을 강제
-- artifact proxy API 응답은 성공/실패 모두 `Cache-Control: no-store`로 고정하고 `X-Frame-Options/SAMEORIGIN`, `X-Content-Type-Options/nosniff`, `Referrer-Policy/no-referrer`를 기본 주입
-- artifact proxy 오류 응답도 `{ error, detail, code }` 계약으로 정규화
-- 레거시 호환이 필요한 경우 `LEGACY_GAME_SANDBOX_ALLOWLIST`로 게임 단위 예외만 허용 (전역 `LEGACY_GAME_SANDBOX=1`은 긴급 롤백용)
-- 이미지 최적화는 기본 활성화하며, `svg/data/blob`만 `unoptimized`로 처리
-- `/admin`은 middleware 쿠키 게이트 + 서버측 RBAC 이중 검사
-- 외부 fetch는 timeout/retry 사용 (`fetchWithRetry`) + `429/5xx` 재시도
-- 비멱등 POST는 `Idempotency-Key` 없으면 재시도하지 않음
-
-## Cloudflare 배포
-
+- PR/브랜치 검증: `.github/workflows/frontend-ci.yml`
+  - `IIS_DEMO_PREVIEW=1`로 Supabase 의존 없이 lint → typecheck → unit → e2e → build 실행
+- main 배포: `.github/workflows/deploy-cloudflare.yml`
+  - verify 후 `@opennextjs/cloudflare`로 build/deploy
 - OpenNext 설정: `open-next.config.ts`
 - Worker 설정: `wrangler.jsonc`
-- CI 워크플로우: `.github/workflows/deploy-cloudflare.yml`
-  - verify 단계: lint → typecheck → unit test(vitest) → e2e smoke(playwright) → build
-  - verify/deploy build 직전 `clean:next` 수행으로 `.next/.turbo` 캐시 불일치 이슈를 완화
-- PR/브랜치 검증 워크플로우: `.github/workflows/frontend-ci.yml`
-  - `IIS_DEMO_PREVIEW=1`로 고정해 Supabase 의존 없이 PR 검증을 수행
 
-### 배포 워크플로우 필수 GitHub Secrets
+필수 시크릿/런타임 변수는 현재 워크플로우 기준 아래 조합입니다.
 
 - `CLOUDFLARE_API_TOKEN`
 - `CLOUDFLARE_ACCOUNT_ID`
@@ -117,16 +151,11 @@ npm run build
 - `SUPABASE_SERVICE_ROLE_KEY`
 - `CORE_ENGINE_URL`
 - `CORE_ENGINE_API_TOKEN`
-- `ADMIN_ALLOWED_EMAILS` *(권장: secret 또는 repo variable로 관리)*
+- `ADMIN_ALLOWED_EMAILS`
 
-## 트러블슈팅 (자주 보는 에러)
+## 트러블슈팅
 
-- `Could not find ... segment-explorer-node.js#SegmentViewNode` (Playwright/e2e 개발 서버 기동 시)
-  - Next dev 캐시 불일치로 발생할 수 있는 일시 오류
-  - `npm run clean:next`로 `.next/.turbo` 정리 후 재실행
-  - 현재 `npm run test:e2e`는 실행 전에 자동으로 `clean:next`를 수행
-
+- Next/Playwright 실행 중 캐시 불일치가 보이면 먼저 `npm run clean:next`
 - `CORE_ENGINE_URL is missing`
-  - 포털 런타임에 `CORE_ENGINE_URL`이 비어있다는 뜻
-  - `[GitHub Actions]` Repository Secret + `[Cloudflare Dashboard]` 런타임 변수 모두 확인 필요
-  - 값 형식 예시: `http://<ec2-public-dns>:8000`
+  - 포털 런타임 변수 또는 GitHub Actions secret 누락
+  - 예시: `http://<backend-host>:8000`

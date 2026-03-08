@@ -29,7 +29,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
 
   const allGames = await loadCatalogGames();
   const visibleGames = filterPublicGames(allGames, { q, genre });
-  const featuredGames = sortPublicGames(filterPublicGames(allGames, {}), "popular").slice(0, 3);
+  const topPlayedGame = sortPublicGames(filterPublicGames(allGames, {}), "popular")[0] ?? null;
   const newestGames = sortPublicGames(filterPublicGames(allGames, {}), "newest").slice(0, 6);
   const filteredGames = sortPublicGames(visibleGames, sort);
   const genres = Array.from(new Set(allGames.map((game) => game.genre_primary ?? game.genre).filter(Boolean))).slice(0, 6);
@@ -43,7 +43,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <select
             name="sort"
             defaultValue={sort}
-            className="flex h-11 w-full rounded-xl border border-zinc-200 bg-white px-4 text-sm text-foreground outline-none transition focus:border-primary"
+            className="flex h-11 w-full rounded-2xl border border-[#1b1337]/12 bg-white/82 px-4 text-sm text-foreground outline-none shadow-[0_10px_24px_rgba(27,19,55,0.04)] transition focus:border-primary"
           >
             <option value="popular">인기순</option>
             <option value="newest">신규순</option>
@@ -67,13 +67,28 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
         <section className="grid gap-4">
           <div>
             <h2 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-foreground">지금 뜨는 게임</h2>
-            <p className="mt-1 text-sm text-muted-foreground">많이 플레이되는 게임부터 바로 들어가보세요.</p>
+            <p className="mt-1 text-sm text-muted-foreground">최근 중복 새로고침을 제외한 실제 플레이 기록 기준 1위만 노출합니다.</p>
           </div>
-          <div className="grid gap-4 md:grid-cols-3">
-            {featuredGames.map((game) => (
-              <GameCard key={`featured-${game.id}`} game={game} variant="featured" />
-            ))}
-          </div>
+          {topPlayedGame ? (
+            <div className="grid gap-4">
+              <Card className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-end">
+                <div className="space-y-2">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Top played</p>
+                  <h3 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">{topPlayedGame.name}</h3>
+                  <p className="text-sm leading-6 text-muted-foreground">
+                    누적 플레이 {Number(topPlayedGame.play_count_cached ?? 0).toLocaleString("ko-KR")}회 · {(topPlayedGame.genre_primary ?? topPlayedGame.genre)} 장르
+                  </p>
+                </div>
+                <div className="text-sm text-muted-foreground sm:text-right">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Arcade pick</p>
+                  <p className="mt-2">지금 가장 많이 열리고 있는 게임</p>
+                </div>
+              </Card>
+              <GameCard key={`featured-${topPlayedGame.id}`} game={topPlayedGame} variant="featured" />
+            </div>
+          ) : (
+            <Card className="p-6 text-sm text-muted-foreground">표시할 게임이 없습니다.</Card>
+          )}
         </section>
       ) : null}
 

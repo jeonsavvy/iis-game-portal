@@ -47,6 +47,14 @@ describe("sortPublicGames", () => {
     expect(sortPublicGames(GAMES as never, "popular").map((game) => game.id)).toEqual(["game-1", "game-3", "game-2"]);
   });
 
+  it("ignores featured rank when popularity is requested", () => {
+    const rows = [
+      { ...GAMES[0], featured_rank: 999, play_count_cached: 30 },
+      { ...GAMES[1], featured_rank: 1, play_count_cached: 80 },
+    ];
+    expect(sortPublicGames(rows as never, "popular").map((game) => game.id)).toEqual(["game-2", "game-1"]);
+  });
+
   it("sorts by newest first", () => {
     expect(sortPublicGames(GAMES as never, "newest").map((game) => game.id)).toEqual(["game-2", "game-1", "game-3"]);
   });
