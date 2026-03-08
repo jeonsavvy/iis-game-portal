@@ -29,6 +29,17 @@ describe("presentation helpers", () => {
     expect(resolveGameImage(baseGame as never)).toBe("https://cdn.example.com/golden-isles-flight.png");
   });
 
+  it("prefers explicit thumbnail artwork over runtime screenshot when both are real images", () => {
+    expect(
+      resolveGameImage({
+        ...baseGame,
+        thumbnail_url: "https://cdn.example.com/golden-isles-flight-thumb.png",
+        hero_image_url: "https://cdn.example.com/golden-isles-flight-hero.png",
+        screenshot_url: "https://cdn.example.com/golden-isles-flight-runtime.png",
+      } as never),
+    ).toBe("https://cdn.example.com/golden-isles-flight-thumb.png");
+  });
+
   it("normalizes raw machine genre labels", () => {
     expect(resolveGenreLabel(baseGame as never)).toBe("비행");
   });

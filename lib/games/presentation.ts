@@ -45,7 +45,7 @@ function coverAssetByGenre(genreToken: string): string | null {
 }
 
 export function resolveGameImage(game: Pick<GameRow, "screenshot_url" | "hero_image_url" | "thumbnail_url" | "genre" | "genre_primary" | "genre_tags">): string | null {
-  const candidates = [game.screenshot_url, game.hero_image_url, game.thumbnail_url].filter((value): value is string => Boolean(value?.trim()));
+  const candidates = [game.thumbnail_url, game.hero_image_url, game.screenshot_url].filter((value): value is string => Boolean(value?.trim()));
   const firstActual = candidates.find((candidate) => !isPlaceholderAsset(candidate));
   if (firstActual) return firstActual;
 
