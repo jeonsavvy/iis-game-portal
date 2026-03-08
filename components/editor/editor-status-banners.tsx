@@ -17,7 +17,7 @@ export function EditorStatusBanners({ error, isRestoring, restoreWarning, onDism
 }
 
 function Banner({ children, icon, tone, onDismiss }: { children: string; icon: React.ReactNode; tone: "error" | "warning" | "info"; onDismiss?: () => void; }) {
-  const styles = tone === "error" ? "border-red-400/20 bg-red-400/10 text-red-100" : tone === "warning" ? "border-amber-300/20 bg-amber-300/10 text-amber-100" : "border-cyan-300/20 bg-cyan-300/10 text-cyan-50";
+  const styles = tone === "error" ? "border-red-200 bg-red-50 text-red-700" : tone === "warning" ? "border-amber-200 bg-amber-50 text-amber-700" : "border-cyan-200 bg-cyan-50 text-cyan-700";
   return (
     <div className={`flex items-start justify-between gap-3 rounded-[1.4rem] border px-4 py-3 text-sm leading-6 ${styles}`}>
       <div className="flex items-start gap-3">

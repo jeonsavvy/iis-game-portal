@@ -15,11 +15,11 @@ export type SessionListItem = {
 
 export function SessionListPane({ items, selectedSessionId, onSelect, labelForStatus, labelForRunStatus }: { items: SessionListItem[]; selectedSessionId: string; onSelect: (sessionId: string) => void; labelForStatus: (value: string) => string; labelForRunStatus: (value: string) => string; }) {
   return (
-    <Card data-admin-surface="session-list" className="p-5">
+    <Card data-admin-surface="session-list" className="bg-white/72 p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">세션 목록</h2>
-          <p className="text-sm text-muted-foreground">진행 중인 세션을 선택하면 중앙 타임라인과 큐가 함께 갱신됩니다.</p>
+          <p className="text-sm text-muted-foreground">세션을 고르면 중앙 타임라인과 큐가 함께 갱신됩니다.</p>
         </div>
         <Badge variant="secondary">{items.length}</Badge>
       </div>
@@ -35,7 +35,7 @@ export function SessionListPane({ items, selectedSessionId, onSelect, labelForSt
                 onClick={() => onSelect(session.session_id)}
                 className={cn(
                   "cursor-pointer rounded-[1rem] border px-4 py-4 text-left transition-all duration-200",
-                  active ? "border-primary/40 bg-orange-50 shadow-none" : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50",
+                  active ? "border-primary/30 bg-[#fff8ef] shadow-none" : "border-[#1b1337]/8 bg-white/88 hover:border-[#1b1337]/14 hover:bg-white",
                 )}
               >
                 <div className="flex items-start justify-between gap-3">

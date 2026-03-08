@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Fredoka, Noto_Sans_KR } from "next/font/google";
+import { Noto_Sans_KR } from "next/font/google";
 
 import { GlobalNav } from "@/components/layout/global-nav";
 import { PageShell } from "@/components/layout/page-shell";
@@ -9,7 +9,6 @@ import { SurfaceBackdrop } from "@/components/layout/surface-backdrop";
 import "./globals.css";
 
 const bodyFont = Noto_Sans_KR({ subsets: ["latin"], variable: "--font-noto-sans-kr", weight: ["400", "500", "700"] });
-const displayFont = Fredoka({ subsets: ["latin"], variable: "--font-fredoka", weight: ["500", "600", "700"] });
 
 function resolveMetadataBase(rawUrl: string | undefined): URL | undefined {
   const candidate = rawUrl?.trim() || (process.env.NODE_ENV === "production" ? "" : "http://localhost:3000");
@@ -27,13 +26,13 @@ function resolveMetadataBase(rawUrl: string | undefined): URL | undefined {
 export const metadata: Metadata = {
   metadataBase: resolveMetadataBase(process.env.NEXT_PUBLIC_SITE_URL),
   title: "iis",
-  description: "브라우저에서 바로 만들고 플레이하는 게임 포털",
+  description: "브라우저에서 바로 만들고 플레이하는 포털",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="ko">
-      <body className={`${bodyFont.variable} ${displayFont.variable}`}>
+      <body className={bodyFont.variable}>
         <SurfaceBackdrop />
         <GlobalNav />
         <PageShell>

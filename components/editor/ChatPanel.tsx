@@ -60,15 +60,15 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
   };
 
   return (
-    <div className="flex h-full flex-col overflow-hidden rounded-[1rem] border border-zinc-200 bg-white">
-      <div className="border-b border-zinc-200 px-5 py-4">
+    <div className="flex h-full flex-col overflow-hidden rounded-[1.5rem] border border-[#1b1337]/10 bg-white/78 shadow-[0_18px_36px_rgba(27,19,55,0.06)] backdrop-blur-sm">
+      <div className="border-b border-[#1b1337]/8 px-5 py-4">
         <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">채팅</h2>
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
         <div ref={scrollViewportRef} className="grid gap-3 px-4 py-4 sm:px-5">
           {messages.length === 0 && !input.trim() ? (
-            <div className="rounded-[1rem] border border-dashed border-zinc-200 bg-zinc-50 p-5">
+            <div className="rounded-[1.2rem] border border-dashed border-[#1b1337]/10 bg-white/70 p-5">
               <h3 className="text-xl font-semibold tracking-[-0.03em] text-foreground">무엇을 만들까요?</h3>
               <div className="mt-4 grid gap-2">
                 {[
@@ -79,7 +79,7 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
                   <button
                     key={suggestion}
                     type="button"
-                    className="cursor-pointer rounded-xl border border-zinc-200 bg-white px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-zinc-300 hover:bg-zinc-50 hover:text-foreground"
+                    className="cursor-pointer rounded-2xl border border-[#1b1337]/10 bg-[#f8f4eb] px-4 py-3 text-left text-sm text-muted-foreground transition hover:border-[#1b1337]/16 hover:bg-white hover:text-foreground"
                     onClick={() => onSend({ prompt: suggestion })}
                     disabled={isGenerating}
                   >
@@ -90,7 +90,7 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
             </div>
           ) : (
             messages.map((message) => (
-              <article key={message.id} className={cn("rounded-[1rem] border px-4 py-3 text-sm leading-6", ROLE_TONE[message.role])}>
+              <article key={message.id} className={cn("rounded-[1rem] border px-4 py-3 text-sm leading-6 shadow-none", ROLE_TONE[message.role])}>
                 <div className="mb-2 flex items-center justify-between gap-3 text-[11px] font-semibold">
                   <span>{ROLE_LABELS[message.role]}</span>
                   <time className="text-muted-foreground">{new Date(message.timestamp).toLocaleTimeString("ko-KR", { hour: "2-digit", minute: "2-digit" })}</time>
@@ -110,7 +110,7 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
           )}
 
           {isGenerating ? (
-            <div className="rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-4 text-sm text-muted-foreground">
+            <div className="rounded-[1rem] border border-[#1b1337]/10 bg-[#f8f4eb] px-4 py-4 text-sm text-muted-foreground">
               <div className="mb-2 text-[11px] font-semibold text-accent">생성 중</div>
               <div className="flex items-center gap-2">
                 <span className="size-2 animate-pulse rounded-full bg-accent" />
@@ -121,7 +121,7 @@ export function ChatPanel({ messages, onSend, isGenerating, initialPrompt = "" }
         </div>
       </ScrollArea>
 
-      <form onSubmit={handleSubmit} className="border-t border-zinc-200 px-4 py-4 sm:px-5">
+      <form onSubmit={handleSubmit} className="border-t border-[#1b1337]/8 px-4 py-4 sm:px-5">
         <input ref={fileInputRef} type="file" accept="image/png,image/jpeg,image/webp" className="hidden" onChange={handlePickImage} />
         <div className="grid gap-3">
           <Textarea

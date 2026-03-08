@@ -25,12 +25,12 @@ export function ObservatoryFilters({
   setErrorFilter: (value: string) => void;
 }) {
   return (
-    <Card data-admin-surface="observatory-filters" className="p-5">
+    <Card data-admin-surface="observatory-filters" className="bg-white/72 p-5">
       <div className="mb-4 flex items-center gap-3">
         <Filter className="size-4 text-zinc-500" />
         <div>
           <h2 className="text-[1.3rem] font-semibold tracking-[-0.03em] text-foreground">필터</h2>
-          <p className="text-sm text-muted-foreground">상태, 에이전트, 작업 단계, 오류 여부를 기준으로 운영 로그를 정리합니다.</p>
+          <p className="text-sm text-muted-foreground">필요한 신호만 남기도록 상태와 에이전트 기준으로 좁혀봅니다.</p>
         </div>
       </div>
       <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-4">

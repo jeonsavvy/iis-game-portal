@@ -135,8 +135,8 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
     <section className="grid gap-5">
       <Card data-admin-surface="games-header" className="p-6 sm:p-8">
         <div className="space-y-3">
-          <h1 className="text-4xl font-bold tracking-[-0.05em] text-foreground">게임 관리</h1>
-          <p className="text-sm text-muted-foreground">공개된 게임을 확인하고, 필요할 때만 위험 작업을 실행합니다.</p>
+          <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">게임 관리</h1>
+          <p className="text-sm text-muted-foreground">공개 게임 상태를 확인하고, 필요할 때만 위험 작업을 실행합니다.</p>
         </div>
       </Card>
 
@@ -147,7 +147,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
       ) : null}
 
       <section className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_24rem]">
-        <Card data-admin-surface="games-list" className="p-5">
+        <Card data-admin-surface="games-list" className="bg-white/72 p-5">
           <div className="mb-4 flex items-center justify-between gap-3">
             <div>
               <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">삭제 대상 선택</h2>
@@ -172,7 +172,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
                       setConfirmChecked(false);
                       setResultMessage("");
                     }}
-                    className={`rounded-[1rem] border px-4 py-4 text-left transition ${active ? "border-red-200 bg-red-50" : "border-zinc-200 bg-white hover:border-zinc-300 hover:bg-zinc-50"}`}
+                    className={`rounded-[1rem] border px-4 py-4 text-left transition ${active ? "border-red-200 bg-red-50" : "border-[#1b1337]/8 bg-white/88 hover:border-[#1b1337]/14 hover:bg-white"}`}
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
@@ -193,7 +193,7 @@ export function GameAdminPanel({ initialGames, readOnly = false }: Props) {
           )}
         </Card>
 
-        <Card data-admin-surface="games-delete" className="p-5">
+        <Card data-admin-surface="games-delete" className="bg-white/72 p-5">
           <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">삭제 확인 (되돌릴 수 없음)</h2>
 
           {selectedGame ? (

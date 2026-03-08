@@ -4,8 +4,12 @@ test("운영실 허브가 세션 운영과 게임 관리로 분리된다", async
   await page.goto("/admin");
 
   await expect(page.getByRole("heading", { name: "운영실" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "세션 운영 보기" })).toBeVisible();
-  await expect(page.getByRole("link", { name: "게임 관리 보기" })).toBeVisible();
+  await expect(page.getByText("최근 세션")).toBeVisible();
+  await expect(page.getByText("최근 게임")).toBeVisible();
+  await expect(page.getByText("협업 수정 대기")).toBeVisible();
+  await expect(page.getByText("퍼블리시 승인 대기")).toBeVisible();
+  await expect(page.getByRole("link", { name: "세션 운영실 열기" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "게임 관리 열기" })).toBeVisible();
   await expect(page.getByText("공개 서비스와 분리된 운영 허브입니다.")).toHaveCount(0);
   const bg = await page.locator("[data-admin-surface]").first().evaluate((node) => window.getComputedStyle(node).backgroundColor);
   expect(bg).not.toBe("rgb(17, 17, 24)");

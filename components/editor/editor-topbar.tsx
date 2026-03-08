@@ -43,15 +43,18 @@ export function EditorTopbar({
   onSelectSession: (sessionId: string) => void;
 }) {
   return (
-    <div className="flex flex-col gap-3 rounded-[1rem] border border-zinc-200 bg-white p-4 shadow-[var(--shadow-soft)] lg:flex-row lg:items-center lg:justify-between">
-      <div className="flex flex-col gap-3 lg:flex-row lg:items-center">
-        <div className="flex items-center gap-3">
-          <h1 className="text-[1.8rem] font-semibold tracking-[-0.03em] text-foreground">내 작업공간</h1>
-          <span className="text-sm text-muted-foreground">{RUN_LABELS[runStatus]}</span>
+    <div className="flex flex-col gap-4 rounded-[1.5rem] border border-[#1b1337]/10 bg-white/78 p-4 shadow-[0_18px_36px_rgba(27,19,55,0.06)] backdrop-blur-sm lg:flex-row lg:items-center lg:justify-between">
+      <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:gap-5">
+        <div className="grid gap-1">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">workspace</p>
+          <div className="flex flex-wrap items-center gap-3">
+            <h1 className="text-[1.9rem] font-semibold tracking-[-0.04em] text-foreground">내 작업공간</h1>
+            <span className="text-sm text-muted-foreground">{RUN_LABELS[runStatus]}</span>
+          </div>
         </div>
-        <div className="w-full lg:w-[17rem]">
+        <div className="w-full lg:w-[18rem]">
           <Select value={selectedSessionId || undefined} onValueChange={onSelectSession}>
-            <SelectTrigger aria-label="세션 선택">
+            <SelectTrigger aria-label="세션 선택" className="bg-white/88">
               <SelectValue placeholder="세션 선택" />
             </SelectTrigger>
             <SelectContent>

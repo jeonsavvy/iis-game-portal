@@ -41,7 +41,6 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
         <div className="grid gap-2 p-4">
           <div className="flex flex-wrap items-center gap-2">
             <Badge variant="outline">{game.genre_primary ?? game.genre}</Badge>
-            <Badge variant="accent">{Number(game.play_count_cached ?? 0).toLocaleString("ko-KR")} plays</Badge>
           </div>
           <h3 className="text-xl font-semibold leading-tight tracking-[-0.03em] text-foreground">{game.name}</h3>
           <p className="text-sm leading-6 text-muted-foreground">{summary}</p>

@@ -66,26 +66,10 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
       {!hasQuery ? (
         <section className="grid gap-4">
           <div>
-            <h2 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-foreground">지금 뜨는 게임</h2>
-            <p className="mt-1 text-sm text-muted-foreground">최근 중복 새로고침을 제외한 실제 플레이 기록 기준 1위만 노출합니다.</p>
+            <h2 className="text-[1.6rem] font-semibold tracking-[-0.03em] text-foreground">추천 게임</h2>
           </div>
           {topPlayedGame ? (
-            <div className="grid gap-4">
-              <Card className="grid gap-4 p-4 sm:grid-cols-[minmax(0,1fr)_9rem] sm:items-end">
-                <div className="space-y-2">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Top played</p>
-                  <h3 className="text-2xl font-semibold tracking-[-0.04em] text-foreground">{topPlayedGame.name}</h3>
-                  <p className="text-sm leading-6 text-muted-foreground">
-                    누적 플레이 {Number(topPlayedGame.play_count_cached ?? 0).toLocaleString("ko-KR")}회 · {(topPlayedGame.genre_primary ?? topPlayedGame.genre)} 장르
-                  </p>
-                </div>
-                <div className="text-sm text-muted-foreground sm:text-right">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Arcade pick</p>
-                  <p className="mt-2">지금 가장 많이 열리고 있는 게임</p>
-                </div>
-              </Card>
-              <GameCard key={`featured-${topPlayedGame.id}`} game={topPlayedGame} variant="featured" />
-            </div>
+            <GameCard key={`featured-${topPlayedGame.id}`} game={topPlayedGame} variant="featured" />
           ) : (
             <Card className="p-6 text-sm text-muted-foreground">표시할 게임이 없습니다.</Card>
           )}

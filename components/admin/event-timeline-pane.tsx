@@ -38,18 +38,18 @@ export function EventTimelinePane({
   labelForEvent: (eventType: string) => string;
 }) {
   return (
-    <Card data-admin-surface="event-timeline" className="p-5">
+    <Card data-admin-surface="event-timeline" className="bg-white/72 p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <div>
           <h2 className="text-[1.4rem] font-semibold tracking-[-0.03em] text-foreground">이벤트 타임라인</h2>
-          <p className="text-sm text-muted-foreground">{selectedTitle ? `${selectedTitle} · 최근 이벤트 흐름` : "선택된 세션의 이벤트를 시간순으로 표시합니다."}</p>
+          <p className="text-sm text-muted-foreground">{selectedTitle ? `${selectedTitle} · 최근 이벤트 흐름` : "선택된 세션의 이벤트를 시간 순서대로 확인합니다."}</p>
         </div>
         <Badge variant="secondary">{events.length}</Badge>
       </div>
       <ScrollArea className="h-[28rem] pr-3 xl:h-[40rem]">
         <div className="grid gap-3">
           {events.map((event) => (
-            <article key={event.id} className="rounded-[1rem] border border-zinc-200 bg-zinc-50 p-4">
+            <article key={event.id} className="rounded-[1rem] border border-[#1b1337]/8 bg-white/88 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant={event.error_code ? "destructive" : "outline"}>{labelForAgent(event.agent, event.event_type)}</Badge>
                 <span className="text-sm font-medium text-foreground">{labelForAction(event.action)}</span>

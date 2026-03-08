@@ -67,20 +67,20 @@ export function AgentLogPanel({
   const latest = activities.length > 0 ? activities[activities.length - 1] : null;
 
   return (
-    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.8rem] border border-white/8 bg-[#111118]/90">
-      <div className="border-b border-white/8 px-5 py-4">
+    <div className="flex h-full min-h-0 flex-col overflow-hidden rounded-[1.5rem] border border-[#1b1337]/10 bg-white/78 shadow-[0_18px_36px_rgba(27,19,55,0.06)] backdrop-blur-sm">
+      <div className="border-b border-[#1b1337]/8 px-5 py-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-accent">Run status</p>
-            <h2 className="mt-2 font-display text-[1.85rem] tracking-[-0.04em] text-foreground">실행 상태</h2>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-muted-foreground">run support</p>
+            <h2 className="mt-2 text-[1.55rem] font-semibold tracking-[-0.04em] text-foreground">실행 상태</h2>
           </div>
           <Badge variant={runStatus === "failed" ? "destructive" : runStatus === "succeeded" ? "success" : "outline"}>{RUN_LABELS[runStatus]}</Badge>
         </div>
         {runId ? <p className="mt-2 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
-        {runError ? <p className="mt-3 rounded-2xl border border-red-400/15 bg-red-400/8 px-3 py-2 text-sm leading-6 text-red-100">{runError}</p> : null}
+        {runError ? <p className="mt-3 rounded-2xl border border-red-200 bg-red-50 px-3 py-2 text-sm leading-6 text-red-700">{runError}</p> : null}
       </div>
 
-      <div className="grid gap-3 border-b border-white/8 px-5 py-4">
+      <div className="grid gap-3 border-b border-[#1b1337]/8 px-5 py-4">
         <div className="grid gap-2 sm:grid-cols-2">
           <Button type="button" variant="outline" size="sm" onClick={onRetryLast} disabled={isBusy || !onRetryLast}><RotateCcw className="size-4" />마지막 요청 재실행</Button>
           <Button type="button" variant="outline" size="sm" onClick={onRerunQa} disabled={isBusy || !onRerunQa}><Shield className="size-4" />QA 다시 실행</Button>
@@ -96,7 +96,7 @@ export function AgentLogPanel({
       <ScrollArea className="min-h-0 flex-1">
         <div className="grid gap-3 px-4 py-4 sm:px-5">
           {latest ? (
-            <div className="rounded-[1.45rem] border border-white/8 bg-white/[0.04] p-4">
+            <div className="rounded-[1.3rem] border border-[#1b1337]/8 bg-white/88 p-4">
               <div className="flex flex-wrap items-center gap-2">
                 <Badge variant="outline">{AGENT_LABELS[latest.agent] ?? latest.agent}</Badge>
                 <span className="text-sm font-medium text-foreground">{ACTION_LABELS[latest.action] ?? latest.action}</span>
@@ -107,15 +107,15 @@ export function AgentLogPanel({
                 {latest.decision_reason ? <p>판단 근거: {latest.decision_reason}</p> : null}
                 {latest.change_impact ? <p>변경 영향: {latest.change_impact}</p> : null}
                 {typeof latest.confidence === "number" ? <p>신뢰도: {latest.confidence.toFixed(2)}</p> : null}
-                {latest.error_code ? <p className="text-red-200">오류 코드: {latest.error_code}</p> : null}
+                {latest.error_code ? <p className="text-red-700">오류 코드: {latest.error_code}</p> : null}
               </div>
             </div>
           ) : (
-            <p className="rounded-[1.4rem] border border-dashed border-white/10 px-4 py-6 text-sm text-muted-foreground">프롬프트를 보내면 실행 상태와 최근 변경 내역이 여기에 표시됩니다.</p>
+            <p className="rounded-[1.3rem] border border-dashed border-[#1b1337]/10 px-4 py-6 text-sm text-muted-foreground">프롬프트를 보내면 실행 상태와 최근 변경 내역이 여기에 표시됩니다.</p>
           )}
 
           {activities.map((activity, index) => (
-            <article key={`${activity.agent}-${activity.action}-${index}`} className="rounded-[1.35rem] border border-white/8 bg-black/20 px-4 py-4 text-sm leading-6 text-muted-foreground">
+            <article key={`${activity.agent}-${activity.action}-${index}`} className="rounded-[1.25rem] border border-[#1b1337]/8 bg-[rgba(255,255,255,0.7)] px-4 py-4 text-sm leading-6 text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Badge variant="secondary">{AGENT_LABELS[activity.agent] ?? activity.agent}</Badge>
                 <span className="text-foreground">{ACTION_LABELS[activity.action] ?? activity.action}</span>

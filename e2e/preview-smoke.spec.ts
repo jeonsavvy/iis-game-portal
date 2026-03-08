@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("홈이 프리뷰 모드로 렌더링된다", async ({ page }) => {
   await page.goto("/");
 
-  await expect(page.getByRole("heading", { name: "지금 뜨는 게임" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "추천 게임" })).toBeVisible();
   await expect(page.getByRole("heading", { name: "신규 게임" })).toBeVisible();
 });
 
