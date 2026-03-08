@@ -27,14 +27,14 @@ export function GamePreview({ html, title = "게임 미리보기" }: { html: str
   }
 
   return (
-    <div className="overflow-hidden rounded-[1.8rem] border border-[#1b1337]/12 bg-[#050816] shadow-[0_24px_60px_rgba(9,12,33,0.22)]">
+    <div className="h-full overflow-hidden rounded-[1.3rem] border border-[#1b1337]/12 bg-[#050816] shadow-[0_24px_60px_rgba(9,12,33,0.22)]">
       <iframe
         ref={frameRef}
         srcDoc={html}
         title={title}
         width="100%"
         height="100%"
-        className="min-h-[66vh] w-full border-0 bg-[#050816] xl:min-h-[78vh]"
+        className="min-h-[72vh] w-full border-0 bg-[#050816] xl:min-h-[80vh]"
         sandbox="allow-scripts allow-same-origin allow-forms"
         referrerPolicy="no-referrer"
         tabIndex={0}

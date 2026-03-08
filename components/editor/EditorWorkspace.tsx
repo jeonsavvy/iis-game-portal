@@ -25,9 +25,7 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
     handleStartFreshSession,
     handleSelectSession,
     handleDeleteSession,
-    handleRetryLast,
     handleRestorePrevious,
-    handleProposeFix,
     handleApplyFix,
     dismissError,
     dismissRestoreWarning,
@@ -69,13 +67,9 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
             runStatus={runStatus}
             runId={runId}
             runError={runError}
-            canRetryLast={actionsState.canRetryLast}
             canRestorePrevious={actionsState.canRestorePrevious}
-            canProposeFix={actionsState.canProposeFix}
             canApplyFix={actionsState.canApplyFix}
-            onRetryLast={handleRetryLast}
             onRestorePrevious={handleRestorePrevious}
-            onProposeFix={handleProposeFix}
             onApplyFix={handleApplyFix}
           />
         </div>

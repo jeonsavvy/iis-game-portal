@@ -10,13 +10,9 @@ export function EditorSidebar({
   runStatus,
   runId,
   runError,
-  canRetryLast,
   canRestorePrevious,
-  canProposeFix,
   canApplyFix,
-  onRetryLast,
   onRestorePrevious,
-  onProposeFix,
   onApplyFix,
 }: {
   messages: ChatMessage[];
@@ -27,13 +23,9 @@ export function EditorSidebar({
   runStatus: RunStatus;
   runId?: string | null;
   runError?: string | null;
-  canRetryLast: boolean;
   canRestorePrevious: boolean;
-  canProposeFix: boolean;
   canApplyFix: boolean;
-  onRetryLast: () => void;
   onRestorePrevious: () => void;
-  onProposeFix: () => void;
   onApplyFix: () => void;
 }) {
   return (
@@ -47,13 +39,9 @@ export function EditorSidebar({
         runStatus={runStatus}
         runId={runId}
         runError={runError}
-        canRetryLast={canRetryLast}
         canRestorePrevious={canRestorePrevious}
-        canProposeFix={canProposeFix}
         canApplyFix={canApplyFix}
-        onRetryLast={onRetryLast}
         onRestorePrevious={onRestorePrevious}
-        onProposeFix={onProposeFix}
         onApplyFix={onApplyFix}
       />
     </div>

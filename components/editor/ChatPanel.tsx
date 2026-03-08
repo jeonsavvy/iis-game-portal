@@ -67,13 +67,9 @@ export function ChatPanel({
   runStatus,
   runId,
   runError,
-  canRetryLast,
   canRestorePrevious,
-  canProposeFix,
   canApplyFix,
-  onRetryLast,
   onRestorePrevious,
-  onProposeFix,
   onApplyFix,
 }: {
   messages: ChatMessage[];
@@ -84,13 +80,9 @@ export function ChatPanel({
   runStatus: RunStatus;
   runId?: string | null;
   runError?: string | null;
-  canRetryLast: boolean;
   canRestorePrevious: boolean;
-  canProposeFix: boolean;
   canApplyFix: boolean;
-  onRetryLast: () => void;
   onRestorePrevious: () => void;
-  onProposeFix: () => void;
   onApplyFix: () => void;
 }) {
   const [input, setInput] = useState(initialPrompt);
@@ -98,6 +90,13 @@ export function ChatPanel({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const scrollViewportRef = useRef<HTMLDivElement | null>(null);
   const latestActivity = activities.length > 0 ? activities[activities.length - 1] : null;
+  const statusSummary = canApplyFix
+    ? "문제를 바탕으로 수정 미리보기가 준비됐습니다. 적용하면 오른쪽 게임 화면이 바로 갱신됩니다."
+    : runStatus === "running" || isGenerating
+      ? "지금 요청을 처리 중입니다. 결과가 나오면 오른쪽 미리보기와 아래 기록이 함께 갱신됩니다."
+      : latestActivity
+        ? `${AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · ${ACTION_LABELS[latestActivity.action] ?? latestActivity.action} · ${latestActivity.summary}`
+        : "게임을 수정하고 싶다면 문제를 아래 입력창에 그대로 적어 보내세요. 자동으로 수정 요청으로 처리됩니다.";
 
   useEffect(() => {
     const viewport = scrollViewportRef.current;
@@ -139,37 +138,26 @@ export function ChatPanel({
         <div className="mt-4 rounded-[1.1rem] border border-[#1b1337]/8 bg-white/88 px-4 py-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">실행 상태</p>
-              <h3 className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">실행 상태</h3>
-              <p className="mt-2 text-sm leading-6 text-foreground">
-                {latestActivity
-                  ? `${AGENT_LABELS[latestActivity.agent] ?? latestActivity.agent} · ${ACTION_LABELS[latestActivity.action] ?? latestActivity.action} · ${latestActivity.summary}`
-                  : "아직 실행 기록이 없습니다."}
-              </p>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">현재 상태</p>
+              <h3 className="mt-2 text-base font-semibold tracking-[-0.02em] text-foreground">현재 상태</h3>
+              <p className="mt-2 text-sm leading-6 text-foreground">{statusSummary}</p>
               {runId ? <p className="mt-1 text-xs text-muted-foreground">실행 ID: {runId}</p> : null}
               {runError ? <p className="mt-2 text-sm text-red-700">{runError}</p> : null}
             </div>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {canRetryLast ? (
-              <Button type="button" variant="outline" size="sm" onClick={onRetryLast} disabled={isGenerating}>
-                같은 요청 다시 만들기
-              </Button>
-            ) : null}
-            {canProposeFix ? (
-              <Button type="button" variant="outline" size="sm" onClick={onProposeFix} disabled={isGenerating}>
-                문제 수정안 만들기
-              </Button>
-            ) : null}
             {canApplyFix ? (
               <Button type="button" size="sm" onClick={onApplyFix} disabled={isGenerating}>
-                수정안 적용
+                수정 미리보기 적용
               </Button>
             ) : null}
             {canRestorePrevious ? (
               <Button type="button" variant="ghost" size="sm" onClick={onRestorePrevious} disabled={isGenerating}>
                 직전 결과 되돌리기
               </Button>
+            ) : null}
+            {!canApplyFix && !canRestorePrevious ? (
+              <p className="text-xs text-muted-foreground">버그나 수정 요청은 아래 입력창에 바로 적어 보내면 됩니다.</p>
             ) : null}
           </div>
         </div>
