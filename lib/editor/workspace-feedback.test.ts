@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { RESTORE_BANNER_DELAY_MS, buildFixReviewState, normalizeWorkspaceError } from "./workspace-feedback";
+import { RESTORE_BANNER_DELAY_MS, buildFixReviewState, normalizeWorkspaceError, normalizeWorkspaceStatusMessage } from "./workspace-feedback";
 
 describe("normalizeWorkspaceError", () => {
   it("rewrites transient core engine aborts into friendly guidance", () => {
@@ -21,6 +21,10 @@ describe("normalizeWorkspaceError", () => {
         detail: "The operation was aborted",
       }),
     ).not.toContain("The operation was aborted");
+  });
+
+  it("rewrites scaffold specialization rejection into a conversational message", () => {
+    expect(normalizeWorkspaceError("scaffold_specialization_rejected")).toContain("장르 감각");
   });
 });
 
@@ -45,5 +49,13 @@ describe("buildFixReviewState", () => {
 describe("RESTORE_BANNER_DELAY_MS", () => {
   it("keeps restore banners deferred long enough to avoid flicker", () => {
     expect(RESTORE_BANNER_DELAY_MS).toBeGreaterThanOrEqual(300);
+  });
+});
+
+describe("normalizeWorkspaceStatusMessage", () => {
+  it("hides raw scaffold rejection phrases from activity summaries", () => {
+    const message = normalizeWorkspaceStatusMessage("Specialization rejected, reverted to deterministic scaffold baseline");
+    expect(message).toContain("장르 감각");
+    expect(message.toLowerCase()).not.toContain("rejected");
   });
 });

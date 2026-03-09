@@ -75,6 +75,14 @@ export function normalizeWorkspaceError(payload: unknown): string {
     return "코어 엔진 연결이 잠시 불안정합니다. 잠시 후 다시 시도하면 이어서 작업할 수 있습니다.";
   }
 
+  if (
+    haystack.includes("scaffold_specialization_rejected")
+    || haystack.includes("specialization rejected")
+    || haystack.includes("scaffold_reverted_to_baseline")
+  ) {
+    return "요청한 장르 감각을 다듬는 중입니다. 기본 플레이 감각은 유지한 채 다시 보정하고 있습니다.";
+  }
+
   return extractGenericMessage(payload);
 }
 
@@ -84,4 +92,16 @@ export function buildFixReviewState({ hasPreviewFix, historyCount }: FixReviewSt
     canApplyFix: hasPreviewFix,
     canRestorePrevious: historyCount > 0,
   };
+}
+
+export function normalizeWorkspaceStatusMessage(message: string): string {
+  const lowered = message.trim().toLowerCase();
+  if (
+    lowered.includes("specialization rejected")
+    || lowered.includes("scaffold_specialization_rejected")
+    || lowered.includes("reverted to deterministic scaffold baseline")
+  ) {
+    return "장르 감각을 기준선 위에서 다시 보정했습니다. 플레이 가능한 상태를 유지한 채 다음 수정을 이어갈 수 있습니다.";
+  }
+  return message;
 }

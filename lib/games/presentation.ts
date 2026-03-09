@@ -37,21 +37,10 @@ function looksRobotic(text: string, gameName: string): boolean {
   );
 }
 
-function coverAssetByGenre(genreToken: string): string | null {
-  if (genreToken === "racing") return "/assets/game-covers/racing-openwheel.png";
-  if (genreToken === "flight") return "/assets/game-covers/flight-island.png";
-  if (genreToken === "shooter") return "/assets/game-covers/space-dogfight.png";
-  return null;
-}
-
 export function resolveGameImage(game: Pick<GameRow, "screenshot_url" | "hero_image_url" | "thumbnail_url" | "genre" | "genre_primary" | "genre_tags">): string | null {
   const candidates = [game.thumbnail_url, game.hero_image_url, game.screenshot_url].filter((value): value is string => Boolean(value?.trim()));
   const firstActual = candidates.find((candidate) => !isPlaceholderAsset(candidate));
   if (firstActual) return firstActual;
-
-  const token = normalizedGenreToken(game.genre_primary ?? game.genre, Array.isArray(game.genre_tags) ? game.genre_tags : []);
-  const mappedCover = coverAssetByGenre(token);
-  if (mappedCover) return mappedCover;
 
   return candidates[0] ?? null;
 }

@@ -3,6 +3,7 @@
 import { AlertTriangle, Bot, CheckCircle2, RotateCcw, Shield, Sparkles } from "lucide-react";
 
 import type { AgentActivity, RunStatus } from "@/components/editor/types";
+import { normalizeWorkspaceStatusMessage } from "@/lib/editor/workspace-feedback";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -102,12 +103,11 @@ export function AgentLogPanel({
                 <span className="text-sm font-medium text-foreground">{ACTION_LABELS[latest.action] ?? latest.action}</span>
               </div>
               <div className="mt-3 grid gap-2 text-sm leading-6 text-muted-foreground">
-                <p className="text-foreground">{latest.summary}</p>
+                <p className="text-foreground">{normalizeWorkspaceStatusMessage(latest.summary)}</p>
                 {latest.input_signal ? <p>입력 신호: {latest.input_signal}</p> : null}
                 {latest.decision_reason ? <p>판단 근거: {latest.decision_reason}</p> : null}
                 {latest.change_impact ? <p>변경 영향: {latest.change_impact}</p> : null}
                 {typeof latest.confidence === "number" ? <p>신뢰도: {latest.confidence.toFixed(2)}</p> : null}
-                {latest.error_code ? <p className="text-red-700">오류 코드: {latest.error_code}</p> : null}
               </div>
             </div>
           ) : (
@@ -120,7 +120,7 @@ export function AgentLogPanel({
                 <Badge variant="secondary">{AGENT_LABELS[activity.agent] ?? activity.agent}</Badge>
                 <span className="text-foreground">{ACTION_LABELS[activity.action] ?? activity.action}</span>
               </div>
-              <p className="mt-2 text-foreground">{activity.summary}</p>
+              <p className="mt-2 text-foreground">{normalizeWorkspaceStatusMessage(activity.summary)}</p>
               {activity.change_impact ? <p className="mt-1">{activity.change_impact}</p> : null}
             </article>
           ))}

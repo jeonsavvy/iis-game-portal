@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as R
 import { useRouter, useSearchParams } from "next/navigation";
 
 import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, RunStatus } from "@/components/editor/types";
-import { buildFixReviewState, normalizeWorkspaceError, RESTORE_BANNER_DELAY_MS } from "@/lib/editor/workspace-feedback";
+import { buildFixReviewState, normalizeWorkspaceError, normalizeWorkspaceStatusMessage, RESTORE_BANNER_DELAY_MS } from "@/lib/editor/workspace-feedback";
 import { normalizeSessionTitle } from "@/lib/editor/session-options";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
 
@@ -129,7 +129,7 @@ function activityRole(agent: string): ChatMessage["role"] {
 function summarizeActivity(activity: AgentActivity): string {
   const lines = [
     `${activity.agent}/${activity.action}`,
-    activity.summary || "처리 완료",
+    normalizeWorkspaceStatusMessage(activity.summary || "처리 완료"),
     activity.decision_reason ? `판단 근거: ${activity.decision_reason}` : "",
     activity.change_impact ? `변경 영향: ${activity.change_impact}` : "",
     typeof activity.metadata?.scaffold_key === "string" ? `기반 scaffold: ${activity.metadata.scaffold_key}` : "",
@@ -183,7 +183,7 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
 
   if (event.event_type === "agent_activity" && event.agent) {
     const lines = [
-      event.summary || `${event.agent} 작업`,
+      normalizeWorkspaceStatusMessage(event.summary || `${event.agent} 작업`),
       event.decision_reason ? `판단 근거: ${event.decision_reason}` : "",
       event.change_impact ? `변경 영향: ${event.change_impact}` : "",
       scaffoldKey ? `기반 scaffold: ${scaffoldKey}` : "",
@@ -218,7 +218,7 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
     ].includes(event.event_type)
   ) {
     const lines = [
-      event.summary || event.event_type,
+      normalizeWorkspaceStatusMessage(event.summary || event.event_type),
       event.error_code ? `오류 코드: ${event.error_code}` : "",
       scaffoldKey ? `기반 scaffold: ${scaffoldKey}` : "",
       generationMode ? `생성 모드: ${generationMode}` : "",
@@ -981,42 +981,39 @@ export function useEditorSession() {
 
   const handlePublish = useCallback(async () => {
     if (!session?.id || !session.html.trim()) return;
+    if (activeProposalId && previewHtmlOverride) {
+      setError("수정안 미리보기가 열려 있습니다. 현재 버전을 유지하거나 수정안을 먼저 반영한 뒤 퍼블리시하세요.");
+      return;
+    }
     setIsGenerating(true);
     try {
-      const publishOnce = async () => {
-        const response = await fetch(`${API_BASE}/${session.id}/publish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ slug: "" }),
-        });
-        const payload = await response.json().catch(() => ({}));
-        return { response, payload };
-      };
-
-      let { response: res, payload: result } = await publishOnce();
-      const detail = result && typeof result === "object" ? (result as Record<string, unknown>).detail : null;
-      const detailCode = detail && typeof detail === "object" ? (detail as Record<string, unknown>).code : null;
-      const topCode = result && typeof result === "object" ? (result as Record<string, unknown>).code : null;
-
-      if (!res.ok && (detailCode === "publish_unapproved" || topCode === "publish_unapproved")) {
-        const approveResponse = await fetch(`${API_BASE}/${session.id}/approve-publish`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ note: "workspace auto-approve" }),
-        });
-        const approvePayload = await approveResponse.json().catch(() => ({}));
-        if (!approveResponse.ok) throw new Error(normalizeWorkspaceError(approvePayload));
-        ({ response: res, payload: result } = await publishOnce());
-      }
+      const res = await fetch(`${API_BASE}/${session.id}/publish`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ slug: "" }),
+      });
+      const result = await res.json().catch(() => ({}));
 
       if (!res.ok) throw new Error(normalizeWorkspaceError(result));
       const gameUrl = typeof result.game_url === "string" ? result.game_url : "";
+      const presentationStatus = typeof result.presentation_status === "string" ? result.presentation_status : "ready";
       setSession((prev) =>
         prev
           ? {
               ...prev,
               status: "published",
-              messages: [...prev.messages, { id: makeId(), role: "system", content: `퍼블리시 성공 → ${gameUrl}`, timestamp: Date.now() }],
+              messages: [
+                ...prev.messages,
+                {
+                  id: makeId(),
+                  role: "system",
+                  content:
+                    presentationStatus === "ready"
+                      ? `퍼블리시 성공 → ${gameUrl}`
+                      : `퍼블리시 완료 · 대표 썸네일 복구 후 메인 노출 예정 → ${gameUrl}`,
+                  timestamp: Date.now(),
+                },
+              ],
             }
           : prev,
       );
@@ -1025,7 +1022,7 @@ export function useEditorSession() {
     } finally {
       setIsGenerating(false);
     }
-  }, [session]);
+  }, [activeProposalId, previewHtmlOverride, session]);
 
   const handleRetryLast = useCallback(() => {
     if (!lastPrompt.trim() || isGenerating) return;

@@ -40,6 +40,17 @@ describe("presentation helpers", () => {
     ).toBe("https://cdn.example.com/golden-isles-flight-thumb.png");
   });
 
+  it("does not fall back to genre cover art when no usable public image exists", () => {
+    expect(
+      resolveGameImage({
+        ...baseGame,
+        thumbnail_url: null,
+        hero_image_url: null,
+        screenshot_url: null,
+      } as never),
+    ).toBeNull();
+  });
+
   it("normalizes raw machine genre labels", () => {
     expect(resolveGenreLabel(baseGame as never)).toBe("비행");
   });
