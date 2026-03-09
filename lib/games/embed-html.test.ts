@@ -20,6 +20,14 @@ describe("patchHtmlForEmbeddedViewport", () => {
     expect(result).not.toContain("overlayText.includes('시작')");
   });
 
+  it("repairs legacy published three namespace shims for core utilities", () => {
+    const result = patchHtmlForEmbeddedViewport(
+      "<!doctype html><html><head></head><body><script>camera.fov=window.__iis_addon_shims.MathUtils.lerp(camera.fov,58,0.5);</script></body></html>",
+    );
+    expect(result).toContain("THREE.MathUtils.lerp");
+    expect(result).not.toContain("window.__iis_addon_shims.MathUtils");
+  });
+
   it("is idempotent", () => {
     const once = patchHtmlForEmbeddedViewport("<!doctype html><html><head></head><body></body></html>");
     const twice = patchHtmlForEmbeddedViewport(once);

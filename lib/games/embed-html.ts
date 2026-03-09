@@ -28,12 +28,22 @@ window.addEventListener('resize',apply,{passive:true});
 window.addEventListener('message',(event)=>{if(event?.data?.type==='iis:recover:start'){recoverOverlay();apply();}});
 })();</script>`;
 
+const LEGACY_THREE_NAMESPACE_REPAIRS: Array<[RegExp, string]> = [
+  [/window\.__iis_addon_shims\.MathUtils\b/g, "THREE.MathUtils"],
+  [/window\.__iis_addon_shims\.LoaderUtils\b/g, "THREE.LoaderUtils"],
+  [/window\.__iis_addon_shims\.AnimationUtils\b/g, "THREE.AnimationUtils"],
+  [/window\.__iis_addon_shims\.ShapeUtils\b/g, "THREE.ShapeUtils"],
+];
+
 export function patchHtmlForEmbeddedViewport(html: string): string {
   if (!html || html.includes("iis-embed-viewport-fix")) {
     return html;
   }
 
   let nextHtml = html;
+  for (const [pattern, replacement] of LEGACY_THREE_NAMESPACE_REPAIRS) {
+    nextHtml = nextHtml.replace(pattern, replacement);
+  }
   if (/<\/head>/i.test(nextHtml)) {
     nextHtml = nextHtml.replace(/<\/head>/i, `${EMBED_VIEWPORT_FIX_STYLE}</head>`);
   } else {
