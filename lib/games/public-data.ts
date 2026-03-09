@@ -28,7 +28,7 @@ export const loadCatalogGames = cache(async (): Promise<GameRow[]> => {
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("games_metadata").select("*").eq("status", "active");
-  return ((data ?? []) as GameRow[]).filter((game) => isPubliclyVisible(game) && hasLiveCatalogImage(game));
+  return ((data ?? []) as GameRow[]).filter(isPubliclyVisible);
 });
 
 export const loadPublicGameBySlug = cache(async (slug: string): Promise<GameRow | null> => {
@@ -40,7 +40,7 @@ export const loadPublicGameBySlug = cache(async (slug: string): Promise<GameRow 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("games_metadata").select("*").eq("slug", slug).maybeSingle();
   const game = (data as GameRow | null) ?? null;
-  return game && isPubliclyVisible(game) && hasLiveCatalogImage(game) ? game : null;
+  return game && isPubliclyVisible(game) ? game : null;
 });
 
 export const loadGameLeaderboard = cache(async (gameId: string, slug: string, limit = 10): Promise<LeaderboardRow[]> => {
