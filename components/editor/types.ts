@@ -4,6 +4,14 @@ export type ChatAttachment = {
   data_url?: string;
 };
 
+export type PublishThumbnailCandidate = {
+  id: string;
+  label: string;
+  source: "auto";
+  mime_type: string;
+  data_url: string;
+};
+
 export type ChatMessage = {
   id: string;
   role: "user" | "assistant" | "visual_qa" | "playtester" | "system";

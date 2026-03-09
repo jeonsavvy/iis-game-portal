@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
-import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, RunStatus } from "@/components/editor/types";
+import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, PublishThumbnailCandidate, RunStatus } from "@/components/editor/types";
 import { buildFixReviewState, normalizeWorkspaceError, normalizeWorkspaceStatusMessage, RESTORE_BANNER_DELAY_MS } from "@/lib/editor/workspace-feedback";
 import { normalizeSessionTitle } from "@/lib/editor/session-options";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
@@ -106,6 +106,10 @@ type SessionListResponse = {
     status: string;
     updated_at?: string | null;
   }>;
+};
+
+type PublishThumbnailCandidatesResponse = {
+  candidates?: PublishThumbnailCandidate[];
 };
 
 const API_BASE = "/api/sessions";
@@ -276,6 +280,12 @@ export function useEditorSession() {
   const [showRestoreBanner, setShowRestoreBanner] = useState(false);
   const [restoreWarning, setRestoreWarning] = useState<string | null>(null);
   const [sessionOptions, setSessionOptions] = useState<Array<{ session_id: string; title: string; status: string; updated_at?: string | null }>>([]);
+  const [publishDialogOpen, setPublishDialogOpen] = useState(false);
+  const [publishThumbnailCandidates, setPublishThumbnailCandidates] = useState<PublishThumbnailCandidate[]>([]);
+  const [publishThumbnailLoading, setPublishThumbnailLoading] = useState(false);
+  const [publishThumbnailError, setPublishThumbnailError] = useState<string | null>(null);
+  const [selectedPublishThumbnailId, setSelectedPublishThumbnailId] = useState<string | null>(null);
+  const [manualPublishThumbnail, setManualPublishThumbnail] = useState<ChatAttachment | null>(null);
 
   const workspaceRef = useRef<HTMLDivElement | null>(null);
   const restoredSessionRef = useRef<string | null>(null);
@@ -980,10 +990,53 @@ export function useEditorSession() {
     }
   }, [session?.id]);
 
+  const loadPublishThumbnailCandidates = useCallback(async (sessionId: string) => {
+    setPublishThumbnailLoading(true);
+    setPublishThumbnailError(null);
+    try {
+      const res = await fetch(`${API_BASE}/${sessionId}/publish-thumbnail-candidates`, {
+        method: "GET",
+        cache: "no-store",
+      });
+      const payload = (await res.json().catch(() => ({}))) as PublishThumbnailCandidatesResponse;
+      if (!res.ok) throw new Error(normalizeWorkspaceError(payload));
+      const candidates = Array.isArray(payload.candidates) ? payload.candidates : [];
+      setPublishThumbnailCandidates(candidates);
+      setSelectedPublishThumbnailId(candidates[0]?.id ?? null);
+    } catch (err) {
+      setPublishThumbnailCandidates([]);
+      setSelectedPublishThumbnailId(null);
+      setPublishThumbnailError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
+    } finally {
+      setPublishThumbnailLoading(false);
+    }
+  }, []);
+
   const handlePublish = useCallback(async () => {
     if (!session?.id || !session.html.trim()) return;
     if (activeProposalId && previewHtmlOverride) {
       setError("수정안 미리보기가 열려 있습니다. 현재 버전을 유지하거나 수정안을 먼저 반영한 뒤 퍼블리시하세요.");
+      return;
+    }
+    setPublishDialogOpen(true);
+    setManualPublishThumbnail(null);
+    setSelectedPublishThumbnailId(null);
+    void loadPublishThumbnailCandidates(session.id);
+  }, [activeProposalId, loadPublishThumbnailCandidates, previewHtmlOverride, session]);
+
+  const handleConfirmPublish = useCallback(async () => {
+    if (!session?.id || !session.html.trim()) return;
+    const selectedCandidate = publishThumbnailCandidates.find((candidate) => candidate.id === selectedPublishThumbnailId) ?? null;
+    const selectedThumbnail = manualPublishThumbnail
+      ?? (selectedCandidate
+        ? {
+            name: `${selectedCandidate.id}.png`,
+            mime_type: selectedCandidate.mime_type,
+            data_url: selectedCandidate.data_url,
+          }
+        : null);
+    if (!selectedThumbnail) {
+      setPublishThumbnailError("자동 캡처를 고르거나 직접 이미지를 업로드하세요.");
       return;
     }
     setIsGenerating(true);
@@ -991,7 +1044,7 @@ export function useEditorSession() {
       const res = await fetch(`${API_BASE}/${session.id}/publish`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ slug: "" }),
+        body: JSON.stringify({ slug: "", selected_thumbnail: selectedThumbnail }),
       });
       const result = await res.json().catch(() => ({}));
 
@@ -1018,12 +1071,40 @@ export function useEditorSession() {
             }
           : prev,
       );
+      setPublishDialogOpen(false);
+      setPublishThumbnailCandidates([]);
+      setSelectedPublishThumbnailId(null);
+      setManualPublishThumbnail(null);
+      setPublishThumbnailError(null);
     } catch (err) {
-      setError(normalizeWorkspaceError(err instanceof Error ? err.message : err));
+      const normalized = normalizeWorkspaceError(err instanceof Error ? err.message : err);
+      setPublishThumbnailError(normalized);
+      setError(normalized);
     } finally {
       setIsGenerating(false);
     }
-  }, [activeProposalId, previewHtmlOverride, session]);
+  }, [manualPublishThumbnail, publishThumbnailCandidates, selectedPublishThumbnailId, session]);
+
+  const closePublishDialog = useCallback(() => {
+    setPublishDialogOpen(false);
+    setPublishThumbnailError(null);
+    setPublishThumbnailLoading(false);
+    setPublishThumbnailCandidates([]);
+    setSelectedPublishThumbnailId(null);
+    setManualPublishThumbnail(null);
+  }, []);
+
+  const handleSelectPublishThumbnail = useCallback((candidateId: string) => {
+    setManualPublishThumbnail(null);
+    setSelectedPublishThumbnailId(candidateId);
+  }, []);
+
+  const handleManualPublishThumbnailChange = useCallback((attachment: ChatAttachment | null) => {
+    setManualPublishThumbnail(attachment);
+    if (attachment) {
+      setSelectedPublishThumbnailId(null);
+    }
+  }, []);
 
   const handleRetryLast = useCallback(() => {
     if (!lastPrompt.trim() || isGenerating) return;
@@ -1051,6 +1132,7 @@ export function useEditorSession() {
   const handleStartFreshSession = useCallback(() => {
     void (async () => {
       try {
+        closePublishDialog();
         pendingCreatedSessionRef.current = null;
         setSession(null);
         setRunId(null);
@@ -1071,11 +1153,12 @@ export function useEditorSession() {
         setError(normalizeWorkspaceError(error instanceof Error ? error.message : error));
       }
     })();
-  }, [createSessionDraft]);
+  }, [closePublishDialog, createSessionDraft]);
 
   const handleSelectSession = useCallback(
     (sessionId: string) => {
       if (!sessionId || sessionId === session?.id) return;
+      closePublishDialog();
       setSession(null);
       setRunId(null);
       setRunStatus("idle");
@@ -1085,10 +1168,11 @@ export function useEditorSession() {
       setPreviewHtmlOverride(null);
       syncEditorUrl(sessionId, null);
     },
-    [session?.id, syncEditorUrl],
+    [closePublishDialog, session?.id, syncEditorUrl],
   );
 
   const handleDeleteSession = useCallback(async () => {
+    closePublishDialog();
     const targetSessionId = searchParams?.get("session")?.trim() || session?.id || "";
     if (!targetSessionId) return;
 
@@ -1118,7 +1202,7 @@ export function useEditorSession() {
     } catch (error) {
       setError(normalizeWorkspaceError(error instanceof Error ? error.message : error));
     }
-  }, [router, searchParams, session?.id, sessionOptions, syncEditorUrl]);
+  }, [closePublishDialog, router, searchParams, session?.id, sessionOptions, syncEditorUrl]);
 
   const actionsState = useMemo(
     () => ({
@@ -1161,9 +1245,20 @@ export function useEditorSession() {
     handleApplyFix,
     handleApprovePublish,
     handlePublish,
+    handleConfirmPublish,
+    closePublishDialog,
+    handleSelectPublishThumbnail,
+    handleManualPublishThumbnailChange,
+    refreshPublishThumbnailCandidates: () => (session?.id ? loadPublishThumbnailCandidates(session.id) : Promise.resolve()),
     handleStartFreshSession,
     handleSelectSession,
     handleDeleteSession,
+    publishDialogOpen,
+    publishThumbnailCandidates,
+    publishThumbnailLoading,
+    publishThumbnailError,
+    selectedPublishThumbnailId,
+    manualPublishThumbnail,
     dismissError: () => setError(null),
     dismissRestoreWarning: () => setRestoreWarning(null),
     actionsState,
