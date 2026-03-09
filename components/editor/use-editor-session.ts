@@ -214,6 +214,7 @@ function eventToChatMessage(event: SessionEvent): ChatMessage | null {
       "issue_reported",
       "publish_success",
       "publish_blocked_runtime",
+      "publish_blocked_presentation",
       "scaffold_reverted_to_baseline",
     ].includes(event.event_type)
   ) {

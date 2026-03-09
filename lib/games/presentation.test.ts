@@ -48,7 +48,18 @@ describe("presentation helpers", () => {
         hero_image_url: null,
         screenshot_url: null,
       } as never),
-    ).toBe("/assets/preview-raster/aether-courier.png");
+    ).toBeNull();
+  });
+
+  it("ignores absolute preview placeholder assets for live rows", () => {
+    expect(
+      resolveGameImage({
+        ...baseGame,
+        thumbnail_url: "https://arcade.example.com/assets/preview-raster/aether-courier.png",
+        hero_image_url: "https://arcade.example.com/assets/preview/skyline-jet.svg",
+        screenshot_url: null,
+      } as never),
+    ).toBeNull();
   });
 
   it("normalizes raw machine genre labels", () => {

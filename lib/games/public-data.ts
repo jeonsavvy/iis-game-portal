@@ -12,8 +12,11 @@ export function isPreviewMode(): boolean {
   return process.env.IIS_DEMO_PREVIEW === "1";
 }
 
-function isPubliclyVisible(game: GameRow): boolean {
-  return game.status === "active" && game.visibility !== "hidden";
+function isPubliclyVisible(game: GameRow, options: { requireLiveImage: boolean }): boolean {
+  if (game.status !== "active" || game.visibility === "hidden") {
+    return false;
+  }
+  return !options.requireLiveImage || hasLiveCatalogImage(game);
 }
 
 export function hasLiveCatalogImage(game: Pick<GameRow, "thumbnail_url" | "hero_image_url" | "screenshot_url" | "genre" | "genre_primary" | "genre_tags">): boolean {
@@ -23,24 +26,24 @@ export function hasLiveCatalogImage(game: Pick<GameRow, "thumbnail_url" | "hero_
 
 export const loadCatalogGames = cache(async (): Promise<GameRow[]> => {
   if (isPreviewMode()) {
-    return PREVIEW_GAMES.filter(isPubliclyVisible);
+    return PREVIEW_GAMES.filter((game) => isPubliclyVisible(game, { requireLiveImage: false }));
   }
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("games_metadata").select("*").eq("status", "active");
-  return ((data ?? []) as GameRow[]).filter(isPubliclyVisible);
+  return ((data ?? []) as GameRow[]).filter((game) => isPubliclyVisible(game, { requireLiveImage: true }));
 });
 
 export const loadPublicGameBySlug = cache(async (slug: string): Promise<GameRow | null> => {
   if (isPreviewMode()) {
     const previewGame = getPreviewGameBySlug(slug) ?? getPreviewGameById(slug);
-    return previewGame && isPubliclyVisible(previewGame) ? previewGame : null;
+    return previewGame && isPubliclyVisible(previewGame, { requireLiveImage: false }) ? previewGame : null;
   }
 
   const supabase = await createSupabaseServerClient();
   const { data } = await supabase.from("games_metadata").select("*").eq("slug", slug).maybeSingle();
   const game = (data as GameRow | null) ?? null;
-  return game && isPubliclyVisible(game) ? game : null;
+  return game && isPubliclyVisible(game, { requireLiveImage: true }) ? game : null;
 });
 
 export const loadGameLeaderboard = cache(async (gameId: string, slug: string, limit = 10): Promise<LeaderboardRow[]> => {

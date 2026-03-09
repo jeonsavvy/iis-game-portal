@@ -22,4 +22,14 @@ describe("hasLiveCatalogImage", () => {
       } as never),
     ).toBe(false);
   });
+
+  it("rejects absolute preview placeholder assets for live catalog rows", () => {
+    expect(
+      hasLiveCatalogImage({
+        thumbnail_url: "https://arcade.example.com/assets/preview-raster/timebreakers.png",
+        hero_image_url: null,
+        screenshot_url: null,
+      } as never),
+    ).toBe(false);
+  });
 });

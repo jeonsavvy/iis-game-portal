@@ -71,6 +71,7 @@ const EVENT_LABELS: Record<string, string> = {
   fix_proposed: "수정안 제안",
   fix_applied: "수정안 적용",
   publish_blocked_unapproved: "승인 전 퍼블리시 차단",
+  publish_blocked_presentation: "썸네일/프레젠테이션 차단",
   publish_approved: "퍼블리시 승인",
   publish_success: "퍼블리시 성공",
   prompt_run_queued: "실행 대기",
