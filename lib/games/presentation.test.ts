@@ -40,7 +40,7 @@ describe("presentation helpers", () => {
     ).toBe("https://cdn.example.com/golden-isles-flight-thumb.png");
   });
 
-  it("does not fall back to genre cover art when no usable public image exists", () => {
+  it("falls back to genre cover art when no usable public image exists", () => {
     expect(
       resolveGameImage({
         ...baseGame,
@@ -48,7 +48,7 @@ describe("presentation helpers", () => {
         hero_image_url: null,
         screenshot_url: null,
       } as never),
-    ).toBeNull();
+    ).toBe("/assets/preview-raster/aether-courier.png");
   });
 
   it("normalizes raw machine genre labels", () => {

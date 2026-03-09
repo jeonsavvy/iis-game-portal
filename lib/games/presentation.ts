@@ -5,6 +5,20 @@ type GenreToken = "racing" | "flight" | "shooter" | "puzzle" | "survival" | "exp
 
 const PLACEHOLDER_PREFIXES = ["/assets/preview/", "/assets/preview-raster/"] as const;
 
+function genreFallbackImage(token: GenreToken): string | null {
+  const covers: Record<GenreToken, string | null> = {
+    racing: "/assets/preview-raster/neon-drift.png",
+    flight: "/assets/preview-raster/aether-courier.png",
+    shooter: "/assets/preview-raster/skyline-jet.png",
+    puzzle: "/assets/preview-raster/fracture-labyrinth.png",
+    survival: "/assets/preview-raster/ember-survival.png",
+    experimental: "/assets/preview-raster/timebreakers.png",
+    action: "/assets/preview-raster/timebreakers.png",
+    game: null,
+  };
+  return covers[token];
+}
+
 function normalizedGenreToken(raw: string | null | undefined, tags: string[] = []): GenreToken {
   const haystack = [raw ?? "", ...tags].join(" ").toLowerCase();
   if (/(race|racing|openwheel|formula|circuit|drift|레이싱)/.test(haystack)) return "racing";
@@ -41,8 +55,9 @@ export function resolveGameImage(game: Pick<GameRow, "screenshot_url" | "hero_im
   const candidates = [game.thumbnail_url, game.hero_image_url, game.screenshot_url].filter((value): value is string => Boolean(value?.trim()));
   const firstActual = candidates.find((candidate) => !isPlaceholderAsset(candidate));
   if (firstActual) return firstActual;
+  if (candidates[0]) return candidates[0];
 
-  return candidates[0] ?? null;
+  return genreFallbackImage(normalizedGenreToken(game.genre_primary ?? game.genre, Array.isArray(game.genre_tags) ? game.genre_tags : []));
 }
 
 export function resolveGenreLabel(game: Pick<GameRow, "genre" | "genre_primary" | "genre_tags">): string {

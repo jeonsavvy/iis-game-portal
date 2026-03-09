@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { patchHtmlForEmbeddedViewport } from "@/lib/games/embed-html";
 
 export function GamePreview({ html, title = "게임 미리보기" }: { html: string; title?: string }) {
   const frameRef = useRef<HTMLIFrameElement | null>(null);
@@ -30,7 +31,7 @@ export function GamePreview({ html, title = "게임 미리보기" }: { html: str
     <div className="h-full overflow-hidden rounded-[1.3rem] border border-[#1b1337]/12 bg-[#050816] shadow-[0_24px_60px_rgba(9,12,33,0.22)]">
       <iframe
         ref={frameRef}
-        srcDoc={html}
+        srcDoc={patchHtmlForEmbeddedViewport(html)}
         title={title}
         width="100%"
         height="100%"
