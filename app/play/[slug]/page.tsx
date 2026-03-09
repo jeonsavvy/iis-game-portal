@@ -1,3 +1,7 @@
+// 공개 플레이 화면입니다.
+// 슬러그 조회, 프리뷰 모드, iframe 보안 정책을 한 파일에서 정리해
+// 실제 게임 실행 경로가 흔들리지 않게 합니다.
+
 import { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";

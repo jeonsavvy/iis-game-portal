@@ -1,5 +1,8 @@
 "use client";
 
+// 작업공간의 큰 화면 배치를 담당합니다.
+// 실제 세션 상태와 네트워크 흐름은 hook에 두고, 이 컴포넌트는 배치와 연결만 맡습니다.
+
 import { EditorPreviewStage } from "@/components/editor/editor-preview-stage";
 import { EditorSidebar } from "@/components/editor/editor-sidebar";
 import { EditorStatusBanners } from "@/components/editor/editor-status-banners";

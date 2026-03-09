@@ -1,3 +1,6 @@
+// 공개 카탈로그 첫 화면입니다.
+// 검색 조건과 노출 규칙을 여기서 확정해 홈과 카탈로그가 같은 기준을 보게 합니다.
+
 import Link from "next/link";
 
 import { GameCard } from "@/components/GameCard";

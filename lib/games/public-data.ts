@@ -1,3 +1,6 @@
+// 공개 화면에서 읽는 게임 데이터를 한곳에서 정리합니다.
+// 프리뷰 모드와 실데이터 모드가 같은 계약을 따르도록 여기서 필터링 기준을 맞춥니다.
+
 import { cache } from "react";
 
 import { PREVIEW_GAMES, PREVIEW_LEADERBOARDS, getPreviewGameById, getPreviewGameBySlug } from "@/lib/demo/preview-data";
@@ -8,6 +11,7 @@ import type { Database } from "@/types/database";
 type GameRow = Database["public"]["Tables"]["games_metadata"]["Row"];
 type LeaderboardRow = Database["public"]["Tables"]["leaderboard"]["Row"];
 
+// 홈/플레이/리더보드는 모두 같은 프리뷰 토글을 사용합니다.
 export function isPreviewMode(): boolean {
   return process.env.IIS_DEMO_PREVIEW === "1";
 }
@@ -24,6 +28,7 @@ export function hasLiveCatalogImage(game: Pick<GameRow, "thumbnail_url" | "hero_
   return Boolean(image && /^https?:\/\//.test(image.trim()));
 }
 
+// 공개 카탈로그는 숨김 게임과 대표 이미지 없는 실게임을 걸러냅니다.
 export const loadCatalogGames = cache(async (): Promise<GameRow[]> => {
   if (isPreviewMode()) {
     return PREVIEW_GAMES.filter((game) => isPubliclyVisible(game, { requireLiveImage: false }));

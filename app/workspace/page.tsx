@@ -1,3 +1,6 @@
+// 제작 작업공간 진입점입니다.
+// 인증과 역할 검사를 이 레벨에서 끝내고, 통과한 사용자만 편집 UI를 보게 합니다.
+
 import Link from "next/link";
 
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";

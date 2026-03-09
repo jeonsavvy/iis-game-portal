@@ -1,5 +1,9 @@
 "use client";
 
+// 작업공간의 상태 기계입니다.
+// 세션 조회, 프롬프트 실행, 수정 검토, 퍼블리시까지 한 훅에서 관리해
+// 화면 컴포넌트가 네트워크 세부 구현을 알지 않도록 유지합니다.
+
 import { useCallback, useEffect, useMemo, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -112,6 +116,7 @@ type PublishThumbnailCandidatesResponse = {
   candidates?: PublishThumbnailCandidate[];
 };
 
+// --- API and local persistence keys ---------------------------------------
 const API_BASE = "/api/sessions";
 const CHAT_MIN_WIDTH = 320;
 const CHAT_MAX_WIDTH = 560;
@@ -124,6 +129,7 @@ function makeId() {
   return `msg-${Date.now()}-${++msgCounter}`;
 }
 
+// --- Normalizers shared across polling and UI rendering -------------------
 function activityRole(agent: string): ChatMessage["role"] {
   if (agent === "visual_qa") return "visual_qa";
   if (agent === "playtester") return "playtester";
@@ -259,6 +265,7 @@ function wait(ms: number): Promise<void> {
   });
 }
 
+// --- Public hook ----------------------------------------------------------
 export function useEditorSession() {
   const router = useRouter();
   const searchParams = useSearchParams();

@@ -1,3 +1,6 @@
+// 공개 플레이 화면이 정적 게임 산출물을 안전하게 불러오도록 중계하는 모듈입니다.
+// 사설 네트워크 접근, 잘못된 경로, 위험한 리다이렉트를 여기서 차단합니다.
+
 import { NextResponse } from "next/server";
 
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -16,6 +19,7 @@ export type ArtifactTarget = {
   contentTypeHint: string;
 };
 
+// --- Path validation and source allowlist ---------------------------------
 function artifactProxyError(status: number, error: string, code: string = error): NextResponse {
   return NextResponse.json(
     {
@@ -149,6 +153,7 @@ export async function resolveArtifactTarget(gameId: string, requestedAssetPath: 
   };
 }
 
+// --- Upstream fetch with redirect guard -----------------------------------
 export async function proxyArtifactResponse(target: ArtifactTarget): Promise<NextResponse> {
   let upstream: Response | null = null;
 

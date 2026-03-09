@@ -1,3 +1,6 @@
+// 포털 BFF가 Core Engine으로 요청을 넘길 때 사용하는 공통 어댑터입니다.
+// 인증 헤더, timeout, 재시도, 에러 정규화를 여기서 맞춰 개별 라우트가 얇게 유지되게 합니다.
+
 import { NextResponse } from "next/server";
 
 import type { AdminGuardContext } from "@/lib/api/admin-guard";
@@ -14,6 +17,7 @@ type ForwardToCoreEngineArgs = {
   responseHeaders?: HeadersInit;
 };
 
+// --- Target resolution and response parsing -------------------------------
 function resolveCoreEngineUrl(path: string): string | null {
   const coreEngineUrl = process.env.CORE_ENGINE_URL;
   if (!coreEngineUrl) {
@@ -40,6 +44,7 @@ export function buildCoreActorHeaders(auth: Pick<AdminGuardContext, "userId" | "
   };
 }
 
+// --- Forwarding with auth and retry policy --------------------------------
 export async function forwardToCoreEngine({
   path,
   method = "GET",
