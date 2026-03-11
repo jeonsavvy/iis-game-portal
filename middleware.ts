@@ -1,16 +1,13 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
+import { isSupabaseAuthCookieName } from "@/lib/auth/supabase-cookie";
+
 const PREVIEW_MODE_ENABLED = process.env.IIS_DEMO_PREVIEW === "1";
 
 function hasSupabaseAuthCookie(request: NextRequest): boolean {
   const cookieNames = request.cookies.getAll().map((cookie) => cookie.name);
-  return cookieNames.some(
-    (name) =>
-      (name.startsWith("sb-") && name.endsWith("-auth-token")) ||
-      name.includes("supabase-auth-token") ||
-      name.includes("sb-access-token"),
-  );
+  return cookieNames.some((name) => isSupabaseAuthCookieName(name));
 }
 
 export function middleware(request: NextRequest) {
