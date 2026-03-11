@@ -57,6 +57,6 @@ describe("formatGenerationSummary", () => {
       model: "gemini-2.5-pro",
       fallbackUsed: true,
       fallbackRank: 1,
-    })).toBe("Vertex · gemini-2.5-pro · fallback 1");
+    })).toBe("생성 엔진 Vertex · 모델 gemini-2.5-pro");
   });
 });

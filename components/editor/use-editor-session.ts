@@ -11,6 +11,7 @@ import type { AgentActivity, ChatAttachment, ChatMessage, ChatSendPayload, Publi
 import { buildFixReviewState, normalizeWorkspaceError, normalizeWorkspaceStatusMessage, RESTORE_BANNER_DELAY_MS } from "@/lib/editor/workspace-feedback";
 import { normalizeSessionTitle } from "@/lib/editor/session-options";
 import { isTransientCoreEnginePollFailure } from "@/lib/editor/run-polling";
+import { buildLastSessionStorageKey, LEGACY_LAST_SESSION_STORAGE_KEY } from "@/lib/editor/session-storage";
 
 type SessionState = {
   id: string;
@@ -122,7 +123,6 @@ const CHAT_MIN_WIDTH = 320;
 const CHAT_MAX_WIDTH = 560;
 const LAYOUT_STORAGE_KEY = "iis-workspace-layout-v5";
 const MAX_TRANSIENT_POLL_FAILURES = 8;
-const LAST_SESSION_STORAGE_KEY = "iis-workspace-last-session-v2";
 
 let msgCounter = 0;
 function makeId() {
@@ -266,9 +266,10 @@ function wait(ms: number): Promise<void> {
 }
 
 // --- Public hook ----------------------------------------------------------
-export function useEditorSession() {
+export function useEditorSession({ accountEmail = null }: { accountEmail?: string | null } = {}) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const lastSessionStorageKey = useMemo(() => buildLastSessionStorageKey(accountEmail), [accountEmail]);
   const [session, setSession] = useState<SessionState | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isIssueBusy, setIsIssueBusy] = useState(false);
@@ -314,10 +315,10 @@ export function useEditorSession() {
       }
       router.replace(`/workspace?${params.toString()}`);
       if (typeof window !== "undefined") {
-        localStorage.setItem(LAST_SESSION_STORAGE_KEY, sessionId);
+        localStorage.setItem(lastSessionStorageKey, sessionId);
       }
     },
-    [router, searchParams],
+    [lastSessionStorageKey, router, searchParams],
   );
 
   const createSessionDraft = useCallback(async (): Promise<string> => {
@@ -531,13 +532,18 @@ export function useEditorSession() {
 
   useEffect(() => {
     if (typeof window === "undefined" || !session?.id) return;
-    localStorage.setItem(LAST_SESSION_STORAGE_KEY, session.id);
+    localStorage.setItem(lastSessionStorageKey, session.id);
     if (pendingCreatedSessionRef.current === session.id) {
       pendingCreatedSessionRef.current = null;
       setRestoreWarning(null);
       setError(null);
     }
-  }, [session?.id]);
+  }, [lastSessionStorageKey, session?.id]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    localStorage.removeItem(LEGACY_LAST_SESSION_STORAGE_KEY);
+  }, [lastSessionStorageKey]);
 
   useEffect(() => {
     const sessionParam = searchParams?.get("session")?.trim();
@@ -571,7 +577,7 @@ export function useEditorSession() {
             return;
           }
           if (typeof window !== "undefined") {
-            localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
+            localStorage.removeItem(lastSessionStorageKey);
           }
           router.replace("/workspace");
           setRestoreWarning("이 계정에서 접근할 수 없는 이전 세션은 자동으로 제외했습니다.");
@@ -641,16 +647,16 @@ export function useEditorSession() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshotWithRetry, loadRecentEvents, loadSessionOptions, pollRun, router, runId, searchParams, session]);
+  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshotWithRetry, lastSessionStorageKey, loadRecentEvents, loadSessionOptions, pollRun, router, runId, searchParams, session]);
 
   useEffect(() => {
     if (searchParams?.get("session")) return;
     if (typeof window === "undefined") return;
-    const rememberedSession = localStorage.getItem(LAST_SESSION_STORAGE_KEY)?.trim();
+    const rememberedSession = localStorage.getItem(lastSessionStorageKey)?.trim();
     if (rememberedSession && !session?.id) {
       router.replace(`/workspace?session=${encodeURIComponent(rememberedSession)}`);
     }
-  }, [router, searchParams, session?.id]);
+  }, [lastSessionStorageKey, router, searchParams, session?.id]);
 
   useEffect(() => {
     const handleMouseMove = (event: MouseEvent) => {
@@ -1159,14 +1165,14 @@ export function useEditorSession() {
         setRestoreWarning(null);
         restoredSessionRef.current = null;
         if (typeof window !== "undefined") {
-          localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
+          localStorage.removeItem(lastSessionStorageKey);
         }
         await createSessionDraft();
       } catch (error) {
         setError(normalizeWorkspaceError(error instanceof Error ? error.message : error));
       }
     })();
-  }, [closePublishDialog, createSessionDraft]);
+  }, [closePublishDialog, createSessionDraft, lastSessionStorageKey]);
 
   const handleSelectSession = useCallback(
     (sessionId: string) => {

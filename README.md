@@ -53,8 +53,10 @@ npm run dev
 - 로그인 허용 기준과 권한 기준은 Supabase `profiles.role` 단일 소스를 사용합니다.
 - 역할 기준은 `lib/auth/rbac.ts` 를 사용합니다.
   - `creator`, `master_admin` : 로그인 및 작업공간 접근 가능
-  - `master_admin` : 운영 화면과 게임 삭제 가능
+  - `creator` : 본인 세션만 조회/복원/수정 가능
+  - `master_admin` : 전체 세션 조회 가능, 운영 화면과 게임 삭제 가능
 - Google 로그인 후 callback 에서 `profiles.role` 을 다시 검사합니다.
+- 작업공간의 최근 세션 복원 키는 로그인 계정별로 분리됩니다.
 - `IIS_DEMO_PREVIEW=1` 일 때는 샘플 데이터로 화면을 렌더링합니다.
 
 ## Core Engine 연동 범위
@@ -80,6 +82,7 @@ npm run dev
 
 포털 고유 라우트:
 
+- `GET /api/auth/me`
 - `GET /api/games/[id]/artifact`
 - `GET /api/games/[id]/artifact/[...asset]`
 - `GET /api/games/[id]/leaderboard`
@@ -93,6 +96,7 @@ npm run dev
 - 공개 카탈로그와 플레이 화면은 빠르게 갱신되는 프론트엔드 경험이 중심이기 때문에 포털이 담당합니다.
 - 세션 생성, 수정 검토, 퍼블리시는 Core Engine 쪽에서 처리하고, 포털은 필요한 경로만 BFF로 중계합니다.
 - 로그인, 역할 검사, 공개 메타데이터 조회는 포털에서 바로 처리하되, 생성 로직과 퍼블리시 로직은 백엔드로 분리해 책임을 나눴습니다.
+- 세션 읽기/쓰기 요청은 현재 로그인한 actor 정보를 Core Engine으로 함께 전달해 계정별 세션 범위를 유지합니다.
 
 ## 핵심 환경변수
 

@@ -14,7 +14,7 @@ export function ObservatoryHeader({ totalSessions, selectedTitle, selectedGenera
           <Badge variant="secondary">세션 {totalSessions}개</Badge>
           {selectedTitle ? <Badge variant="outline">선택: {selectedTitle}</Badge> : null}
           {selectedGenerationSummary ? <Badge variant="outline">{selectedGenerationSummary}</Badge> : null}
-          {selectedFallbackUsed ? <Badge variant="secondary">fallback 사용</Badge> : null}
+          {selectedFallbackUsed ? <Badge variant="secondary">대체 경로 사용</Badge> : null}
         </div>
       </div>
     </Card>

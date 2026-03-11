@@ -48,7 +48,7 @@ export function SessionListPane({ items, selectedSessionId, onSelect, labelForSt
                   </div>
                   <Badge variant={session.latestError ? "destructive" : "outline"}>{labelForRunStatus(session.runStatus)}</Badge>
                 </div>
-                {session.fallbackUsed ? <p className="mt-2 text-xs leading-5 text-primary">용량 fallback 경로 사용</p> : null}
+                {session.fallbackUsed ? <p className="mt-2 text-xs leading-5 text-primary">모델 혼잡으로 대체 경로 사용</p> : null}
                 {session.latestError ? <p className="mt-3 text-xs leading-5 text-red-600">최근 오류: {session.latestError}</p> : null}
               </button>
             );

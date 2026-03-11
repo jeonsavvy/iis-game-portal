@@ -10,7 +10,7 @@ import { EditorTopbar } from "@/components/editor/editor-topbar";
 import { PublishThumbnailDialog } from "@/components/editor/PublishThumbnailDialog";
 import { useEditorSession } from "@/components/editor/use-editor-session";
 
-export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string }) {
+export function EditorWorkspace({ initialPrompt = "", accountEmail = null }: { initialPrompt?: string; accountEmail?: string | null }) {
   const {
     isGenerating,
     isIssueBusy,
@@ -48,7 +48,7 @@ export function EditorWorkspace({ initialPrompt = "" }: { initialPrompt?: string
     handleSelectPublishThumbnail,
     handleManualPublishThumbnailChange,
     refreshPublishThumbnailCandidates,
-  } = useEditorSession();
+  } = useEditorSession({ accountEmail });
 
   return (
     <div className="grid gap-4">

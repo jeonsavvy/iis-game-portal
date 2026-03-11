@@ -64,10 +64,10 @@ export function labelForGenerationSource(source: string | null): string | null {
 export function formatGenerationSummary(info: SessionGenerationInfo | null): string | null {
   if (!info) return null;
 
-  const parts = [labelForGenerationSource(info.source), info.model];
-  if (info.fallbackUsed) {
-    parts.push(`fallback ${info.fallbackRank ?? 1}`);
-  }
+  const parts = [
+    labelForGenerationSource(info.source) ? `생성 엔진 ${labelForGenerationSource(info.source)}` : null,
+    info.model ? `모델 ${info.model}` : null,
+  ];
 
   const filtered = parts.filter((value): value is string => Boolean(value && value.trim()));
   return filtered.length > 0 ? filtered.join(" · ") : null;

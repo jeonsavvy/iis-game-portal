@@ -21,7 +21,7 @@ export default async function WorkspacePage({ searchParams }: { searchParams?: P
   const initialPrompt = typeof params.prompt === "string" ? params.prompt.trim() : "";
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
-    return <EditorWorkspace initialPrompt={initialPrompt} />;
+    return <EditorWorkspace initialPrompt={initialPrompt} accountEmail={null} />;
   }
 
   let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -73,5 +73,5 @@ export default async function WorkspacePage({ searchParams }: { searchParams?: P
     );
   }
 
-  return <EditorWorkspace initialPrompt={initialPrompt} />;
+  return <EditorWorkspace initialPrompt={initialPrompt} accountEmail={user.email ?? null} />;
 }
