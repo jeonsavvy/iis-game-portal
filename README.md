@@ -48,11 +48,13 @@ npm run dev
 ## 인증과 권한
 
 - `middleware.ts` 가 `/admin/*`, `/workspace*` 접근을 먼저 검사합니다.
-- 로그인은 Supabase 이메일 로그인 링크 기반입니다.
+- 공개 홈/플레이 화면은 로그인 없이 사용할 수 있습니다.
+- 작업공간/운영실 로그인은 Supabase Google OAuth 기반입니다.
 - 로그인 허용 기준과 권한 기준은 Supabase `profiles.role` 단일 소스를 사용합니다.
 - 역할 기준은 `lib/auth/rbac.ts` 를 사용합니다.
   - `creator`, `master_admin` : 로그인 및 작업공간 접근 가능
   - `master_admin` : 운영 화면과 게임 삭제 가능
+- Google 로그인 후 callback 에서 `profiles.role` 을 다시 검사합니다.
 - `IIS_DEMO_PREVIEW=1` 일 때는 샘플 데이터로 화면을 렌더링합니다.
 
 ## Core Engine 연동 범위
@@ -78,7 +80,6 @@ npm run dev
 
 포털 고유 라우트:
 
-- `POST /api/auth/login-link`
 - `GET /api/games/[id]/artifact`
 - `GET /api/games/[id]/artifact/[...asset]`
 - `GET /api/games/[id]/leaderboard`
@@ -102,7 +103,7 @@ npm run dev
 | `NEXT_PUBLIC_SUPABASE_URL` | 브라우저와 SSR에서 쓰는 Supabase URL입니다. |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 브라우저 anon key입니다. |
 | `NEXT_PUBLIC_SITE_URL` | canonical, metadata, OG 기준 URL입니다. |
-| `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 admin client용 키입니다. 로그인 승인 대상(`profiles.role`) 조회와 admin route에서 사용합니다. |
+| `SUPABASE_SERVICE_ROLE_KEY` | 서버 전용 admin client용 키입니다. admin route와 서버 쓰기 작업에서 사용합니다. |
 | `CORE_ENGINE_URL` | Core Engine base URL입니다. |
 | `CORE_ENGINE_API_TOKEN` | production BFF Bearer 토큰입니다. |
 | `IIS_DEMO_PREVIEW` | 샘플 데이터 렌더링 여부입니다. |
@@ -117,6 +118,7 @@ npm run dev
 - 공개 게임 메타데이터, 인증, 플레이 집계는 **Supabase** 와 연결됩니다.
 - 실제 생성과 퍼블리시 로직은 **AWS EC2에서 운영되는 Core Engine** 이 담당하고, 포털은 공개 화면과 운영 화면을 제공하는 계층으로 동작합니다.
 - 공개 게임 실행은 원본 산출물을 그대로 노출하지 않고 artifact proxy를 거쳐 전달합니다.
+- Google OAuth 사용 시 Supabase Auth 에서 Google provider 와 `/auth/callback` redirect URL 이 설정돼 있어야 합니다.
 
 즉, 이 저장소는 생성 엔진을 직접 실행하는 프로젝트가 아니라,
 Cloudflare에 배포되는 사용자 접점과 운영 화면을 담당하는 프론트엔드 계층입니다.
