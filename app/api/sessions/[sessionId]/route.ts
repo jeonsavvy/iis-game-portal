@@ -6,11 +6,12 @@ export async function GET(
   _request: Request,
   context: { params: Promise<{ sessionId: string }> },
 ) {
-  return runAdminReadRoute(async () => {
+  return runAdminReadRoute(async (auth) => {
     const { sessionId } = await context.params;
     return forwardToCoreEngine({
       path: `/api/v1/sessions/${encodeURIComponent(sessionId)}`,
       method: "GET",
+      headers: buildCoreActorHeaders(auth),
       timeoutMs: 10000,
       retries: 3,
       responseHeaders: { "Cache-Control": "no-store, max-age=0" },

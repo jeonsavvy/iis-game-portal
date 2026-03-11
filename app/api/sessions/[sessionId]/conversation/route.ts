@@ -1,11 +1,11 @@
 import { runAdminReadRoute } from "@/lib/api/admin-read-route";
-import { forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
+import { buildCoreActorHeaders, forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 
 export async function GET(
   request: Request,
   context: { params: Promise<{ sessionId: string }> },
 ) {
-  return runAdminReadRoute(async () => {
+  return runAdminReadRoute(async (auth) => {
     const { sessionId } = await context.params;
     const url = new URL(request.url);
     const limit = url.searchParams.get("limit")?.trim();
@@ -21,6 +21,7 @@ export async function GET(
     return forwardToCoreEngine({
       path,
       method: "GET",
+      headers: buildCoreActorHeaders(auth),
       timeoutMs: 12000,
       retries: 3,
       responseHeaders: { "Cache-Control": "no-store, max-age=0" },

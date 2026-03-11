@@ -3,7 +3,7 @@ import { runAdminWriteRoute } from "@/lib/api/admin-write-route";
 import { buildCoreActorHeaders, forwardToCoreEngine } from "@/lib/api/core-engine-proxy";
 
 export async function GET(request: Request) {
-  return runAdminReadRoute(async () => {
+  return runAdminReadRoute(async (auth) => {
     const url = new URL(request.url);
     const status = url.searchParams.get("status")?.trim();
     const limit = url.searchParams.get("limit")?.trim();
@@ -18,6 +18,7 @@ export async function GET(request: Request) {
     return forwardToCoreEngine({
       path,
       method: "GET",
+      headers: buildCoreActorHeaders(auth),
       timeoutMs: 12000,
       retries: 3,
       responseHeaders: { "Cache-Control": "no-store, max-age=0" },

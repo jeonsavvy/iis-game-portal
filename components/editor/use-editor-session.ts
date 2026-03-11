@@ -570,7 +570,13 @@ export function useEditorSession() {
             setRestoreWarning("세션 스냅샷을 다시 불러오지 못했지만 현재 화면은 유지했습니다.");
             return;
           }
-          throw new Error("세션 스냅샷을 아직 불러오지 못했습니다. 잠시 후 다시 시도해주세요.");
+          if (typeof window !== "undefined") {
+            localStorage.removeItem(LAST_SESSION_STORAGE_KEY);
+          }
+          router.replace("/workspace");
+          setRestoreWarning("이 계정에서 접근할 수 없는 이전 세션은 자동으로 제외했습니다.");
+          setError(null);
+          return;
         }
         if (cancelled) return;
 
@@ -635,7 +641,7 @@ export function useEditorSession() {
     return () => {
       cancelled = true;
     };
-  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshotWithRetry, loadRecentEvents, loadSessionOptions, pollRun, runId, searchParams, session]);
+  }, [fetchConversation, fetchLatestIssueSnapshot, fetchSessionSnapshotWithRetry, loadRecentEvents, loadSessionOptions, pollRun, router, runId, searchParams, session]);
 
   useEffect(() => {
     if (searchParams?.get("session")) return;

@@ -7,7 +7,7 @@ describe("getAdminLoginIntro", () => {
     const intro = getAdminLoginIntro("/workspace");
 
     expect(intro.title).toBe("로그인");
-    expect(intro.description).toBe("작업공간과 운영실은 관리자에게 승인된 Google 계정으로만 접속할 수 있습니다.");
+    expect(intro.description).toBe("승인된 Google 계정은 권한에 따라 게임 만들기 작업공간 또는 운영실에 접근할 수 있습니다.");
     expect(intro.meta).toBeNull();
   });
 });

@@ -5,8 +5,12 @@ vi.mock("@/lib/api/admin-read-route", () => ({
   runAdminReadRoute: vi.fn(),
 }));
 
+vi.mock("@/lib/api/admin-write-route", () => ({
+  runAdminWriteRoute: vi.fn(),
+}));
+
 vi.mock("@/lib/api/core-engine-proxy", () => ({
-  buildCoreActorHeaders: vi.fn(() => ({ "X-IIS-Actor-Id": "user-1", "X-IIS-Actor-Role": "master_admin" })),
+  buildCoreActorHeaders: vi.fn(() => ({ "X-IIS-Actor-Id": "user-1", "X-IIS-Actor-Role": "creator" })),
   forwardToCoreEngine: vi.fn(),
 }));
 
@@ -18,31 +22,26 @@ const mockedRunAdminReadRoute = vi.mocked(runAdminReadRoute);
 const mockedBuildCoreActorHeaders = vi.mocked(buildCoreActorHeaders);
 const mockedForwardToCoreEngine = vi.mocked(forwardToCoreEngine);
 
-describe("GET /api/sessions/[sessionId]/publish-thumbnail-candidates", () => {
+describe("GET /api/sessions", () => {
   beforeEach(() => {
     vi.resetAllMocks();
     mockedRunAdminReadRoute.mockImplementation(async (handler) => handler({
       userId: "user-1",
-      role: "master_admin",
+      role: "creator",
     } as never));
   });
 
-  it("forwards candidate lookup to core", async () => {
-    mockedForwardToCoreEngine.mockResolvedValueOnce(
-      NextResponse.json({ candidates: [{ id: "auto-1" }] }, { status: 200 }),
-    );
+  it("forwards actor headers so core can scope sessions by owner", async () => {
+    mockedForwardToCoreEngine.mockResolvedValueOnce(NextResponse.json({ sessions: [] }, { status: 200 }));
 
-    const response = await GET(
-      new Request("https://portal.example.com/api/sessions/s-1/publish-thumbnail-candidates"),
-      { params: Promise.resolve({ sessionId: "s-1" }) },
-    );
+    const response = await GET(new Request("https://portal.example.com/api/sessions?limit=20"));
 
     expect(response.status).toBe(200);
-    expect(mockedBuildCoreActorHeaders).toHaveBeenCalledWith({ userId: "user-1", role: "master_admin" });
+    expect(mockedBuildCoreActorHeaders).toHaveBeenCalledWith({ userId: "user-1", role: "creator" });
     expect(mockedForwardToCoreEngine).toHaveBeenCalledWith(expect.objectContaining({
-      path: "/api/v1/sessions/s-1/publish-thumbnail-candidates",
+      path: "/api/v1/sessions?limit=20",
       method: "GET",
-      headers: { "X-IIS-Actor-Id": "user-1", "X-IIS-Actor-Role": "master_admin" },
+      headers: { "X-IIS-Actor-Id": "user-1", "X-IIS-Actor-Role": "creator" },
     }));
   });
 });

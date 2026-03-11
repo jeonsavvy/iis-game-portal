@@ -11,7 +11,7 @@ describe("AdminLoginForm copy", () => {
     }));
 
     expect(html).toContain("Google로 로그인");
-    expect(html).toContain("작업공간과 운영실은 관리자에게 승인된 Google 계정으로만 접속할 수 있습니다.");
+    expect(html).toContain("승인된 Google 계정은 권한에 따라 게임 만들기 작업공간 또는 운영실에 접근할 수 있습니다.");
     expect(html).not.toContain("로그인 이메일");
     expect(html).not.toContain("로그인 링크 받기");
     expect(html).not.toContain("매직링크");
