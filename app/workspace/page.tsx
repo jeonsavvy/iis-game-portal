@@ -3,7 +3,6 @@
 
 import Link from "next/link";
 
-import { SignOutButton } from "@/components/SignOutButton";
 import { AccessStateCard } from "@/components/auth/access-state-card";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { Button } from "@/components/ui/button";
@@ -66,12 +65,9 @@ export default async function WorkspacePage({ searchParams }: { searchParams?: P
         message={deniedCopy.message}
         detail={deniedCopy.detail}
         actions={(
-          <>
-            <Button asChild className="w-fit" variant="outline">
-              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
-            </Button>
-            <SignOutButton />
-          </>
+          <Button asChild className="w-fit" variant="outline">
+            <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+          </Button>
         )}
       />
     );

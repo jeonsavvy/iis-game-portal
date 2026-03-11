@@ -278,6 +278,12 @@ export const PREVIEW_SESSION_EVENTS: Record<string, Array<Record<string, unknown
       change_impact: "initial_generation",
       confidence: 0.91,
       error_code: null,
+      metadata: {
+        source: "vertex",
+        model: "gemini-2.5-pro",
+        fallback_used: false,
+        fallback_rank: 0,
+      },
       created_at: minutes(18),
     },
     {

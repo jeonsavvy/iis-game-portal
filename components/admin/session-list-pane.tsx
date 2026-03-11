@@ -11,6 +11,8 @@ export type SessionListItem = {
   status: string;
   runStatus: string;
   latestError: string | null;
+  generationSummary?: string | null;
+  fallbackUsed?: boolean;
 };
 
 export function SessionListPane({ items, selectedSessionId, onSelect, labelForStatus, labelForRunStatus }: { items: SessionListItem[]; selectedSessionId: string; onSelect: (sessionId: string) => void; labelForStatus: (value: string) => string; labelForRunStatus: (value: string) => string; }) {
@@ -42,9 +44,11 @@ export function SessionListPane({ items, selectedSessionId, onSelect, labelForSt
                   <div>
                     <p className="font-medium text-foreground">{session.title}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{labelForStatus(session.status)}</p>
+                    {session.generationSummary ? <p className="mt-2 text-xs leading-5 text-[#5d5476]">{session.generationSummary}</p> : null}
                   </div>
                   <Badge variant={session.latestError ? "destructive" : "outline"}>{labelForRunStatus(session.runStatus)}</Badge>
                 </div>
+                {session.fallbackUsed ? <p className="mt-2 text-xs leading-5 text-primary">용량 fallback 경로 사용</p> : null}
                 {session.latestError ? <p className="mt-3 text-xs leading-5 text-red-600">최근 오류: {session.latestError}</p> : null}
               </button>
             );

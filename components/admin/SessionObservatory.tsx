@@ -8,6 +8,7 @@ import { ObservatoryHeader } from "@/components/admin/observatory-header";
 import { QueueSummaryPane } from "@/components/admin/queue-summary-pane";
 import { SessionListPane } from "@/components/admin/session-list-pane";
 import { Card } from "@/components/ui/card";
+import { extractSessionGenerationInfo, formatGenerationSummary } from "@/lib/admin/session-generation";
 import { PREVIEW_SESSION_EVENTS, PREVIEW_SESSIONS } from "@/lib/demo/preview-data";
 
 type SessionSummary = {
@@ -259,10 +260,13 @@ export function SessionObservatory({ previewMode = false }: { previewMode?: bool
   const runBoard = useMemo(() => {
     return visibleSessions.map((session) => {
       const items = eventsBySession[session.session_id] ?? [];
+      const generationInfo = extractSessionGenerationInfo(items);
       return {
         ...session,
         runStatus: latestRunStatus(items),
         latestError: items.find((item) => item.error_code)?.error_code ?? null,
+        generationSummary: formatGenerationSummary(generationInfo),
+        fallbackUsed: generationInfo?.fallbackUsed ?? false,
       };
     });
   }, [eventsBySession, visibleSessions]);
@@ -274,10 +278,16 @@ export function SessionObservatory({ previewMode = false }: { previewMode?: bool
   );
 
   const selectedSession = sessions.find((session) => session.session_id === selectedSessionId) ?? null;
+  const selectedBoardSession = runBoard.find((session) => session.session_id === selectedSessionId) ?? null;
 
   return (
     <section className="grid gap-5">
-      <ObservatoryHeader totalSessions={sessions.length} selectedTitle={selectedSession?.title ?? null} />
+      <ObservatoryHeader
+        totalSessions={sessions.length}
+        selectedTitle={selectedSession?.title ?? null}
+        selectedGenerationSummary={selectedBoardSession?.generationSummary ?? null}
+        selectedFallbackUsed={selectedBoardSession?.fallbackUsed ?? false}
+      />
       {error ? <Card className="rounded-[1rem] border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700">{error}</Card> : null}
       <ObservatoryFilters
         statusFilter={statusFilter}
@@ -291,7 +301,15 @@ export function SessionObservatory({ previewMode = false }: { previewMode?: bool
       />
       <section className="grid gap-5 xl:grid-cols-[minmax(16rem,0.72fr)_minmax(0,1.2fr)_minmax(18rem,0.62fr)]">
         <SessionListPane
-          items={runBoard.map((session) => ({ session_id: session.session_id, title: session.title, status: session.status, runStatus: session.runStatus, latestError: session.latestError }))}
+          items={runBoard.map((session) => ({
+            session_id: session.session_id,
+            title: session.title,
+            status: session.status,
+            runStatus: session.runStatus,
+            latestError: session.latestError,
+            generationSummary: session.generationSummary,
+            fallbackUsed: session.fallbackUsed,
+          }))}
           selectedSessionId={selectedSessionId}
           onSelect={setSelectedSessionId}
           labelForStatus={labelForStatus}

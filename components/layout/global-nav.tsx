@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { NavAccount } from "@/components/layout/nav-account";
 import { cn } from "@/lib/utils";
 
 const LINKS = [
@@ -45,6 +46,10 @@ export function GlobalNav() {
             );
           })}
         </nav>
+
+        <div className="ml-auto flex items-center">
+          <NavAccount />
+        </div>
       </div>
     </header>
   );

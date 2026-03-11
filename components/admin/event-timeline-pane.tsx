@@ -63,6 +63,10 @@ export function EventTimelinePane({
                 {event.change_impact ? <p>영향: {event.change_impact}</p> : null}
                 {typeof event.metadata?.scaffold_key === "string" ? <p>기반 scaffold: {event.metadata.scaffold_key as string}</p> : null}
                 {typeof event.metadata?.generation_mode === "string" ? <p>생성 모드: {event.metadata.generation_mode as string}</p> : null}
+                {typeof event.metadata?.source === "string" ? <p>생성 출처: {event.metadata.source as string}</p> : null}
+                {typeof event.metadata?.model === "string" ? <p>모델: {event.metadata.model as string}</p> : null}
+                {typeof event.metadata?.selected_model === "string" ? <p>선택 모델: {event.metadata.selected_model as string}</p> : null}
+                {event.metadata?.fallback_used === true ? <p>용량 fallback 경로 사용</p> : null}
                 {typeof event.confidence === "number" ? <p>신뢰도: {event.confidence.toFixed(2)}</p> : null}
                 {event.error_code ? <p className="text-red-600">오류 코드: {event.error_code}</p> : null}
               </div>

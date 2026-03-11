@@ -1,11 +1,11 @@
 import Link from "next/link";
 
 import { PREVIEW_GAMES, PREVIEW_SESSION_EVENTS, PREVIEW_SESSIONS } from "@/lib/demo/preview-data";
-import { SignOutButton } from "@/components/SignOutButton";
 import { AccessStateCard } from "@/components/auth/access-state-card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
+import { extractSessionGenerationInfo, formatGenerationSummary } from "@/lib/admin/session-generation";
 import { getAccessDeniedCopy, getLoginRequiredCopy } from "@/lib/auth/access-feedback";
 import { resolveGenreLabel } from "@/lib/games/presentation";
 import { isMasterAdmin } from "@/lib/auth/rbac";
@@ -21,6 +21,8 @@ type DashboardSessionRow = {
   updated_at?: string | null;
   latestError: string | null;
   runStatus: string;
+  generationSummary?: string | null;
+  fallbackUsed?: boolean;
 };
 
 type DashboardQueueEvent = {
@@ -99,13 +101,19 @@ function formatDate(value: string): string {
 
 async function loadDashboardData(previewMode: boolean): Promise<DashboardData> {
   if (previewMode) {
-    const eventRows = Object.values(PREVIEW_SESSION_EVENTS).flat() as Array<{ id: string; event_type: string; summary?: string; error_code?: string | null }>;
+    const eventRows = Object.values(PREVIEW_SESSION_EVENTS).flat() as Array<{ id: string; event_type: string; summary?: string; error_code?: string | null; metadata?: Record<string, unknown> }>;
     const recentSessions = PREVIEW_SESSIONS.map((session) => {
-      const events = (PREVIEW_SESSION_EVENTS[session.session_id] ?? []) as Array<{ event_type?: string | null; error_code?: string | null }>;
+      const events = (PREVIEW_SESSION_EVENTS[session.session_id] ?? []) as Array<{ event_type?: string | null; error_code?: string | null; metadata?: Record<string, unknown> }>;
+      const generationInfo = extractSessionGenerationInfo(events.map((event) => ({
+        event_type: String(event.event_type ?? ""),
+        metadata: event.metadata,
+      })));
       return {
         ...session,
         latestError: events.find((event) => event.error_code)?.error_code ?? null,
         runStatus: latestRunStatus(events),
+        generationSummary: formatGenerationSummary(generationInfo),
+        fallbackUsed: generationInfo?.fallbackUsed ?? false,
       };
     });
     const recentGames = PREVIEW_GAMES.filter((game) => game.status === "active")
@@ -158,11 +166,11 @@ async function loadDashboardData(previewMode: boolean): Promise<DashboardData> {
     sessions.map(async (session) => {
       const result = await supabase
         .from("session_events")
-        .select("id,event_type,summary,error_code,created_at")
+        .select("id,event_type,summary,error_code,metadata,created_at")
         .eq("session_id", session.session_id)
         .order("created_at", { ascending: false })
         .limit(40);
-      return [session.session_id, (result.data ?? []) as Array<{ id: string; event_type: string; summary?: string; error_code?: string | null; created_at: string }>] as const;
+      return [session.session_id, (result.data ?? []) as Array<{ id: string; event_type: string; summary?: string; error_code?: string | null; metadata?: Record<string, unknown>; created_at: string }>] as const;
     }),
   );
   const eventsBySession = Object.fromEntries(eventEntries);
@@ -176,6 +184,8 @@ async function loadDashboardData(previewMode: boolean): Promise<DashboardData> {
       ...session,
       latestError: (eventsBySession[session.session_id] ?? []).find((event) => event.error_code)?.error_code ?? null,
       runStatus: latestRunStatus(eventsBySession[session.session_id] ?? []),
+      generationSummary: formatGenerationSummary(extractSessionGenerationInfo(eventsBySession[session.session_id] ?? [])),
+      fallbackUsed: extractSessionGenerationInfo(eventsBySession[session.session_id] ?? [])?.fallbackUsed ?? false,
     })),
     recentGames: ((recentGamesResult.data ?? []) as Array<{ id: string; slug: string; name: string; genre: string; genre_primary: string | null; status: string; created_at: string }>).map((game) => ({
       id: game.id,
@@ -200,10 +210,9 @@ function DashboardStat({ label, value, detail }: { label: string; value: string;
   );
 }
 
-function AdminDashboard({ previewMode, data }: { previewMode: boolean; data: DashboardData }) {
+function AdminDashboard({ data }: { data: DashboardData }) {
   return (
     <section className="grid gap-5">
-      <div className="flex justify-end">{previewMode ? null : <SignOutButton />}</div>
       <Card data-admin-surface="hub" className="p-6 sm:p-8">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2">
@@ -248,9 +257,11 @@ function AdminDashboard({ previewMode, data }: { previewMode: boolean; data: Das
                   <div>
                     <p className="font-medium text-foreground">{session.title}</p>
                     <p className="mt-1 text-sm text-muted-foreground">{labelForSessionStatus(session.status)} · {session.genre || "general"}</p>
+                    {session.generationSummary ? <p className="mt-2 text-xs leading-5 text-[#5d5476]">{session.generationSummary}</p> : null}
                   </div>
                   <Badge variant={session.latestError ? "destructive" : "outline"}>{labelForRunStatus(session.runStatus)}</Badge>
                 </div>
+                {session.fallbackUsed ? <p className="mt-2 text-xs text-primary">용량 fallback 경로 사용</p> : null}
                 {session.latestError ? <p className="mt-2 text-xs text-red-600">최근 오류: {session.latestError}</p> : null}
               </Link>
             ))}
@@ -335,7 +346,7 @@ export default async function AdminPage() {
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
   if (previewMode) {
     const dashboardData = await loadDashboardData(true);
-    return <AdminDashboard previewMode data={dashboardData} />;
+    return <AdminDashboard data={dashboardData} />;
   }
 
   let supabase: Awaited<ReturnType<typeof createSupabaseServerClient>>;
@@ -379,17 +390,14 @@ export default async function AdminPage() {
         message={deniedCopy.message}
         detail={deniedCopy.detail}
         actions={(
-          <>
-            <Button asChild className="w-fit" variant="outline">
-              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
-            </Button>
-            <SignOutButton />
-          </>
+          <Button asChild className="w-fit" variant="outline">
+            <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+          </Button>
         )}
       />
     );
   }
 
   const dashboardData = await loadDashboardData(false);
-  return <AdminDashboard previewMode={false} data={dashboardData} />;
+  return <AdminDashboard data={dashboardData} />;
 }

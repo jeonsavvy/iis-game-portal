@@ -1,7 +1,7 @@
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 
-export function ObservatoryHeader({ totalSessions, selectedTitle }: { totalSessions: number; selectedTitle?: string | null }) {
+export function ObservatoryHeader({ totalSessions, selectedTitle, selectedGenerationSummary, selectedFallbackUsed }: { totalSessions: number; selectedTitle?: string | null; selectedGenerationSummary?: string | null; selectedFallbackUsed?: boolean; }) {
   return (
     <Card data-admin-surface="observatory-header" className="p-6 sm:p-7">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -13,6 +13,8 @@ export function ObservatoryHeader({ totalSessions, selectedTitle }: { totalSessi
         <div className="flex flex-wrap gap-3 text-sm">
           <Badge variant="secondary">세션 {totalSessions}개</Badge>
           {selectedTitle ? <Badge variant="outline">선택: {selectedTitle}</Badge> : null}
+          {selectedGenerationSummary ? <Badge variant="outline">{selectedGenerationSummary}</Badge> : null}
+          {selectedFallbackUsed ? <Badge variant="secondary">fallback 사용</Badge> : null}
         </div>
       </div>
     </Card>

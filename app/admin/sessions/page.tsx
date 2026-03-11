@@ -1,7 +1,6 @@
 import Link from "next/link";
 
 import { SessionObservatory } from "@/components/admin/SessionObservatory";
-import { SignOutButton } from "@/components/SignOutButton";
 import { AccessStateCard } from "@/components/auth/access-state-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -64,12 +63,9 @@ export default async function AdminSessionsPage() {
         message={deniedCopy.message}
         detail={deniedCopy.detail}
         actions={(
-          <>
-            <Button asChild className="w-fit" variant="outline">
-              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
-            </Button>
-            <SignOutButton />
-          </>
+          <Button asChild className="w-fit" variant="outline">
+            <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+          </Button>
         )}
       />
     );
@@ -81,7 +77,6 @@ export default async function AdminSessionsPage() {
         <Button asChild variant="ghost" className="px-0 text-muted-foreground shadow-none">
           <Link href="/admin">운영실 홈</Link>
         </Button>
-        <SignOutButton />
       </div>
       <SessionObservatory />
     </section>
