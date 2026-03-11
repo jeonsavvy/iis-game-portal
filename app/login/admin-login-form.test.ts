@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { getAdminLoginIntro, getInitialAdminLoginStatus } from "@/components/AdminLoginForm";
+import { getAdminLoginErrorMessage, getAdminLoginIntro, getInitialAdminLoginStatus, validateAdminLoginSubmission } from "@/components/AdminLoginForm";
 
 describe("getAdminLoginIntro", () => {
   it("uses approval-first login copy", () => {
@@ -13,13 +13,25 @@ describe("getAdminLoginIntro", () => {
 });
 
 describe("getInitialAdminLoginStatus", () => {
-  it("keeps the initial screen empty when the allowlist is not configured", () => {
-    expect(getInitialAdminLoginStatus({ allowlistConfigured: false, initialError: null, supabaseConfigError: null })).toBe("");
+  it("keeps the initial screen empty when no login error is provided", () => {
+    expect(getInitialAdminLoginStatus({ initialError: null })).toBe("");
   });
 
-  it("does not leak raw config errors on the default screen", () => {
-    expect(getInitialAdminLoginStatus({ allowlistConfigured: true, initialError: null, supabaseConfigError: "Missing NEXT_PUBLIC_SUPABASE_URL" })).toBe(
-      "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.",
-    );
+  it("surfaces known login errors through normalized copy", () => {
+    expect(getInitialAdminLoginStatus({ initialError: "config" })).toBe("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+  });
+});
+
+describe("getAdminLoginErrorMessage", () => {
+  it("uses an approval-specific rejection message for forbidden accounts", () => {
+    expect(getAdminLoginErrorMessage("forbidden")).toBe("승인되지 않은 계정입니다. 관리자 승인 후 다시 시도해주세요.");
+  });
+});
+
+describe("validateAdminLoginSubmission", () => {
+  it("requires a non-empty email value", () => {
+    expect(validateAdminLoginSubmission({
+      normalizedEmail: "",
+    })).toBe("이메일을 입력해주세요.");
   });
 });

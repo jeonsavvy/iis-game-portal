@@ -2,7 +2,7 @@ import Link from "next/link";
 
 import { AdminLoginForm } from "@/components/AdminLoginForm";
 import { Card } from "@/components/ui/card";
-import { normalizeNextPath, parseAllowedStaffEmails } from "@/lib/auth/admin-auth";
+import { normalizeNextPath } from "@/lib/auth/admin-auth";
 
 type LoginSearchParams = {
   next?: string;
@@ -12,7 +12,6 @@ type LoginSearchParams = {
 export default async function LoginPage({ searchParams }: { searchParams?: Promise<LoginSearchParams> }) {
   const params = searchParams ? await searchParams : {};
   const nextPath = normalizeNextPath(params.next, "/workspace");
-  const allowedEmails = parseAllowedStaffEmails(process.env.ADMIN_ALLOWED_EMAILS);
   const previewMode = process.env.IIS_DEMO_PREVIEW === "1";
 
   if (previewMode) {
@@ -29,5 +28,5 @@ export default async function LoginPage({ searchParams }: { searchParams?: Promi
     );
   }
 
-  return <AdminLoginForm nextPath={nextPath} allowedEmails={allowedEmails} initialError={params.error ?? null} />;
+  return <AdminLoginForm nextPath={nextPath} initialError={params.error ?? null} />;
 }

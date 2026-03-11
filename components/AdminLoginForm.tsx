@@ -1,35 +1,29 @@
 "use client";
 
-import React, { type FormEvent, useMemo, useState } from "react";
+import React, { type FormEvent, useState } from "react";
 
 import { AdminLoginPanel } from "@/components/auth/admin-login-panel";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { createSupabaseBrowserClient } from "@/lib/supabase/browser";
 
 type AdminLoginFormProps = {
   nextPath: string;
-  allowedEmails: string[];
   initialError?: string | null;
 };
 
 type AdminLoginStatusArgs = {
-  allowlistConfigured: boolean;
   initialError?: string | null;
-  supabaseConfigError?: string | null;
 };
 
-function buildCallbackUrl(nextPath: string): string {
-  const url = new URL("/auth/callback", window.location.origin);
-  url.searchParams.set("next", nextPath);
-  return url.toString();
-}
+type AdminLoginSubmitValidationArgs = {
+  normalizedEmail: string;
+};
 
-function getErrorMessage(code: string | null | undefined): string | null {
+export function getAdminLoginErrorMessage(code: string | null | undefined): string | null {
   if (!code) return null;
   switch (code) {
     case "forbidden":
-      return "이 계정으로는 로그인할 수 없습니다.";
+      return "승인되지 않은 계정입니다. 관리자 승인 후 다시 시도해주세요.";
     case "missing_code":
       return "인증 코드가 누락되었습니다. 메일 링크를 다시 열어주세요.";
     case "exchange_failed":
@@ -49,76 +43,64 @@ export function getAdminLoginIntro(_nextPath: string): { title: string; descript
   };
 }
 
-export function getInitialAdminLoginStatus({ allowlistConfigured, initialError, supabaseConfigError }: AdminLoginStatusArgs): string {
+export function getInitialAdminLoginStatus({ initialError }: AdminLoginStatusArgs): string {
   if (initialError) {
-    return getErrorMessage(initialError) ?? "";
-  }
-  if (supabaseConfigError || !allowlistConfigured) {
-    return supabaseConfigError ? "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요." : "";
+    return getAdminLoginErrorMessage(initialError) ?? "";
   }
   return "";
 }
 
-export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminLoginFormProps) {
-  const allowlistConfigured = allowedEmails.length > 0;
-  const [supabaseConfigError] = useState<string | null>(() => {
-    try {
-      createSupabaseBrowserClient();
-      return null;
-    } catch (error) {
-      return error instanceof Error ? error.message : "unknown_error";
-    }
-  });
+export function validateAdminLoginSubmission({
+  normalizedEmail,
+}: AdminLoginSubmitValidationArgs): string | null {
+  if (!normalizedEmail) {
+    return "이메일을 입력해주세요.";
+  }
+  return null;
+}
 
-  const supabase = useMemo(() => {
-    try {
-      return createSupabaseBrowserClient();
-    } catch {
-      return null;
-    }
-  }, []);
-
+export function AdminLoginForm({ nextPath, initialError }: AdminLoginFormProps) {
   const intro = getAdminLoginIntro(nextPath);
   const [email, setEmail] = useState("");
-  const [status, setStatus] = useState<string>(getInitialAdminLoginStatus({ allowlistConfigured, initialError, supabaseConfigError }));
+  const [status, setStatus] = useState<string>(getInitialAdminLoginStatus({ initialError }));
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
-    if (!allowlistConfigured) {
-      setStatus("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
-      return;
-    }
-    if (!normalizedEmail) {
-      setStatus("이메일을 입력해주세요.");
-      return;
-    }
-    if (!allowedEmails.includes(normalizedEmail)) {
-      setStatus("이 계정으로는 로그인할 수 없습니다.");
-      return;
-    }
-    if (!supabase) {
-      setStatus("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+    const validationMessage = validateAdminLoginSubmission({
+      normalizedEmail,
+    });
+    if (validationMessage) {
+      setStatus(validationMessage);
       return;
     }
 
     setSubmitting(true);
-    setStatus("로그인 링크 전송 중...");
+    setStatus("승인 상태 확인 중...");
 
-    const { error } = await supabase.auth.signInWithOtp({
-      email: normalizedEmail,
-      options: { emailRedirectTo: buildCallbackUrl(nextPath) },
-    });
+    try {
+      const response = await fetch("/api/auth/login-link", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          nextPath,
+        }),
+      });
+      const payload = await response.json().catch(() => null) as { error?: string; code?: string } | null;
 
-    if (error) {
-      setStatus(`전송 실패: ${error.message}`);
+      if (!response.ok) {
+        setStatus(getAdminLoginErrorMessage(payload?.code) ?? payload?.error ?? "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+        return;
+      }
+
+      setStatus("로그인 링크를 이메일로 보냈습니다. 메일에서 링크를 열어 계속 진행해주세요.");
+    } catch {
+      setStatus("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
+    } finally {
       setSubmitting(false);
-      return;
     }
-
-    setStatus("로그인 링크를 이메일로 보냈습니다. 메일에서 링크를 열어 계속 진행해주세요.");
-    setSubmitting(false);
   };
 
   return (

@@ -1,8 +1,9 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 
-import { isAllowedStaffEmail, normalizeNextPath, parseAllowedStaffEmails } from "@/lib/auth/admin-auth";
+import { canUseStaffLogin, normalizeNextPath } from "@/lib/auth/admin-auth";
 import type { Database } from "@/types/database";
+import type { AppRole } from "@/types/database";
 
 type CookieRecord = {
   name: string;
@@ -67,8 +68,9 @@ export async function GET(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const allowedEmails = parseAllowedStaffEmails(process.env.ADMIN_ALLOWED_EMAILS);
-  if (!isAllowedStaffEmail(user?.email, allowedEmails)) {
+  const { data: profile } = await supabase.from("profiles").select("role").eq("id", user?.id ?? "").single();
+  const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
+  if (!canUseStaffLogin(role)) {
     await supabase.auth.signOut();
     successResponse.headers.set("Location", new URL("/login?error=forbidden", request.url).toString());
     return successResponse;
