@@ -1,6 +1,6 @@
 "use client";
 
-import { type FormEvent, useMemo, useState } from "react";
+import React, { type FormEvent, useMemo, useState } from "react";
 
 import { AdminLoginPanel } from "@/components/auth/admin-login-panel";
 import { Button } from "@/components/ui/button";
@@ -33,7 +33,7 @@ function getErrorMessage(code: string | null | undefined): string | null {
     case "missing_code":
       return "인증 코드가 누락되었습니다. 메일 링크를 다시 열어주세요.";
     case "exchange_failed":
-      return "로그인 처리에 실패했습니다. 매직링크를 다시 요청해주세요.";
+      return "로그인 처리에 실패했습니다. 로그인 링크를 다시 요청해주세요.";
     case "config":
       return "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.";
     default:
@@ -44,7 +44,7 @@ function getErrorMessage(code: string | null | undefined): string | null {
 export function getAdminLoginIntro(_nextPath: string): { title: string; description: string; meta: null } {
   return {
     title: "로그인",
-    description: "이메일로 받은 매직링크로 계속 진행하세요.",
+    description: "관리자에게 승인된 이메일 계정만 접속할 수 있습니다.",
     meta: null,
   };
 }
@@ -104,7 +104,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
     }
 
     setSubmitting(true);
-    setStatus("매직링크 전송 중...");
+    setStatus("로그인 링크 전송 중...");
 
     const { error } = await supabase.auth.signInWithOtp({
       email: normalizedEmail,
@@ -117,7 +117,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       return;
     }
 
-    setStatus("매직링크를 이메일로 보냈습니다. 메일에서 링크를 열어 로그인해주세요.");
+    setStatus("로그인 링크를 이메일로 보냈습니다. 메일에서 링크를 열어 계속 진행해주세요.");
     setSubmitting(false);
   };
 
@@ -133,7 +133,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
           <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" autoComplete="email" required />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={submitting}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
+          <Button type="submit" size="lg" disabled={submitting}>{submitting ? "전송 중..." : "로그인 링크 받기"}</Button>
         </div>
       </form>
       {status ? <p className="mt-4 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}

@@ -3,11 +3,11 @@ import { describe, expect, it } from "vitest";
 import { getAdminLoginIntro, getInitialAdminLoginStatus } from "@/components/AdminLoginForm";
 
 describe("getAdminLoginIntro", () => {
-  it("uses a generic login title without exposing internal route details", () => {
+  it("uses approval-first login copy", () => {
     const intro = getAdminLoginIntro("/workspace");
 
     expect(intro.title).toBe("로그인");
-    expect(intro.description).not.toContain("허용된 계정");
+    expect(intro.description).toBe("관리자에게 승인된 이메일 계정만 접속할 수 있습니다.");
     expect(intro.meta).toBeNull();
   });
 });
