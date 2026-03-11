@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import { SessionObservatory } from "@/components/admin/SessionObservatory";
 import { SignOutButton } from "@/components/SignOutButton";
+import { AccessStateCard } from "@/components/auth/access-state-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getAccessDeniedCopy, getLoginRequiredCopy } from "@/lib/auth/access-feedback";
 import { isMasterAdmin } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
@@ -38,24 +40,38 @@ export default async function AdminSessionsPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
+    const loginCopy = getLoginRequiredCopy("/admin/sessions");
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">세션 운영실</h1>
-        <p className="text-sm leading-7 text-muted-foreground">운영실 접근에는 로그인 필요합니다.</p>
-        <Button asChild className="w-fit"><Link href="/login?next=/admin/sessions">로그인 페이지로 이동</Link></Button>
-      </Card>
+      <AccessStateCard
+        title="세션 운영실"
+        message={loginCopy.message}
+        actions={(
+          <Button asChild className="w-fit">
+            <Link href={loginCopy.href}>{loginCopy.ctaLabel}</Link>
+          </Button>
+        )}
+      />
     );
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
   if (!isMasterAdmin(role)) {
+    const deniedCopy = getAccessDeniedCopy(user.email ?? user.id);
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">세션 운영실</h1>
-        <p className="text-sm leading-7 text-muted-foreground">master_admin 권한이 필요합니다. (현재 로그인: {user.email ?? user.id})</p>
-        <div><SignOutButton /></div>
-      </Card>
+      <AccessStateCard
+        title="세션 운영실"
+        message={deniedCopy.message}
+        detail={deniedCopy.detail}
+        actions={(
+          <>
+            <Button asChild className="w-fit" variant="outline">
+              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+            </Button>
+            <SignOutButton />
+          </>
+        )}
+      />
     );
   }
 

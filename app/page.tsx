@@ -7,6 +7,7 @@ import { GameCard } from "@/components/GameCard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { resolveGenreLabel } from "@/lib/games/presentation";
 import { filterPublicGames, type PublicSort, sortPublicGames } from "@/lib/games/public-catalog";
 import { loadCatalogGames } from "@/lib/games/public-data";
 
@@ -35,7 +36,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
   const topPlayedGame = sortPublicGames(filterPublicGames(allGames, {}), "popular")[0] ?? null;
   const newestGames = sortPublicGames(filterPublicGames(allGames, {}), "newest").slice(0, 6);
   const filteredGames = sortPublicGames(visibleGames, sort);
-  const genres = Array.from(new Set(allGames.map((game) => game.genre_primary ?? game.genre).filter(Boolean))).slice(0, 6);
+  const genres = Array.from(new Set(allGames.map((game) => resolveGenreLabel(game)).filter(Boolean))).slice(0, 6);
   const hasQuery = Boolean(q || genre);
 
   return (

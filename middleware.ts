@@ -18,7 +18,11 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  if ((request.nextUrl.pathname.startsWith("/admin") || request.nextUrl.pathname.startsWith("/workspace")) && !hasSupabaseAuthCookie(request)) {
+  const requiresLogin = request.nextUrl.pathname === "/create"
+    || request.nextUrl.pathname.startsWith("/admin")
+    || request.nextUrl.pathname.startsWith("/workspace");
+
+  if (requiresLogin && !hasSupabaseAuthCookie(request)) {
     const redirectUrl = request.nextUrl.clone();
     const nextPath = `${request.nextUrl.pathname}${request.nextUrl.search}`;
     redirectUrl.pathname = "/login";
@@ -31,5 +35,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/workspace/:path*"],
+  matcher: ["/create", "/admin/:path*", "/workspace/:path*"],
 };

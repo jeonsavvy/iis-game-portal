@@ -33,12 +33,12 @@ const GAMES = [
 ] as const;
 
 describe("extractGenreTags", () => {
-  it("deduplicates primary, legacy genre, and tags", () => {
-    expect(extractGenreTags(GAMES[0] as never)).toEqual(["racing", "3d", "time-attack"]);
+  it("deduplicates primary, localized genre labels, legacy genre, and tags", () => {
+    expect(extractGenreTags(GAMES[0] as never)).toEqual(["racing", "레이싱", "3d", "time-attack"]);
   });
 
-  it("falls back to legacy genre when structured tags are empty", () => {
-    expect(extractGenreTags(GAMES[2] as never)).toEqual(["puzzle"]);
+  it("falls back to legacy genre and localized label when structured tags are empty", () => {
+    expect(extractGenreTags(GAMES[2] as never)).toEqual(["puzzle", "퍼즐"]);
   });
 });
 
@@ -63,6 +63,11 @@ describe("sortPublicGames", () => {
 describe("filterPublicGames", () => {
   it("filters by search query and genre tag together", () => {
     const rows = filterPublicGames(GAMES as never, { q: "jet", genre: "dogfight" });
+    expect(rows.map((game) => game.id)).toEqual(["game-2"]);
+  });
+
+  it("supports localized genre labels for genre chips", () => {
+    const rows = filterPublicGames(GAMES as never, { genre: "비행" });
     expect(rows.map((game) => game.id)).toEqual(["game-2"]);
   });
 });

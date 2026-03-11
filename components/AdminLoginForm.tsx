@@ -13,6 +13,12 @@ type AdminLoginFormProps = {
   initialError?: string | null;
 };
 
+type AdminLoginStatusArgs = {
+  allowlistConfigured: boolean;
+  initialError?: string | null;
+  supabaseConfigError?: string | null;
+};
+
 function buildCallbackUrl(nextPath: string): string {
   const url = new URL("/auth/callback", window.location.origin);
   url.searchParams.set("next", nextPath);
@@ -23,16 +29,34 @@ function getErrorMessage(code: string | null | undefined): string | null {
   if (!code) return null;
   switch (code) {
     case "forbidden":
-      return "허용된 계정만 작업공간과 운영 기능에 로그인할 수 있습니다.";
+      return "이 계정으로는 로그인할 수 없습니다.";
     case "missing_code":
       return "인증 코드가 누락되었습니다. 메일 링크를 다시 열어주세요.";
     case "exchange_failed":
       return "로그인 처리에 실패했습니다. 매직링크를 다시 요청해주세요.";
     case "config":
-      return "로그인 설정이 비어 있습니다. 환경변수를 확인해주세요.";
+      return "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.";
     default:
       return "로그인 중 오류가 발생했습니다. 다시 시도해주세요.";
   }
+}
+
+export function getAdminLoginIntro(_nextPath: string): { title: string; description: string; meta: null } {
+  return {
+    title: "로그인",
+    description: "이메일로 받은 매직링크로 계속 진행하세요.",
+    meta: null,
+  };
+}
+
+export function getInitialAdminLoginStatus({ allowlistConfigured, initialError, supabaseConfigError }: AdminLoginStatusArgs): string {
+  if (initialError) {
+    return getErrorMessage(initialError) ?? "";
+  }
+  if (supabaseConfigError || !allowlistConfigured) {
+    return supabaseConfigError ? "현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요." : "";
+  }
+  return "";
 }
 
 export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminLoginFormProps) {
@@ -54,20 +78,16 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
     }
   }, []);
 
-  const [email, setEmail] = useState(allowedEmails[0] ?? "");
-  const [status, setStatus] = useState<string>(
-    getErrorMessage(initialError)
-      ?? (supabaseConfigError
-        ? `로그인 설정 오류: ${supabaseConfigError}`
-        : (!allowlistConfigured ? "로그인 허용 계정이 아직 설정되지 않았습니다. 운영 환경변수를 확인해주세요." : "")),
-  );
+  const intro = getAdminLoginIntro(nextPath);
+  const [email, setEmail] = useState("");
+  const [status, setStatus] = useState<string>(getInitialAdminLoginStatus({ allowlistConfigured, initialError, supabaseConfigError }));
   const [submitting, setSubmitting] = useState(false);
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     const normalizedEmail = email.trim().toLowerCase();
     if (!allowlistConfigured) {
-      setStatus("로그인 허용 계정이 설정되지 않았습니다.");
+      setStatus("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     if (!normalizedEmail) {
@@ -75,11 +95,11 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
       return;
     }
     if (!allowedEmails.includes(normalizedEmail)) {
-      setStatus("허용된 계정만 로그인할 수 있습니다.");
+      setStatus("이 계정으로는 로그인할 수 없습니다.");
       return;
     }
     if (!supabase) {
-      setStatus("로그인 설정 오류로 매직링크를 전송할 수 없습니다.");
+      setStatus("현재 로그인할 수 없습니다. 잠시 후 다시 시도해주세요.");
       return;
     }
 
@@ -103,15 +123,9 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
 
   return (
     <AdminLoginPanel
-      title="작업공간 로그인"
-      description="허용된 계정만 매직링크로 로그인해 작업공간과 운영 기능에 접근할 수 있습니다."
-      meta={
-        <div className="grid gap-1">
-          <p>허용된 계정만 접근 가능합니다.</p>
-          <p>허용 목록은 서버 환경변수에서만 관리됩니다.</p>
-          <p>로그인 후 이동 경로: {nextPath}</p>
-        </div>
-      }
+      title={intro.title}
+      description={intro.description}
+      meta={intro.meta}
     >
       <form onSubmit={handleSubmit} className="grid gap-4">
         <label className="grid gap-2 text-sm text-muted-foreground">
@@ -119,7 +133,7 @@ export function AdminLoginForm({ nextPath, allowedEmails, initialError }: AdminL
           <Input type="email" value={email} onChange={(event) => setEmail(event.target.value)} placeholder="name@example.com" autoComplete="email" required />
         </label>
         <div className="flex flex-wrap items-center gap-3">
-          <Button type="submit" size="lg" disabled={submitting || !allowlistConfigured || !supabase}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
+          <Button type="submit" size="lg" disabled={submitting}>{submitting ? "전송 중..." : "매직링크 보내기"}</Button>
         </div>
       </form>
       {status ? <p className="mt-4 rounded-[1rem] border border-zinc-200 bg-zinc-50 px-4 py-3 text-sm leading-6 text-muted-foreground">{status}</p> : null}

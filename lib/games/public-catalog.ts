@@ -1,4 +1,5 @@
 import type { Database } from "@/types/database";
+import { resolveGenreLabel } from "@/lib/games/presentation";
 
 export type PublicGame = Database["public"]["Tables"]["games_metadata"]["Row"];
 export type PublicSort = "popular" | "newest" | "name";
@@ -30,6 +31,7 @@ export function extractGenreTags(game: Pick<PublicGame, "genre" | "genre_primary
   const tags = [
     normalizeToken(game.genre_primary),
     normalizeToken(game.genre),
+    normalizeToken(resolveGenreLabel(game)),
     ...(Array.isArray(game.genre_tags) ? game.genre_tags.map((tag) => normalizeToken(String(tag))) : []),
   ].filter(Boolean);
 

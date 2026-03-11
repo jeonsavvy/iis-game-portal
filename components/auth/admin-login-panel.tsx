@@ -17,7 +17,6 @@ export function AdminLoginPanel({
     <Card className="mx-auto w-full max-w-2xl rounded-[1.25rem] border-zinc-200 bg-white">
       <CardHeader className="space-y-4 border-b border-zinc-200 pb-6">
         <div className="space-y-2">
-          <p className="text-[11px] font-semibold text-primary">로그인</p>
           <CardTitle className="text-4xl tracking-[-0.05em]">{title}</CardTitle>
         </div>
         <p className="max-w-xl text-sm leading-7 text-muted-foreground">{description}</p>

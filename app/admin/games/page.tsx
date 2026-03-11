@@ -2,8 +2,10 @@ import Link from "next/link";
 
 import { GameAdminPanel } from "@/components/GameAdminPanel";
 import { SignOutButton } from "@/components/SignOutButton";
+import { AccessStateCard } from "@/components/auth/access-state-card";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getAccessDeniedCopy, getLoginRequiredCopy } from "@/lib/auth/access-feedback";
 import { PREVIEW_GAMES } from "@/lib/demo/preview-data";
 import { isMasterAdmin } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
@@ -49,24 +51,38 @@ export default async function AdminGamesPage() {
 
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) {
+    const loginCopy = getLoginRequiredCopy("/admin/games");
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">게임 관리</h1>
-        <p className="text-sm leading-7 text-muted-foreground">운영실 접근에는 로그인 필요합니다.</p>
-        <Button asChild className="w-fit"><Link href="/login?next=/admin/games">로그인 페이지로 이동</Link></Button>
-      </Card>
+      <AccessStateCard
+        title="게임 관리"
+        message={loginCopy.message}
+        actions={(
+          <Button asChild className="w-fit">
+            <Link href={loginCopy.href}>{loginCopy.ctaLabel}</Link>
+          </Button>
+        )}
+      />
     );
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
   if (!isMasterAdmin(role)) {
+    const deniedCopy = getAccessDeniedCopy(user.email ?? user.id);
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">게임 관리</h1>
-        <p className="text-sm leading-7 text-muted-foreground">master_admin 권한이 필요합니다. (현재 로그인: {user.email ?? user.id})</p>
-        <div><SignOutButton /></div>
-      </Card>
+      <AccessStateCard
+        title="게임 관리"
+        message={deniedCopy.message}
+        detail={deniedCopy.detail}
+        actions={(
+          <>
+            <Button asChild className="w-fit" variant="outline">
+              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+            </Button>
+            <SignOutButton />
+          </>
+        )}
+      />
     );
   }
 

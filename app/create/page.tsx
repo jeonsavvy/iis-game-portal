@@ -1,15 +1,32 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Crosshair, Plane } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
 
 const PRESETS = [
   { title: "비행", summary: "섬과 링을 통과하는 안정적인 3D 비행", prompt: "로우폴리 섬과 링을 통과하는 3D 비행 게임", Icon: Plane },
   { title: "슈팅", summary: "대시와 업그레이드가 있는 탑뷰 아레나 슈팅", prompt: "탑뷰 슈팅에 대시와 웨이브 시스템을 넣은 아레나 게임 만들어줘.", Icon: Crosshair },
 ];
 
-export default function CreatePage() {
+export default async function CreatePage() {
+  if (process.env.IIS_DEMO_PREVIEW !== "1") {
+    try {
+      const supabase = await createSupabaseServerClient();
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+
+      if (!user) {
+        redirect("/login?next=/create");
+      }
+    } catch {
+      redirect("/login?next=/create");
+    }
+  }
+
   return (
     <section className="grid gap-6">
       <div>

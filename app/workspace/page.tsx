@@ -3,9 +3,12 @@
 
 import Link from "next/link";
 
+import { SignOutButton } from "@/components/SignOutButton";
+import { AccessStateCard } from "@/components/auth/access-state-card";
 import { EditorWorkspace } from "@/components/editor/EditorWorkspace";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { getAccessDeniedCopy, getLoginRequiredCopy } from "@/lib/auth/access-feedback";
 import { canAccessWorkspace } from "@/lib/auth/rbac";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { AppRole } from "@/types/database";
@@ -39,28 +42,38 @@ export default async function WorkspacePage({ searchParams }: { searchParams?: P
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) {
+    const loginCopy = getLoginRequiredCopy("/workspace");
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">내 작업공간</h1>
-        <p className="text-sm leading-7 text-muted-foreground">작업공간은 로그인 후 사용할 수 있습니다.</p>
-        <Button asChild className="w-fit">
-          <Link href="/login?next=/workspace">로그인하고 계속하기</Link>
-        </Button>
-      </Card>
+      <AccessStateCard
+        title="내 작업공간"
+        message={loginCopy.message}
+        actions={(
+          <Button asChild className="w-fit">
+            <Link href={loginCopy.href}>{loginCopy.ctaLabel}</Link>
+          </Button>
+        )}
+      />
     );
   }
 
   const { data: profile } = await supabase.from("profiles").select("role").eq("id", user.id).single();
   const role = ((profile as { role?: AppRole } | null)?.role ?? null) as AppRole | null;
   if (!canAccessWorkspace(role)) {
+    const deniedCopy = getAccessDeniedCopy(user.email ?? user.id);
     return (
-      <Card className="grid gap-4 p-6">
-        <h1 className="text-4xl font-semibold tracking-[-0.05em] text-foreground">내 작업공간</h1>
-        <p className="text-sm leading-7 text-muted-foreground">현재는 승인된 제작자와 운영자만 작업공간을 사용할 수 있습니다.</p>
-        <Button asChild className="w-fit" variant="outline">
-          <Link href="/create">AI로 게임 만들기 안내 보기</Link>
-        </Button>
-      </Card>
+      <AccessStateCard
+        title="내 작업공간"
+        message={deniedCopy.message}
+        detail={deniedCopy.detail}
+        actions={(
+          <>
+            <Button asChild className="w-fit" variant="outline">
+              <Link href={deniedCopy.primaryHref}>{deniedCopy.primaryCtaLabel}</Link>
+            </Button>
+            <SignOutButton />
+          </>
+        )}
+      />
     );
   }
 
