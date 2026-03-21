@@ -29,7 +29,7 @@ async function handleSupabaseKeepalive(controller: WorkerScheduledController, en
   const keepaliveEnv = resolveSupabaseKeepaliveEnv(env, generatedNextEnv);
 
   try {
-    const result = await runSupabaseKeepalive(keepaliveEnv);
+    const result = await runSupabaseKeepalive(keepaliveEnv, { cacheBuster: controller.scheduledTime });
     console.log("[supabase-keepalive] ok", {
       cron: controller.cron,
       scheduledAt,

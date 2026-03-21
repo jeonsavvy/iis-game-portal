@@ -4,8 +4,12 @@ on:
   schedule:
     # Backup keepalive path in case Cloudflare Cron visibility or execution becomes hard to verify.
     # Runs in UTC.
-    - cron: "47 1,13 * * *"
+    - cron: "47 * * * *"
   workflow_dispatch:
+
+concurrency:
+  group: supabase-keepalive
+  cancel-in-progress: false
 
 jobs:
   ping:
@@ -25,7 +29,15 @@ jobs:
       - name: Ping Supabase public catalog
         run: |
           set -euo pipefail
+          sleep_seconds=$(( RANDOM % 300 ))
+          echo "jitter_sleep=${sleep_seconds}s"
+          sleep "${sleep_seconds}"
+
+          keepalive_at="$(date -u +%s)"
           url="${SUPABASE_URL%/}${SUPABASE_KEEPALIVE_PATH}"
+          separator='?'
+          [[ "${url}" == *\?* ]] && separator='&'
+          url="${url}${separator}_keepalive_at=${keepalive_at}"
           response_file="$(mktemp)"
           status_code="$(
             curl --silent --show-error --location \
@@ -35,9 +47,11 @@ jobs:
               --header "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
               --header "Accept: application/json" \
               --header "Cache-Control: no-store, max-age=0" \
+              --header "User-Agent: iis-game-portal-supabase-keepalive/1.1" \
               "${url}"
           )"
 
+          echo "url=${url}"
           echo "status=${status_code}"
           head -c 512 "${response_file}" || true
           echo

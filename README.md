@@ -112,7 +112,7 @@ npm run dev
 | `CORE_ENGINE_API_TOKEN` | production BFF Bearer 토큰입니다. |
 | `IIS_DEMO_PREVIEW` | 샘플 데이터 렌더링 여부입니다. |
 | `FEATURED_GAME_SLUG` | 홈 상단 대표 게임을 고정할 때 사용합니다. |
-| `SUPABASE_KEEPALIVE_PATH` | Cloudflare Cron이 읽기 전용 keepalive로 호출할 Supabase REST 경로입니다. 비워두면 `games_metadata` 활성 게임 1건 조회를 사용합니다. |
+| `SUPABASE_KEEPALIVE_PATH` | Cloudflare Cron과 GitHub Actions backup keepalive가 읽기 전용으로 호출할 Supabase REST 경로입니다. 비워두면 `games_metadata` 활성 게임 1건 조회를 사용합니다. |
 | `OPS_COLLAB_ROOM_V2` | 운영실 협업 화면 롤아웃 플래그입니다. |
 | `LEGACY_GAME_SANDBOX` | 특정 레거시 게임 호환용 iframe 롤백 플래그입니다. |
 | `LEGACY_GAME_SANDBOX_ALLOWLIST` | 예외 허용 대상 게임 목록입니다. |
@@ -124,7 +124,8 @@ npm run dev
 - 실제 생성과 퍼블리시 로직은 **AWS EC2에서 운영되는 Core Engine** 이 담당하고, 포털은 공개 화면과 운영 화면을 제공하는 계층으로 동작합니다.
 - 공개 게임 실행은 원본 산출물을 그대로 노출하지 않고 artifact proxy를 거쳐 전달합니다.
 - Google OAuth 사용 시 Supabase Auth 에서 Google provider 와 `/auth/callback` redirect URL 이 설정돼 있어야 합니다.
-- `wrangler.jsonc` 의 Cloudflare Cron이 하루 1회 UTC 기준으로 Supabase 공개 REST를 읽어 free plan inactivity pause를 예방합니다.
+- `wrangler.jsonc` 의 Cloudflare Cron이 **매시 17분 UTC** 에 Supabase 공개 REST를 읽습니다.
+- `.github/workflows/supabase-keepalive.yml` 이 **매시 47분 UTC** 에 jitter를 넣어 한 번 더 읽어 backup keepalive 역할을 합니다.
 
 즉, 이 저장소는 생성 엔진을 직접 실행하는 프로젝트가 아니라,
 Cloudflare에 배포되는 사용자 접점과 운영 화면을 담당하는 프론트엔드 계층입니다.

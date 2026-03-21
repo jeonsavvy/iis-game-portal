@@ -5,9 +5,9 @@
   "compatibility_date": "2026-02-21",
   "compatibility_flags": ["nodejs_compat"],
   "triggers": {
-    // Daily keepalive so the free Supabase project does not drift into inactivity.
+    // Hourly keepalive so the free Supabase project does not drift into inactivity.
     // Cron runs in UTC.
-    "crons": ["17 3 * * *"]
+    "crons": ["17 * * * *"]
   },
   "assets": {
     "binding": "ASSETS",

@@ -34,14 +34,18 @@ export function resolveSupabaseKeepaliveEnv(
   };
 }
 
-export function resolveSupabaseKeepaliveUrl(env: SupabaseKeepaliveEnv): string {
+export function resolveSupabaseKeepaliveUrl(env: SupabaseKeepaliveEnv, cacheBuster?: string | number): string {
   const supabaseUrl = readEnv(env.NEXT_PUBLIC_SUPABASE_URL);
   if (!supabaseUrl) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
   }
 
   const path = readEnv(env.SUPABASE_KEEPALIVE_PATH) || DEFAULT_KEEPALIVE_PATH;
-  return new URL(path, supabaseUrl).toString();
+  const url = new URL(path, supabaseUrl);
+  if (cacheBuster !== undefined && cacheBuster !== null && String(cacheBuster).trim()) {
+    url.searchParams.set("_keepalive_at", String(cacheBuster));
+  }
+  return url.toString();
 }
 
 export function createSupabaseKeepaliveHeaders(env: SupabaseKeepaliveEnv): Headers {
@@ -60,9 +64,9 @@ export function createSupabaseKeepaliveHeaders(env: SupabaseKeepaliveEnv): Heade
 
 export async function runSupabaseKeepalive(
   env: SupabaseKeepaliveEnv,
-  options?: { timeoutMs?: number; fetchImpl?: typeof fetch },
+  options?: { timeoutMs?: number; fetchImpl?: typeof fetch; cacheBuster?: string | number },
 ): Promise<{ status: number; url: string }> {
-  const url = resolveSupabaseKeepaliveUrl(env);
+  const url = resolveSupabaseKeepaliveUrl(env, options?.cacheBuster);
   const headers = createSupabaseKeepaliveHeaders(env);
   const fetchImpl = options?.fetchImpl ?? fetch;
   const controller = new AbortController();

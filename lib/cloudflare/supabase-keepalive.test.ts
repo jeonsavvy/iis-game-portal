@@ -28,6 +28,12 @@ describe("resolveSupabaseKeepaliveUrl", () => {
       }),
     ).toBe("https://demo-project.supabase.co/rest/v1/leaderboard?select=id&limit=1");
   });
+
+  it("adds a cache buster when requested", () => {
+    expect(resolveSupabaseKeepaliveUrl(baseEnv, 1234567890)).toBe(
+      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=1234567890",
+    );
+  });
 });
 
 describe("resolveSupabaseKeepaliveEnv", () => {
@@ -65,14 +71,14 @@ describe("runSupabaseKeepalive", () => {
   it("performs a read-only GET against Supabase", async () => {
     const fetchImpl = vi.fn().mockResolvedValue(new Response("[]", { status: 200 }));
 
-    const result = await runSupabaseKeepalive(baseEnv, { fetchImpl });
+    const result = await runSupabaseKeepalive(baseEnv, { fetchImpl, cacheBuster: 42 });
 
     expect(result).toEqual({
       status: 200,
-      url: "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1",
+      url: "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=42",
     });
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1",
+      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=42",
       expect.objectContaining({
         method: "GET",
         headers: expect.any(Headers),
