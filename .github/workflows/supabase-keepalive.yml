@@ -35,9 +35,6 @@ jobs:
 
           keepalive_at="$(date -u +%s)"
           url="${SUPABASE_URL%/}${SUPABASE_KEEPALIVE_PATH}"
-          separator='?'
-          [[ "${url}" == *\?* ]] && separator='&'
-          url="${url}${separator}_keepalive_at=${keepalive_at}"
           response_file="$(mktemp)"
           status_code="$(
             curl --silent --show-error --location \
@@ -48,6 +45,7 @@ jobs:
               --header "Accept: application/json" \
               --header "Cache-Control: no-store, max-age=0" \
               --header "User-Agent: iis-game-portal-supabase-keepalive/1.1" \
+              --header "X-IIS-Keepalive-At: ${keepalive_at}" \
               "${url}"
           )"
 

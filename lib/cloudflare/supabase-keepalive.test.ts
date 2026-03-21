@@ -29,11 +29,6 @@ describe("resolveSupabaseKeepaliveUrl", () => {
     ).toBe("https://demo-project.supabase.co/rest/v1/leaderboard?select=id&limit=1");
   });
 
-  it("adds a cache buster when requested", () => {
-    expect(resolveSupabaseKeepaliveUrl(baseEnv, 1234567890)).toBe(
-      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=1234567890",
-    );
-  });
 });
 
 describe("resolveSupabaseKeepaliveEnv", () => {
@@ -75,16 +70,19 @@ describe("runSupabaseKeepalive", () => {
 
     expect(result).toEqual({
       status: 200,
-      url: "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=42",
+      url: "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1",
     });
     expect(fetchImpl).toHaveBeenCalledWith(
-      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1&_keepalive_at=42",
+      "https://demo-project.supabase.co/rest/v1/games_metadata?status=eq.active&select=id&limit=1",
       expect.objectContaining({
         method: "GET",
         headers: expect.any(Headers),
         signal: expect.any(AbortSignal),
       }),
     );
+    const headers = fetchImpl.mock.calls[0]?.[1]?.headers;
+    expect(headers.get("x-iis-keepalive-at")).toBe("42");
+    expect(headers.get("user-agent")).toBe("iis-game-portal-supabase-keepalive/1.1");
   });
 
   it("surfaces response details when Supabase rejects the request", async () => {

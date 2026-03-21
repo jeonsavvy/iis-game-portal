@@ -34,18 +34,14 @@ export function resolveSupabaseKeepaliveEnv(
   };
 }
 
-export function resolveSupabaseKeepaliveUrl(env: SupabaseKeepaliveEnv, cacheBuster?: string | number): string {
+export function resolveSupabaseKeepaliveUrl(env: SupabaseKeepaliveEnv): string {
   const supabaseUrl = readEnv(env.NEXT_PUBLIC_SUPABASE_URL);
   if (!supabaseUrl) {
     throw new Error("NEXT_PUBLIC_SUPABASE_URL is missing");
   }
 
   const path = readEnv(env.SUPABASE_KEEPALIVE_PATH) || DEFAULT_KEEPALIVE_PATH;
-  const url = new URL(path, supabaseUrl);
-  if (cacheBuster !== undefined && cacheBuster !== null && String(cacheBuster).trim()) {
-    url.searchParams.set("_keepalive_at", String(cacheBuster));
-  }
-  return url.toString();
+  return new URL(path, supabaseUrl).toString();
 }
 
 export function createSupabaseKeepaliveHeaders(env: SupabaseKeepaliveEnv): Headers {
@@ -66,8 +62,12 @@ export async function runSupabaseKeepalive(
   env: SupabaseKeepaliveEnv,
   options?: { timeoutMs?: number; fetchImpl?: typeof fetch; cacheBuster?: string | number },
 ): Promise<{ status: number; url: string }> {
-  const url = resolveSupabaseKeepaliveUrl(env, options?.cacheBuster);
+  const url = resolveSupabaseKeepaliveUrl(env);
   const headers = createSupabaseKeepaliveHeaders(env);
+  if (options?.cacheBuster !== undefined && options?.cacheBuster !== null && String(options.cacheBuster).trim()) {
+    headers.set("X-IIS-Keepalive-At", String(options.cacheBuster));
+  }
+  headers.set("User-Agent", "iis-game-portal-supabase-keepalive/1.1");
   const fetchImpl = options?.fetchImpl ?? fetch;
   const controller = new AbortController();
   const timeoutMs = options?.timeoutMs ?? DEFAULT_TIMEOUT_MS;
