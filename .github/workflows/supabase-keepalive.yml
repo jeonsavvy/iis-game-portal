@@ -1,0 +1,48 @@
+name: supabase-keepalive
+
+on:
+  schedule:
+    # Backup keepalive path in case Cloudflare Cron visibility or execution becomes hard to verify.
+    # Runs in UTC.
+    - cron: "47 1,13 * * *"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    env:
+      SUPABASE_URL: ${{ secrets.NEXT_PUBLIC_SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
+      SUPABASE_KEEPALIVE_PATH: /rest/v1/games_metadata?status=eq.active&select=id&limit=1
+    steps:
+      - name: Validate required secrets
+        run: |
+          set -euo pipefail
+          : "${SUPABASE_URL:?NEXT_PUBLIC_SUPABASE_URL is required}"
+          : "${SUPABASE_ANON_KEY:?NEXT_PUBLIC_SUPABASE_ANON_KEY is required}"
+
+      - name: Ping Supabase public catalog
+        run: |
+          set -euo pipefail
+          url="${SUPABASE_URL%/}${SUPABASE_KEEPALIVE_PATH}"
+          response_file="$(mktemp)"
+          status_code="$(
+            curl --silent --show-error --location \
+              --output "${response_file}" \
+              --write-out '%{http_code}' \
+              --header "apikey: ${SUPABASE_ANON_KEY}" \
+              --header "Authorization: Bearer ${SUPABASE_ANON_KEY}" \
+              --header "Accept: application/json" \
+              --header "Cache-Control: no-store, max-age=0" \
+              "${url}"
+          )"
+
+          echo "status=${status_code}"
+          head -c 512 "${response_file}" || true
+          echo
+
+          if [[ "${status_code}" -lt 200 || "${status_code}" -ge 300 ]]; then
+            echo "Supabase keepalive failed with HTTP ${status_code}."
+            exit 1
+          fi

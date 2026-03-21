@@ -143,6 +143,7 @@ npm run build
 
 - PR 검증: `.github/workflows/frontend-ci.yml`
 - 배포: `.github/workflows/deploy-cloudflare.yml`
+- Supabase inactivity backup keepalive: `.github/workflows/supabase-keepalive.yml`
 - OpenNext 설정: `open-next.config.ts`
 - Cloudflare 설정: `wrangler.jsonc`
 
