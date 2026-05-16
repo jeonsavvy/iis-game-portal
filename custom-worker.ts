@@ -24,6 +24,27 @@ type WorkerScheduledController = {
 
 type WorkerEnv = SupabaseKeepaliveEnv & Record<string, unknown>;
 
+const SECURITY_RESPONSE_HEADERS: Record<string, string> = {
+  "X-Content-Type-Options": "nosniff",
+  "Referrer-Policy": "strict-origin-when-cross-origin",
+  "Permissions-Policy": "camera=(), microphone=(), geolocation=(), payment=()",
+};
+
+function withSecurityHeaders(response: Response): Response {
+  const headers = new Headers(response.headers);
+  for (const [key, value] of Object.entries(SECURITY_RESPONSE_HEADERS)) {
+    if (!headers.has(key)) {
+      headers.set(key, value);
+    }
+  }
+
+  return new Response(response.body, {
+    status: response.status,
+    statusText: response.statusText,
+    headers,
+  });
+}
+
 async function handleSupabaseKeepalive(controller: WorkerScheduledController, env: WorkerEnv): Promise<void> {
   const scheduledAt = new Date(controller.scheduledTime).toISOString();
   const keepaliveEnv = resolveSupabaseKeepaliveEnv(env, generatedNextEnv);
@@ -57,7 +78,8 @@ async function handleSupabaseKeepalive(controller: WorkerScheduledController, en
 
 const worker = {
   async fetch(request: Request, env: WorkerEnv, ctx: WorkerExecutionContext): Promise<Response> {
-    return openNextWorker.fetch(request, env, ctx);
+    const response = await openNextWorker.fetch(request, env, ctx);
+    return withSecurityHeaders(response);
   },
 
   async scheduled(controller: WorkerScheduledController, env: WorkerEnv, ctx: WorkerExecutionContext): Promise<void> {

@@ -126,9 +126,15 @@ describe("resolveArtifactTarget", () => {
 
 describe("proxyArtifactResponse", () => {
   const originalFetch = global.fetch;
+  const originalMaxBytes = process.env.ARTIFACT_FETCH_MAX_BYTES;
 
   afterEach(() => {
     global.fetch = originalFetch;
+    if (originalMaxBytes === undefined) {
+      delete process.env.ARTIFACT_FETCH_MAX_BYTES;
+    } else {
+      process.env.ARTIFACT_FETCH_MAX_BYTES = originalMaxBytes;
+    }
     vi.restoreAllMocks();
   });
 
@@ -172,6 +178,53 @@ describe("proxyArtifactResponse", () => {
     expect(response.status).toBe(200);
     expect(html).toContain("iis-embed-viewport-fix");
     expect(html).toContain("iis-embed-viewport-script");
+  });
+
+  it("rejects artifacts above the declared size limit before buffering", async () => {
+    process.env.ARTIFACT_FETCH_MAX_BYTES = "4";
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("ok", {
+        status: 200,
+        headers: {
+          "content-length": "5",
+          "content-type": "application/javascript; charset=utf-8",
+        },
+      }),
+    ) as typeof fetch;
+
+    const response = await proxyArtifactResponse({
+      game: {} as never,
+      upstreamUrl: "https://cdn.example.com/games/neon/main.js",
+      contentTypeHint: "application/javascript; charset=utf-8",
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "artifact_too_large",
+      code: "artifact_too_large",
+    });
+  });
+
+  it("rejects streamed artifacts that exceed the size limit without content-length", async () => {
+    process.env.ARTIFACT_FETCH_MAX_BYTES = "4";
+    global.fetch = vi.fn().mockResolvedValue(
+      new Response("12345", {
+        status: 200,
+        headers: { "content-type": "application/javascript; charset=utf-8" },
+      }),
+    ) as typeof fetch;
+
+    const response = await proxyArtifactResponse({
+      game: {} as never,
+      upstreamUrl: "https://cdn.example.com/games/neon/main.js",
+      contentTypeHint: "application/javascript; charset=utf-8",
+    });
+
+    expect(response.status).toBe(413);
+    await expect(response.json()).resolves.toMatchObject({
+      error: "artifact_too_large",
+      code: "artifact_too_large",
+    });
   });
 
   it("follows safe redirects for artifact responses", async () => {

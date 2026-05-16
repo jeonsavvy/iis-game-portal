@@ -2,6 +2,12 @@
 
 IIS 전체 서비스에서 공개 카탈로그, 플레이 화면, 제작 작업공간, 운영 화면을 제공하는 Next.js 포털입니다.
 
+## 운영 URL
+
+- App: `https://iis-arcade-portal.jeonsavvy.workers.dev/`
+
+운영 smoke check는 홈, 공개 플레이 화면, 로그인 리다이렉트, `/api/auth/me`, artifact proxy의 정상/비정상 응답을 확인합니다.
+
 ## 이 저장소가 맡는 책임
 
 - 공개 게임 목록과 상세 플레이 진입점 제공

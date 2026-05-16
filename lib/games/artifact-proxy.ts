@@ -12,6 +12,7 @@ const ARTIFACT_FETCH_TIMEOUT_MS = 15_000;
 const ARTIFACT_FETCH_RETRIES = 2;
 const ARTIFACT_FETCH_RETRY_DELAY_MS = 200;
 const ARTIFACT_FETCH_MAX_REDIRECT_HOPS = 3;
+const DEFAULT_ARTIFACT_FETCH_MAX_BYTES = 25 * 1024 * 1024;
 
 export type ArtifactTarget = {
   game: Database["public"]["Tables"]["games_metadata"]["Row"];
@@ -110,6 +111,61 @@ function resolveProxyContentType(upstreamContentType: string, hint: string): str
     return hint;
   }
   return upstreamContentType;
+}
+
+function getArtifactFetchMaxBytes(): number {
+  const configured = Number.parseInt(process.env.ARTIFACT_FETCH_MAX_BYTES || "", 10);
+  if (Number.isFinite(configured) && configured > 0) {
+    return configured;
+  }
+  return DEFAULT_ARTIFACT_FETCH_MAX_BYTES;
+}
+
+async function readUpstreamBodyWithLimit(upstream: Response, maxBytes: number): Promise<ArrayBuffer | NextResponse> {
+  const contentLength = upstream.headers.get("content-length");
+  if (contentLength) {
+    const declaredLength = Number.parseInt(contentLength, 10);
+    if (Number.isFinite(declaredLength) && declaredLength > maxBytes) {
+      return artifactProxyError(413, "artifact_too_large", "artifact_too_large");
+    }
+  }
+
+  if (!upstream.body) {
+    const rawBody = await upstream.arrayBuffer();
+    if (rawBody.byteLength > maxBytes) {
+      return artifactProxyError(413, "artifact_too_large", "artifact_too_large");
+    }
+    return rawBody;
+  }
+
+  const reader = upstream.body.getReader();
+  const chunks: Uint8Array[] = [];
+  let totalBytes = 0;
+
+  try {
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      if (!value) continue;
+
+      totalBytes += value.byteLength;
+      if (totalBytes > maxBytes) {
+        await reader.cancel("artifact_too_large");
+        return artifactProxyError(413, "artifact_too_large", "artifact_too_large");
+      }
+      chunks.push(value);
+    }
+  } finally {
+    reader.releaseLock();
+  }
+
+  const combined = new Uint8Array(totalBytes);
+  let offset = 0;
+  for (const chunk of chunks) {
+    combined.set(chunk, offset);
+    offset += chunk.byteLength;
+  }
+  return combined.buffer;
 }
 
 export async function resolveArtifactTarget(gameId: string, requestedAssetPath: string): Promise<ArtifactTarget | NextResponse> {
@@ -225,7 +281,10 @@ export async function proxyArtifactResponse(target: ArtifactTarget): Promise<Nex
   const upstreamContentType = upstream.headers.get("content-type")?.trim() || "";
   const resolvedContentType = resolveProxyContentType(upstreamContentType, target.contentTypeHint);
   let body: BodyInit;
-  const rawBody = await upstream.arrayBuffer();
+  const rawBody = await readUpstreamBodyWithLimit(upstream, getArtifactFetchMaxBytes());
+  if (rawBody instanceof NextResponse) {
+    return rawBody;
+  }
   if (resolvedContentType.toLowerCase().startsWith("text/html")) {
     const rawHtml = new TextDecoder().decode(rawBody);
     const patchedHtml = patchHtmlForEmbeddedViewport(rawHtml);
