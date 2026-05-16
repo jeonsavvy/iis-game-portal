@@ -23,6 +23,7 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
   const playPath = `/play/${game.slug}`;
   const summary = resolveGameSummary(game);
   const style = variantMap[variant];
+  const isFeatured = variant === "featured";
 
   return (
     <Card className="group overflow-hidden transition-transform duration-300 hover:-translate-y-1">
@@ -34,7 +35,8 @@ export function GameCard({ game, variant = "default" }: { game: Game; variant?: 
               src={imageUrl}
               alt={`${game.name} cover`}
               fill
-              sizes={variant === "compact" ? "(max-width: 820px) 100vw, 25vw" : "(max-width: 820px) 100vw, 33vw"}
+              sizes={isFeatured ? "(max-width: 1280px) calc(100vw - 2rem), 1280px" : variant === "compact" ? "(max-width: 820px) 100vw, 25vw" : "(max-width: 820px) 100vw, 33vw"}
+              priority={isFeatured}
               unoptimized={shouldUseUnoptimizedImage(imageUrl)}
             />
           ) : null}

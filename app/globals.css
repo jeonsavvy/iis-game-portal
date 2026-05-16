@@ -7,7 +7,7 @@
   --card-foreground: #1b1337;
   --popover: #fcfaf4;
   --popover-foreground: #1b1337;
-  --primary: #ff5a1f;
+  --primary: #b83a12;
   --primary-foreground: #ffffff;
   --secondary: #f0ece4;
   --secondary-foreground: #1b1337;
@@ -21,7 +21,7 @@
   --warning: #d97706;
   --border: rgba(27, 19, 55, 0.1);
   --input: rgba(255, 255, 255, 0.82);
-  --ring: #ff5a1f;
+  --ring: #b83a12;
   --radius: 1.15rem;
   --font-body: var(--font-noto-sans-kr);
   --font-display: var(--font-noto-sans-kr);

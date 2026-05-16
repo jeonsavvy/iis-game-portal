@@ -47,6 +47,7 @@ export default async function HomePage({ searchParams }: { searchParams?: Promis
           <select
             name="sort"
             defaultValue={sort}
+            aria-label="정렬 순서"
             className="flex h-11 w-full rounded-2xl border border-[#1b1337]/12 bg-white/82 px-4 text-sm text-foreground outline-none shadow-[0_10px_24px_rgba(27,19,55,0.04)] transition focus:border-primary"
           >
             <option value="popular">인기순</option>

@@ -8,8 +8,8 @@ export function PageTransition({ children, className }: { children: React.ReactN
 
   return (
     <motion.div
-      initial={reduceMotion ? undefined : { opacity: 0, y: 16 }}
-      animate={reduceMotion ? undefined : { opacity: 1, y: 0 }}
+      initial={reduceMotion ? undefined : { opacity: 0 }}
+      animate={reduceMotion ? undefined : { opacity: 1 }}
       transition={{ duration: 0.36, ease: [0.22, 1, 0.36, 1] }}
       className={className}
     >
