@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import Link from "next/link";
 
 import { GlobalNav } from "@/components/layout/global-nav";
 import { PageShell } from "@/components/layout/page-shell";
@@ -38,8 +39,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <PageShell>
           <PageTransition>{children}</PageTransition>
         </PageShell>
-        <footer className="mx-auto w-full max-w-[var(--shell-width)] px-4 pb-10 pt-6 text-xs text-[#4b4265] sm:px-6 lg:px-8">
-          © iis
+        <footer className="mx-auto flex w-full max-w-[var(--shell-width)] flex-wrap items-center justify-center gap-x-3 gap-y-2 px-4 pb-10 pt-6 text-xs text-[#4b4265] sm:px-6 lg:px-8">
+          <span>© iis</span>
+          <Link href="/privacy" className="font-medium underline-offset-4 transition-colors hover:text-foreground hover:underline">
+            개인정보처리방침
+          </Link>
         </footer>
       </body>
     </html>
