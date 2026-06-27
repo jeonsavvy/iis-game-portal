@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { DeleteAccountButton } from "@/components/DeleteAccountButton";
 import { SignOutButton } from "@/components/SignOutButton";
 
 type NavAccountPayload = {
@@ -76,6 +77,9 @@ export function NavAccount() {
         {account.role ? <Badge variant="outline" className="mt-1">{formatRole(account.role)}</Badge> : null}
       </div>
       <SignOutButton size="sm" redirectTo="/" />
+      <DeleteAccountButton
+        disabledReason={account.role === "master_admin" ? "마스터 관리자는 운영 잠금 방지를 위해 셀프 탈퇴를 막아두었습니다." : null}
+      />
     </div>
   );
 }
